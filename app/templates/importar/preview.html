@@ -1,0 +1,51 @@
+<section class="tarjeta destacada">
+  <h2>Previsualización — {{ importacion.origen }}</h2>
+
+  {% if not importacion.filas %}
+    <p class="aviso">No encontré tareas para importar.</p>
+  {% else %}
+    <p>Se van a crear <strong>{{ importacion.resumen }}</strong>.</p>
+
+    {% if importacion.avisos %}
+      <details class="avisos" open>
+        <summary>{{ importacion.avisos | length }} cosas que tuve que arreglar o saltear</summary>
+        <ul>
+          {% for aviso in importacion.avisos %}<li>{{ aviso }}</li>{% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+
+    <div class="tabla-preview">
+      <div class="fila-preview cabecera">
+        <span class="p-wbs">WBS</span>
+        <span class="p-titulo">Tarea</span>
+        <span class="p-dias">Días</span>
+        <span class="p-pred">Predecesoras</span>
+      </div>
+      {% for fila in importacion.filas %}
+        <div class="fila-preview {{ 'tipo-fase' if fila.tipo == 'fase' }}">
+          <span class="p-wbs">{{ fila.wbs or '—' }}</span>
+          <span class="p-titulo" style="padding-left: {{ fila.nivel * 16 }}px">
+            {% if fila.es_hito %}◆{% endif %}
+            {{ fila.titulo }}
+            {% if fila.responsable %}<i class="responsable">{{ fila.responsable }}</i>{% endif %}
+          </span>
+          <span class="p-dias">{{ '—' if fila.tipo != 'tarea' else fila.duracion }}</span>
+          <span class="p-pred">{{ fila.predecesoras | join(', ') or '—' }}</span>
+        </div>
+      {% endfor %}
+    </div>
+
+    <form method="post" action="/importar/confirmar" class="form-compacto confirmar">
+      <input type="hidden" name="carga" value="{{ carga }}">
+      <label>Nombre del proyecto
+        <input type="text" name="nombre" maxlength="120" required
+               value="{{ importacion.filas[0].titulo[:60] }}">
+      </label>
+      <label>Fecha de inicio
+        <input type="date" name="fecha_inicio" required value="{{ hoy.isoformat() }}">
+      </label>
+      <button class="boton primario" type="submit">Crear el proyecto</button>
+    </form>
+  {% endif %}
+</section>

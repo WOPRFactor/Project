@@ -8,6 +8,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from . import models  # noqa: F401  — registra las tablas en el metadata
 from .config import settings
+from .migraciones import poner_al_dia
 
 engine = create_engine(
     settings.db_url,
@@ -17,7 +18,9 @@ engine = create_engine(
 
 
 def init_db() -> None:
+    """Crea lo que falte y pone al día una base de una versión anterior."""
     SQLModel.metadata.create_all(engine)
+    poner_al_dia(engine)
 
 
 def get_session() -> Iterator[Session]:

@@ -12,7 +12,10 @@ from datetime import date
 
 @dataclass(frozen=True)
 class TaskNode:
-    """Una tarea tal como la ve el motor. `duracion` se ignora si tiene hijas."""
+    """Una tarea tal como la ve el motor. `duracion` se ignora si tiene hijas.
+
+    Duración 0 = hito: marca un momento, no consume tiempo del cronograma.
+    """
 
     id: int
     titulo: str
@@ -20,6 +23,10 @@ class TaskNode:
     duracion: int = 1
     snet: date | None = None
     orden: int = 0
+
+    @property
+    def es_hito(self) -> bool:
+        return self.duracion == 0
 
 
 @dataclass(frozen=True)
@@ -39,6 +46,7 @@ class ScheduledTask:
     inicio: date
     fin: date
     es_resumen: bool = False
+    es_hito: bool = False
     holgura: int = 0
     critica: bool = False
 

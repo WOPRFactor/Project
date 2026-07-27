@@ -1,6 +1,6 @@
 from datetime import date
 
-from app.engine.timeline import barra, construir_grilla
+from app.engine.timeline import ancho_columna, barra, construir_grilla
 
 
 def test_la_grilla_arranca_el_lunes_y_termina_el_viernes():
@@ -39,6 +39,15 @@ def test_cruce_de_anio_iso_no_repite_semanas():
     numeros = [(s.anio, s.numero) for s in grilla.semanas]
     assert len(numeros) == len(set(numeros))
     assert (2026, 1) in numeros
+
+
+def test_el_ancho_de_columna_se_achica_en_proyectos_largos():
+    corto = construir_grilla(date(2026, 1, 5), date(2026, 2, 6))
+    largo = construir_grilla(date(2026, 1, 5), date(2026, 12, 31))
+    assert ancho_columna(corto.columnas) > ancho_columna(largo.columnas)
+    assert ancho_columna(largo.columnas) >= 6
+    # un proyecto largo tiene que entrar en un ancho razonable
+    assert largo.columnas * ancho_columna(largo.columnas) < 2000
 
 
 def test_los_meses_cubren_todas_las_columnas():

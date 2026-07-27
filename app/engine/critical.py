@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from . import graph
 from .calendar import contar_habiles, sumar_habiles
+from .scheduler import salto_tras
 from .types import DependencyEdge, Schedule, TaskNode
 
 
@@ -47,9 +48,10 @@ def _holgura_de_hojas(
     for task_id in reversed(orden):
         tarea = schedule.tareas[task_id]
         fin_tardio = fin_proyecto
+        salto = salto_tras(por_id[task_id])
         for arista in salientes.get(task_id, []):
             tardio_sucesora = inicio_tardio[arista.successor_id]
-            fin_tardio = min(fin_tardio, sumar_habiles(tardio_sucesora, -(1 + arista.lag)))
+            fin_tardio = min(fin_tardio, sumar_habiles(tardio_sucesora, -(salto + arista.lag)))
 
         duracion = max(por_id[task_id].duracion, 1)
         inicio_tardio[task_id] = sumar_habiles(fin_tardio, -(duracion - 1))

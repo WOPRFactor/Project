@@ -17,7 +17,7 @@ from pydantic import ValidationError
 
 from .config import RAIZ, settings
 from .db import init_db
-from .routers import dependencies, export, projects, tasks
+from .routers import dependencies, export, importar, projects, tasks
 from .templating import templates
 
 log = logging.getLogger("wopr")
@@ -40,6 +40,7 @@ app.include_router(projects.router)
 app.include_router(tasks.router)
 app.include_router(dependencies.router)
 app.include_router(export.router)
+app.include_router(importar.router)
 
 
 @app.get("/salud", include_in_schema=False)

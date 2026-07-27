@@ -107,6 +107,21 @@ def _agrupar_semanas(dias: list[date]) -> list[Semana]:
     return semanas
 
 
+def ancho_columna(columnas: int) -> int:
+    """Píxeles por día hábil, según qué tan largo sea el proyecto.
+
+    Un proyecto de un mes se lee cómodo con columnas anchas; uno de un año, no
+    entraría en ninguna pantalla. En vez de scrollear kilómetros, se achica.
+    """
+    if columnas <= 45:
+        return 22
+    if columnas <= 90:
+        return 14
+    if columnas <= 180:
+        return 9
+    return 6
+
+
 def barra(grilla: Grilla, inicio: date, fin: date) -> tuple[int, int] | None:
     """Columnas `grid-column: inicio / fin` (fin exclusivo) para una tarea."""
     desde = grilla.columna_de(inicio)

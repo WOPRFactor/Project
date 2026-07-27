@@ -11,14 +11,16 @@
     {% for fila in filas %}
       <div class="fila {{ 'resumen' if fila.es_resumen }} estado-{{ fila.tarea.estado.value }}">
         <span class="col-tarea" style="padding-left: {{ fila.nivel * 16 }}px"
-              title="{{ fila.tarea.notas }}">
+              title="{{ fila.tarea.notas }}{% if fila.tarea.responsable %} · Responsable: {{ fila.tarea.responsable }}{% endif %}">
           {% if fila.critica and not fila.es_resumen %}<i class="punto-critico" title="Ruta crítica"></i>{% endif %}
+          {% if fila.es_hito %}<i class="marca-hito" title="Hito">◆</i>{% endif %}
           {{ fila.tarea.titulo }}
+          {% if fila.tarea.responsable %}<i class="responsable">{{ fila.tarea.responsable }}</i>{% endif %}
           {% if fila.tarea.snet %}<i class="marca-snet" title="No arranca antes del {{ fila.tarea.snet | fecha }}">⚑</i>{% endif %}
         </span>
         <span class="col-fecha">{{ fila.inicio | fecha }}</span>
         <span class="col-fecha">{{ fila.fin | fecha }}</span>
-        <span class="col-dias">{{ '—' if fila.es_resumen else fila.tarea.duracion }}</span>
+        <span class="col-dias">{{ '—' if fila.es_resumen or fila.es_hito else fila.tarea.duracion }}</span>
         <span class="col-acciones">
           <form hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ fila.tarea.id }}/estado"
                 hx-target="#tablero" hx-swap="innerHTML" class="en-linea">
@@ -42,7 +44,7 @@
 
   <div class="panel-der">
     {% if grilla %}
-      <div class="pista" style="--cols: {{ grilla.columnas }}">
+      <div class="pista" style="--cols: {{ grilla.columnas }}; --ancho-dia: {{ ancho_dia }}px">
         {% if columna_hoy %}
           <div class="linea-hoy" style="--col: {{ columna_hoy }}" title="Hoy"></div>
         {% endif %}
@@ -62,7 +64,7 @@
         {% for fila in filas %}
           <div class="fila-barra">
             {% if fila.columnas %}
-              <div class="barra-tarea {{ 'resumen' if fila.es_resumen }} {{ 'critica' if fila.critica and not fila.es_resumen }} estado-{{ fila.tarea.estado.value }}"
+              <div class="barra-tarea {{ 'resumen' if fila.es_resumen }} {{ 'hito' if fila.es_hito }} {{ 'critica' if fila.critica and not fila.es_resumen }} estado-{{ fila.tarea.estado.value }}"
                    style="grid-column: {{ fila.columnas[0] }} / {{ fila.columnas[1] }}"
                    title="{{ fila.tarea.titulo }}: {{ fila.inicio | fecha }} → {{ fila.fin | fecha }}{% if not fila.es_resumen %} · holgura {{ fila.holgura }}d{% endif %}">
                 <span>{{ fila.tarea.titulo }}</span>

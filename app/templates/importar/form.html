@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block titulo %}Importar proyecto — WOPR{% endblock %}
+
+{% block acciones %}
+<a class="boton" href="/">Todos los proyectos</a>
+{% endblock %}
+
+{% block contenido %}
+<section class="contenedor">
+  <h1>Importar un proyecto</h1>
+  <p class="tenue">Nada se crea hasta que confirmes la previsualización.</p>
+
+  {% if error %}<p class="aviso">{{ error }}</p>{% endif %}
+
+  <div class="paneles">
+    <section class="tarjeta">
+      <h2>Desde una planilla</h2>
+      <p class="tenue pie">
+        Necesita las columnas <strong>WBS</strong> y <strong>Tarea</strong>. Si están,
+        también lee <em>Predec.</em>, <em>Días</em>, <em>Resp.</em> y <em>_tipo</em>.
+      </p>
+      <form method="post" action="/importar/planilla" enctype="multipart/form-data"
+            class="form-compacto">
+        <label>Archivo .xlsx
+          <input type="file" name="archivo" accept=".xlsx,.xlsm" required>
+        </label>
+        {% if hojas %}
+          <label>Hoja
+            <select name="hoja">
+              {% for nombre in hojas %}
+                <option value="{{ nombre }}" {{ 'selected' if nombre == hoja_elegida }}>{{ nombre }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        {% endif %}
+        <button class="boton primario" type="submit">Previsualizar</button>
+      </form>
+    </section>
+
+    <section class="tarjeta">
+      <h2>Pegando texto</h2>
+      <p class="tenue pie">
+        Una tarea por línea. La indentación arma el árbol, el número al final es la
+        duración en días hábiles y <code>@alguien</code> el responsable.
+      </p>
+      <form method="post" action="/importar/texto" class="form-compacto">
+        <label>Tareas
+          <textarea name="texto" rows="8" placeholder="Relevamiento&#10;    Entrevistas con el cliente   4&#10;    Informe de brechas   2  @Ariel&#10;Hito: relevamiento cerrado"></textarea>
+        </label>
+        <button class="boton primario" type="submit">Previsualizar</button>
+      </form>
+    </section>
+  </div>
+
+  {% if importacion %}
+    {% include "importar/preview.html" %}
+  {% endif %}
+</section>
+{% endblock %}

@@ -14,6 +14,15 @@ from .calendar import fin_desde_inicio, siguiente_habil, sumar_habiles
 from .types import DependencyEdge, Schedule, ScheduledTask, TaskNode
 
 
+def salto_tras(predecesora: TaskNode) -> int:
+    """Días hábiles entre el fin de una predecesora y el arranque de su sucesora.
+
+    Una tarea normal ocupa su último día, así que la sucesora arranca al siguiente.
+    Un hito no consume tiempo: lo que dependa de él arranca el mismo día.
+    """
+    return 0 if predecesora.es_hito else 1
+
+
 def calcular(
     inicio_proyecto: date,
     nodos: list[TaskNode],
@@ -59,14 +68,16 @@ def _forward_pass(
         inicio = arranque
         for arista in entrantes.get(task_id, []):
             fin_previo = schedule.tareas[arista.predecessor_id].fin
-            inicio = max(inicio, sumar_habiles(fin_previo, 1 + arista.lag))
+            salto = salto_tras(por_id[arista.predecessor_id])
+            inicio = max(inicio, sumar_habiles(fin_previo, salto + arista.lag))
         if nodo.snet is not None:
             inicio = max(inicio, siguiente_habil(nodo.snet))
         inicio = siguiente_habil(max(inicio, arranque))
         schedule.tareas[task_id] = ScheduledTask(
             id=task_id,
             inicio=inicio,
-            fin=fin_desde_inicio(inicio, max(nodo.duracion, 1)),
+            fin=fin_desde_inicio(inicio, nodo.duracion),
+            es_hito=nodo.es_hito,
         )
 
 

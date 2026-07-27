@@ -47,7 +47,9 @@ class Task(SQLModel, table=True):
     parent_id: int | None = Field(default=None, foreign_key="task.id", index=True)
     titulo: str = Field(max_length=200)
     notas: str = Field(default="", max_length=4000)
-    duracion: int = Field(default=1, ge=1, le=3650)
+    responsable: str = Field(default="", max_length=120)
+    # duración 0 = hito: marca un momento, no consume días del cronograma
+    duracion: int = Field(default=1, ge=0, le=3650)
     snet: date | None = Field(default=None)
     estado: EstadoTarea = Field(default=EstadoTarea.pendiente)
     orden: int = Field(default=0)

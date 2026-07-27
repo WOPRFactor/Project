@@ -24,6 +24,7 @@ def contexto(session: Session, project_id: int) -> dict:
         "filas": datos.filas,
         "grilla": datos.grilla,
         "columna_hoy": datos.columna_hoy,
+        "ancho_dia": datos.ancho_dia,
         "error_motor": datos.error,
         "hojas": [f.tarea for f in datos.filas if not f.es_resumen],
         "todas": tasks_service.arbol(session, project_id),

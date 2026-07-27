@@ -112,6 +112,44 @@ def test_export_de_proyecto_inexistente_da_404(cliente):
     assert cliente.get("/proyectos/999/export/markdown").status_code == 404
 
 
+def test_import_de_texto_previsualiza_sin_crear_nada(cliente):
+    respuesta = cliente.post(
+        "/importar/texto", data={"texto": "Fase\n  Tarea A  3\n  Hito: listo"}
+    )
+    assert respuesta.status_code == 200
+    assert "Se van a crear" in respuesta.text
+    assert cliente.get("/").text.count("lista-proyectos") == 0  # nada creado todavía
+
+
+def test_import_rechaza_un_archivo_que_no_es_planilla(cliente):
+    respuesta = cliente.post(
+        "/importar/planilla",
+        files={"archivo": ("virus.exe", b"MZ\x90\x00", "application/octet-stream")},
+    )
+    assert respuesta.status_code == 400
+    assert ".xlsx" in respuesta.text
+    assert "Traceback" not in respuesta.text
+
+
+def test_import_de_planilla_corrupta_avisa_sin_romper(cliente):
+    respuesta = cliente.post(
+        "/importar/planilla",
+        files={"archivo": ("rota.xlsx", b"no soy una planilla", "application/vnd.ms-excel")},
+    )
+    assert respuesta.status_code == 400
+    assert "No pude leer la planilla" in respuesta.text
+    assert "Traceback" not in respuesta.text
+
+
+def test_confirmar_sin_previsualizacion_no_rompe(cliente):
+    respuesta = cliente.post(
+        "/importar/confirmar",
+        data={"nombre": "X", "fecha_inicio": "2026-01-05", "carga": "basura"},
+    )
+    assert respuesta.status_code == 400
+    assert "Traceback" not in respuesta.text
+
+
 def test_proyecto_inexistente_da_404_sin_stack_trace(cliente):
     respuesta = cliente.get("/proyectos/999")
     assert respuesta.status_code == 404

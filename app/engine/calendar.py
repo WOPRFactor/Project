@@ -46,9 +46,14 @@ def sumar_habiles(dia: date, n: int) -> date:
 
 
 def fin_desde_inicio(inicio: date, duracion: int) -> date:
-    """Último día hábil de una tarea que arranca en `inicio` y dura `duracion` días."""
-    if duracion < 1:
-        raise ValueError("La duración debe ser de al menos 1 día hábil")
+    """Último día hábil de una tarea que arranca en `inicio` y dura `duracion` días.
+
+    Duración 0 = hito: es un punto en el tiempo, inicio y fin caen el mismo día.
+    """
+    if duracion < 0:
+        raise ValueError("La duración no puede ser negativa")
+    if duracion == 0:
+        return siguiente_habil(inicio)
     return sumar_habiles(inicio, duracion - 1)
 
 

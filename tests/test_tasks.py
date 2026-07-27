@@ -61,9 +61,13 @@ def test_borrar_promoviendo_conserva_las_subtareas(session: Session, proyecto):
     assert quedan[0].parent_id is None
 
 
-def test_duracion_cero_no_valida():
+def test_duracion_cero_es_un_hito_valido():
+    assert TareaIn(titulo="Hito: equipo conformado", duracion=0).duracion == 0
+
+
+def test_duracion_negativa_no_valida():
     with pytest.raises(ValidationError):
-        TareaIn(titulo="Algo", duracion=0)
+        TareaIn(titulo="Algo", duracion=-1)
 
 
 def test_titulo_vacio_no_valida():

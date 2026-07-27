@@ -27,6 +27,8 @@ acá arrancan fijas y simples. Corregí lo que no cierre antes de la Fase 3.
 1. **Jerarquía:** las tareas forman árbol de profundidad libre. Una tarea con hijas es
    *resumen*: no tiene duración propia — sus fechas son la envolvente de sus hijas
    (rollup, como en MS Project).
+1b. **Hito = duración 0** (agregado en Fase 6): marca un momento, inicio y fin el mismo
+   día, y no consume tiempo — su sucesora arranca el mismo día que el hito.
 2. **Dependencias solo Fin→Inicio (FS), con lag**, y solo entre tareas hoja. El lag se
    expresa en días hábiles y puede ser negativo (solape): "arranca 3 días después de que
    termine X" o "puede empezar 2 días antes de que X termine". Otros tipos (SS, FF)
@@ -171,6 +173,16 @@ proyecto de ejemplo con dependencias. README. Pasada final de seguridad.
 README, y pasada limpia: input validado en bordes, cero secretos en repo, deps sin CVEs
 conocidos, sin stack traces al navegador, bind solo-localhost re-verificado. Correr
 `/security-review` sobre el diff antes de cerrar.
+
+### Fase 6 — Importar: planilla y texto pegado ✔
+Nace de una planilla real de Ariel (Gantt de traspaso operativo), que destapó dos
+huecos del modelo: **hitos** (duración 0) y **responsable**. Import desde `.xlsx`
+leyendo WBS, Tarea, Resp., Predec., Días y `_tipo`, con previsualización obligatoria
+antes de crear nada; y pegado de texto indentado para la carga rápida. Suma
+`app/migraciones.py`, porque agregar columnas rompe una base ya existente.
+**Hecho cuando:** la planilla real entra completa (41 filas, 38 dependencias) con sus
+avisos, el cronograma calcula sin errores, y una base de la versión anterior sigue
+abriendo. ✔ Verificado en navegador; 125 tests.
 
 ## Prompts para Code
 

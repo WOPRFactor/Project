@@ -87,7 +87,8 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 
 /* ---------- Gantt ---------- */
 .gantt { display: flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--panel); margin-bottom: 18px; }
-.panel-izq { flex: 0 0 auto; min-width: 520px; border-right: 2px solid var(--borde); }
+/* Ancho fijo: con títulos largos, si crece se come el timeline. */
+.panel-izq { flex: 0 0 560px; max-width: 560px; border-right: 2px solid var(--borde); }
 .panel-der { flex: 1 1 auto; overflow-x: auto; }
 
 .panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 8px; padding: 0 12px; }
@@ -134,6 +135,20 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .barra-tarea.resumen span { display: none; }
 .barra-tarea.estado-hecha { opacity: .5; }
 .barra-tarea.estado-en_curso { box-shadow: inset 0 0 0 2px var(--curso); }
+/* Hito: rombo, no barra — marca un momento, no un tramo de trabajo. */
+.barra-tarea.hito {
+  background: none; color: var(--texto); padding: 0; height: var(--fila);
+  line-height: var(--fila); text-align: center; overflow: visible;
+}
+.barra-tarea.hito span { display: none; }
+.barra-tarea.hito::before { content: "◆"; font-size: 13px; color: var(--texto); }
+.barra-tarea.hito.critica::before { color: var(--critico); }
+
+.marca-hito { color: var(--texto); font-style: normal; font-size: .7rem; margin-right: 4px; }
+.responsable {
+  font-style: normal; font-size: .68rem; color: var(--tenue);
+  border: 1px solid var(--borde); border-radius: 999px; padding: 0 6px; margin-left: 6px;
+}
 
 .linea-hoy {
   position: absolute; top: 0; bottom: 0; width: 2px; background: var(--curso);
@@ -145,3 +160,20 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .lista-deps li { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: .88rem; color: var(--tenue); }
 .lista-deps strong { color: var(--texto); font-weight: 600; }
 .form-compacto label { margin-bottom: 10px; }
+.pie { font-size: .82rem; margin-top: -6px; }
+
+/* ---------- Previsualización del import ---------- */
+.tabla-preview { border: 1px solid var(--borde); border-radius: 8px; max-height: 420px; overflow: auto; margin: 16px 0; }
+.fila-preview { display: flex; align-items: center; gap: 10px; padding: 4px 12px; font-size: .85rem; border-bottom: 1px solid rgba(44, 52, 70, .5); }
+.fila-preview.cabecera { position: sticky; top: 0; background: var(--panel-alto); color: var(--tenue); font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; }
+.fila-preview.tipo-fase { font-weight: 600; background: rgba(76, 141, 255, .06); }
+.p-wbs { flex: 0 0 56px; color: var(--tenue); font-variant-numeric: tabular-nums; }
+.p-titulo { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.p-dias { flex: 0 0 46px; text-align: right; color: var(--tenue); }
+.p-pred { flex: 0 0 130px; color: var(--tenue); font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.avisos { border: 1px solid var(--curso); border-radius: 8px; padding: 10px 14px; margin: 14px 0; }
+.avisos summary { cursor: pointer; color: var(--curso); font-size: .88rem; }
+.avisos ul { margin: 10px 0 0; padding-left: 18px; color: var(--tenue); font-size: .84rem; }
+.avisos li { margin-bottom: 4px; }
+.confirmar { border-top: 1px solid var(--borde); padding-top: 16px; }

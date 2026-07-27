@@ -19,7 +19,7 @@ uv sync
 ```bash
 uv run uvicorn app.main:app --reload      # http://127.0.0.1:8000
 uv run python scripts/seed.py             # carga un proyecto de ejemplo
-uv run pytest                             # 80 tests
+uv run pytest                             # 125 tests
 ```
 
 Flujo: creás un proyecto con su fecha de inicio, cargás tareas (indentándolas como
@@ -32,18 +32,52 @@ Lo que ves en el timeline:
 - **Barras rojas** — ruta crítica: atrasar cualquiera de ellas atrasa el proyecto entero.
 - **Barras grises finas** — tareas resumen (las que tienen subtareas): su fecha es la
   envolvente de sus hijas, no se cargan a mano.
+- **Rombos ◆** — hitos: marcan un momento, no ocupan días.
 - **Línea amarilla** — hoy, si cae dentro del rango del proyecto.
 - **⚑** — la tarea tiene una restricción "no arrancar antes de".
+
+El ancho de las columnas se achica solo en proyectos largos, para que un año entre en
+la pantalla sin scrollear kilómetros.
 
 ## Reglas del motor (v1)
 
 - Duración en **días hábiles** (lunes a viernes; sin feriados todavía).
+- **Duración 0 = hito**: inicio y fin el mismo día, y no consume tiempo — lo que
+  depende de un hito arranca el mismo día que el hito.
 - Dependencias **solo Fin→Inicio**, con lag en días hábiles: positivo espera, negativo
   solapa. Solo entre tareas sin subtareas.
 - Una tarea arranca en el máximo entre el inicio del proyecto, su restricción SNET, y
   (fin de cada predecesora + 1 día hábil + lag). Nada arranca antes del inicio del
   proyecto, ni con lag negativo.
 - Los ciclos se detectan y se rechazan al guardar, nombrando las tareas involucradas.
+
+## Importar
+
+Desde **Importar**, en la home. Nada se crea hasta que confirmás la previsualización,
+que muestra qué va a entrar y qué hubo que arreglar o saltear.
+
+**Desde una planilla `.xlsx`.** Necesita las columnas `WBS` y `Tarea`; si están,
+también lee `Predec.`, `Días`, `Resp.` y `_tipo` (fase / tarea / hito). El WBS arma la
+jerarquía (`2.3` cuelga de `2`) y las predecesoras se escriben por WBS, separadas por
+coma. Si el archivo tiene varias hojas, elegís cuál.
+
+Dos cosas del mundo real que el importador resuelve y **te reporta**:
+
+- Excel suele convertir un WBS como `4.6` en la fecha `2026-06-04`. La conversión es
+  reversible sin ambigüedad, así que se repara y queda anotado en los avisos.
+- Una predecesora que apunta a un WBS que no está en la planilla no se crea, y te dice
+  cuál era.
+
+**Pegando texto.** Una tarea por línea; la indentación (tabs o espacios) arma el árbol,
+el número al final es la duración en días hábiles y `@alguien` el responsable. Una línea
+que empieza con `Hito:` —o con duración 0— entra como hito.
+
+```
+Relevamiento
+    Entrevistas con el cliente   4
+    Informe de brechas   2  @Ariel
+Hito: relevamiento cerrado
+```
 
 ## Export
 
