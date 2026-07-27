@@ -19,7 +19,7 @@ uv sync
 ```bash
 uv run uvicorn app.main:app --reload      # http://127.0.0.1:8000
 uv run python scripts/seed.py             # carga un proyecto de ejemplo
-uv run pytest                             # 67 tests
+uv run pytest                             # 80 tests
 ```
 
 Flujo: creás un proyecto con su fecha de inicio, cargás tareas (indentándolas como
@@ -44,6 +44,17 @@ Lo que ves en el timeline:
   (fin de cada predecesora + 1 día hábil + lag). Nada arranca antes del inicio del
   proyecto, ni con lag negativo.
 - Los ciclos se detectan y se rechazan al guardar, nombrando las tareas involucradas.
+
+## Export
+
+Desde la vista de un proyecto, arriba a la derecha:
+
+- **`.json`** — dump completo: estructura, duraciones, dependencias con su lag y las
+  fechas calculadas. Es el formato para backup portable o para alimentar otra
+  herramienta.
+- **`.md`** — el árbol indentado con fechas, marcando la ruta crítica y las tareas
+  hechas. Para pegar en un informe o versionar en git y ver cómo se movió el
+  cronograma entre semanas.
 
 ## Backup
 

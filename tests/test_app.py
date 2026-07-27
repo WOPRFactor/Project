@@ -81,6 +81,37 @@ def test_dependencia_circular_muestra_aviso_y_no_rompe(cliente):
     assert "Traceback" not in respuesta.text
 
 
+def test_export_json_se_descarga(cliente):
+    cliente.post(
+        "/proyectos",
+        data={"nombre": "Obra Norte", "descripcion": "", "fecha_inicio": "2026-01-05"},
+    )
+    cliente.post(
+        "/proyectos/1/tareas",
+        data={"titulo": "Excavación", "duracion": "3", "snet": "", "parent_id": ""},
+    )
+    respuesta = cliente.get("/proyectos/1/export/json")
+    assert respuesta.status_code == 200
+    assert respuesta.headers["content-disposition"] == 'attachment; filename="obra-norte.json"'
+    assert respuesta.json()["tareas"][0]["inicio"] == "2026-01-05"
+
+
+def test_export_markdown_se_descarga(cliente):
+    cliente.post(
+        "/proyectos",
+        data={"nombre": "Obra Sur", "descripcion": "", "fecha_inicio": "2026-01-05"},
+    )
+    respuesta = cliente.get("/proyectos/1/export/markdown")
+    assert respuesta.status_code == 200
+    assert respuesta.headers["content-disposition"] == 'attachment; filename="obra-sur.md"'
+    assert respuesta.text.startswith("# Obra Sur")
+
+
+def test_export_de_proyecto_inexistente_da_404(cliente):
+    assert cliente.get("/proyectos/999/export/json").status_code == 404
+    assert cliente.get("/proyectos/999/export/markdown").status_code == 404
+
+
 def test_proyecto_inexistente_da_404_sin_stack_trace(cliente):
     respuesta = cliente.get("/proyectos/999")
     assert respuesta.status_code == 404
