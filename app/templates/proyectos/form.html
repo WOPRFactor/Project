@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block titulo %}{{ 'Editar proyecto' if proyecto else 'Nuevo proyecto' }} — WOPR{% endblock %}
+
+{% block contenido %}
+<section class="tarjeta angosta">
+  <h1>{{ 'Editar proyecto' if proyecto else 'Nuevo proyecto' }}</h1>
+  <form method="post"
+        action="{{ '/proyectos/%s/editar' % proyecto.id if proyecto else '/proyectos' }}">
+    <label>
+      Nombre
+      <input type="text" name="nombre" maxlength="120" required
+             value="{{ proyecto.nombre if proyecto else '' }}">
+    </label>
+    <label>
+      Descripción
+      <textarea name="descripcion" rows="3" maxlength="2000">{{ proyecto.descripcion if proyecto else '' }}</textarea>
+    </label>
+    <label>
+      Fecha de inicio
+      <input type="date" name="fecha_inicio" required
+             value="{{ (proyecto.fecha_inicio if proyecto else hoy).isoformat() }}">
+    </label>
+    {% if proyecto %}
+      <label>
+        Estado
+        <select name="estado">
+          {% for valor, etiqueta in etiqueta_estado_proyecto.items() %}
+            <option value="{{ valor.value }}" {{ 'selected' if proyecto.estado == valor }}>
+              {{ etiqueta }}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+    {% endif %}
+    <div class="fila-botones">
+      <button class="boton primario" type="submit">Guardar</button>
+      <a class="boton" href="{{ '/proyectos/%s' % proyecto.id if proyecto else '/' }}">Cancelar</a>
+    </div>
+  </form>
+
+  {% if proyecto %}
+    <form method="post" action="/proyectos/{{ proyecto.id }}/eliminar" class="peligro"
+          onsubmit="return confirm('¿Borrar el proyecto y todas sus tareas? Esto no se puede deshacer.')">
+      <button class="boton peligro" type="submit">Borrar proyecto</button>
+    </form>
+  {% endif %}
+</section>
+{% endblock %}

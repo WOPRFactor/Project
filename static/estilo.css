@@ -1,0 +1,147 @@
+/* WOPR Proyectos — hoja única. El timeline se pinta con CSS Grid, sin librerías. */
+
+:root {
+  --fondo: #12151c;
+  --panel: #1a1f2b;
+  --panel-alto: #212836;
+  --borde: #2c3446;
+  --texto: #e6e9f0;
+  --tenue: #96a0b5;
+  --acento: #4c8dff;
+  --critico: #ff6b5e;
+  --hecho: #3ecf8e;
+  --curso: #f5b544;
+  --fila: 32px;
+  --ancho-dia: 22px;
+  --cabecera: 44px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+a { color: var(--acento); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1 { font-size: 1.5rem; margin: 0 0 4px; }
+h2 { font-size: 1rem; margin: 0 0 12px; color: var(--tenue); text-transform: uppercase; letter-spacing: .04em; }
+
+.barra {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; border-bottom: 1px solid var(--borde); background: var(--panel);
+}
+.marca { font-weight: 700; letter-spacing: .06em; color: var(--texto); }
+.marca span { color: var(--acento); }
+.acciones-barra { display: flex; align-items: center; gap: 16px; }
+
+main { padding: 24px; }
+.contenedor { max-width: 1100px; margin: 0 auto; }
+.contenedor.ancho { max-width: 1600px; }
+.encabezado-seccion { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+
+.tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 18px; margin-bottom: 18px; }
+.tarjeta.angosta { max-width: 560px; margin: 0 auto; }
+.tarjeta.destacada { border-color: var(--acento); }
+.paneles { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; }
+
+label { display: block; margin-bottom: 12px; color: var(--tenue); font-size: .85rem; }
+input, select, textarea {
+  display: block; width: 100%; margin-top: 4px; padding: 8px 10px;
+  background: var(--fondo); color: var(--texto);
+  border: 1px solid var(--borde); border-radius: 6px; font: inherit;
+}
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--acento); outline-offset: 1px; }
+
+.boton {
+  display: inline-block; padding: 8px 14px; border-radius: 6px; cursor: pointer;
+  background: var(--panel-alto); color: var(--texto); border: 1px solid var(--borde); font: inherit;
+}
+.boton:hover { border-color: var(--acento); text-decoration: none; }
+.boton.primario { background: var(--acento); border-color: var(--acento); color: #08101f; font-weight: 600; }
+.boton.peligro { background: transparent; border-color: var(--critico); color: var(--critico); }
+.fila-botones { display: flex; gap: 10px; align-items: center; }
+form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--borde); }
+.en-linea { display: inline; }
+.icono { background: none; border: none; color: var(--tenue); cursor: pointer; font-size: 14px; padding: 2px 4px; }
+.icono:hover { color: var(--texto); }
+
+.tenue, .vacio { color: var(--tenue); }
+.enlace-tenue { color: var(--tenue); font-size: .9rem; }
+.aviso {
+  background: rgba(255, 107, 94, .12); border: 1px solid var(--critico);
+  color: #ffc9c4; padding: 10px 14px; border-radius: 8px; margin: 0 0 16px;
+}
+
+.lista-proyectos { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.lista-proyectos li { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 14px 18px; }
+.lista-proyectos .nombre { font-weight: 600; color: var(--texto); font-size: 1.05rem; }
+.lista-proyectos p { margin: 4px 0 0; font-size: .88rem; }
+
+.chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .72rem; border: 1px solid var(--borde); color: var(--tenue); margin-left: 8px; }
+.chip.estado-activo { border-color: var(--hecho); color: var(--hecho); }
+.chip.estado-pausado { border-color: var(--curso); color: var(--curso); }
+
+/* ---------- Gantt ---------- */
+.gantt { display: flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--panel); margin-bottom: 18px; }
+.panel-izq { flex: 0 0 auto; min-width: 520px; border-right: 2px solid var(--borde); }
+.panel-der { flex: 1 1 auto; overflow-x: auto; }
+
+.panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 8px; padding: 0 12px; }
+.panel-izq .cabecera { height: var(--cabecera); border-bottom: 1px solid var(--borde); color: var(--tenue); font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
+.panel-izq .fila { height: var(--fila); border-bottom: 1px solid rgba(44, 52, 70, .5); font-size: .9rem; }
+.panel-izq .fila.resumen { font-weight: 600; background: rgba(76, 141, 255, .06); }
+.panel-izq .fila.estado-hecha .col-tarea { color: var(--tenue); text-decoration: line-through; }
+
+.col-tarea { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.col-fecha { flex: 0 0 84px; color: var(--tenue); font-size: .82rem; font-variant-numeric: tabular-nums; }
+.col-dias { flex: 0 0 44px; text-align: right; color: var(--tenue); font-size: .82rem; }
+.col-acciones { flex: 0 0 132px; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+
+.punto-critico { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--critico); margin-right: 6px; }
+.marca-snet { color: var(--curso); font-style: normal; margin-left: 4px; }
+
+.chip-boton { border: 1px solid var(--borde); background: transparent; color: var(--tenue); border-radius: 999px; padding: 1px 8px; font-size: .7rem; cursor: pointer; }
+.chip-boton.estado-hecha { border-color: var(--hecho); color: var(--hecho); }
+.chip-boton.estado-en_curso { border-color: var(--curso); color: var(--curso); }
+
+.pista { position: relative; min-width: max-content; }
+.cabecera-grilla { height: var(--cabecera); border-bottom: 1px solid var(--borde); }
+.fila-meses, .fila-semanas { display: grid; grid-template-columns: repeat(var(--cols), var(--ancho-dia)); height: 22px; align-items: center; }
+.mes, .semana { font-size: .68rem; color: var(--tenue); text-align: center; overflow: hidden; white-space: nowrap; border-left: 1px solid var(--borde); }
+.mes { text-transform: uppercase; letter-spacing: .06em; }
+
+.fila-barra {
+  display: grid; grid-template-columns: repeat(var(--cols), var(--ancho-dia));
+  height: var(--fila); align-items: center;
+  border-bottom: 1px solid rgba(44, 52, 70, .5);
+  background-image: repeating-linear-gradient(
+    to right, transparent 0, transparent calc(var(--ancho-dia) * 5 - 1px),
+    var(--borde) calc(var(--ancho-dia) * 5 - 1px), var(--borde) calc(var(--ancho-dia) * 5));
+}
+
+/* Barra del Gantt. Ojo: no reusar el nombre `.barra`, que es la barra de navegación. */
+.barra-tarea {
+  height: 16px; border-radius: 4px; background: var(--acento); color: #08101f;
+  font-size: .7rem; line-height: 16px; padding: 0 6px; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis; min-width: 6px;
+}
+.barra-tarea.critica { background: var(--critico); color: #240b09; }
+.barra-tarea.resumen { height: 9px; border-radius: 2px; background: var(--tenue); }
+.barra-tarea.resumen span { display: none; }
+.barra-tarea.estado-hecha { opacity: .5; }
+.barra-tarea.estado-en_curso { box-shadow: inset 0 0 0 2px var(--curso); }
+
+.linea-hoy {
+  position: absolute; top: 0; bottom: 0; width: 2px; background: var(--curso);
+  opacity: .7; z-index: 2;
+  left: calc((var(--col) - 1) * var(--ancho-dia) + var(--ancho-dia) / 2);
+}
+
+.lista-deps { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.lista-deps li { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: .88rem; color: var(--tenue); }
+.lista-deps strong { color: var(--texto); font-weight: 600; }
+.form-compacto label { margin-bottom: 10px; }

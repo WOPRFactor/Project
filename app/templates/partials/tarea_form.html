@@ -1,0 +1,44 @@
+{% if tarea %}
+<section class="tarjeta destacada">
+  <h2>Editar «{{ tarea.titulo }}»</h2>
+  <form hx-post="/proyectos/{{ proyecto_id }}/tareas/{{ tarea.id }}/editar"
+        hx-target="#tablero" hx-swap="innerHTML" class="form-compacto">
+    <label>Título
+      <input type="text" name="titulo" maxlength="200" required value="{{ tarea.titulo }}">
+    </label>
+    <label>Notas
+      <textarea name="notas" rows="2" maxlength="4000">{{ tarea.notas }}</textarea>
+    </label>
+    <label>Duración (días hábiles)
+      <input type="number" name="duracion" min="1" max="3650" required value="{{ tarea.duracion }}">
+    </label>
+    <label>No arrancar antes de
+      <input type="date" name="snet" value="{{ tarea.snet.isoformat() if tarea.snet else '' }}">
+    </label>
+    <label>Estado
+      <select name="estado">
+        {% for valor, etiqueta in etiqueta_estado_tarea.items() %}
+          <option value="{{ valor.value }}" {{ 'selected' if tarea.estado == valor }}>{{ etiqueta }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Subtarea de
+      <select name="parent_id">
+        <option value="">— tarea de primer nivel —</option>
+        {% for candidata, nivel in candidatos %}
+          {% if candidata.id != tarea.id %}
+            <option value="{{ candidata.id }}" {{ 'selected' if tarea.parent_id == candidata.id }}>
+              {{ '— ' * nivel }}{{ candidata.titulo }}
+            </option>
+          {% endif %}
+        {% endfor %}
+      </select>
+    </label>
+    <div class="fila-botones">
+      <button class="boton primario" type="submit">Guardar cambios</button>
+      <button class="boton" type="button"
+              onclick="document.getElementById('panel-edicion').innerHTML = ''">Cancelar</button>
+    </div>
+  </form>
+</section>
+{% endif %}

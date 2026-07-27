@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titulo %}Proyectos — WOPR{% endblock %}
+
+{% block acciones %}
+<a class="boton primario" href="/proyectos/nuevo">Nuevo proyecto</a>
+{% endblock %}
+
+{% block contenido %}
+<section class="contenedor">
+  <div class="encabezado-seccion">
+    <h1>Proyectos</h1>
+    <a class="enlace-tenue" href="/?archivados={{ 'false' if archivados else 'true' }}">
+      {{ 'Ocultar archivados' if archivados else 'Ver archivados' }}
+    </a>
+  </div>
+
+  {% if not proyectos %}
+    <p class="vacio">Todavía no hay proyectos. Creá el primero para arrancar.</p>
+  {% else %}
+    <ul class="lista-proyectos">
+      {% for proyecto in proyectos %}
+        <li>
+          <a href="/proyectos/{{ proyecto.id }}">
+            <span class="nombre">{{ proyecto.nombre }}</span>
+            <span class="chip estado-{{ proyecto.estado.value }}">
+              {{ etiqueta_estado_proyecto[proyecto.estado] }}
+            </span>
+          </a>
+          <p class="tenue">
+            Arranca el {{ proyecto.fecha_inicio | fecha }}
+            {% if proyecto.descripcion %} · {{ proyecto.descripcion }}{% endif %}
+          </p>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</section>
+{% endblock %}

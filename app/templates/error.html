@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block titulo %}Error — WOPR Proyectos{% endblock %}
+{% block contenido %}
+<section class="tarjeta angosta">
+  <h1>Algo no salió bien</h1>
+  <p class="aviso">{{ mensaje }}</p>
+  <a class="boton" href="/">Volver al inicio</a>
+</section>
+{% endblock %}

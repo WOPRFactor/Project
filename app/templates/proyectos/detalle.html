@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}{{ proyecto.nombre }} — WOPR{% endblock %}
+
+{% block acciones %}
+<div class="acciones-barra">
+  <a class="enlace-tenue" href="/proyectos/{{ proyecto.id }}/editar">Editar proyecto</a>
+  <a class="boton" href="/">Todos los proyectos</a>
+</div>
+{% endblock %}
+
+{% block contenido %}
+<section class="contenedor ancho">
+  <div class="encabezado-seccion">
+    <div>
+      <h1>{{ proyecto.nombre }}</h1>
+      <p class="tenue">
+        Arranca el {{ proyecto.fecha_inicio | fecha }} ·
+        <span class="chip estado-{{ proyecto.estado.value }}">
+          {{ etiqueta_estado_proyecto[proyecto.estado] }}
+        </span>
+      </p>
+    </div>
+  </div>
+
+  <div id="tablero">
+    {% include "partials/tablero.html" %}
+  </div>
+</section>
+{% endblock %}

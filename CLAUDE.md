@@ -35,8 +35,9 @@ Dirección de dependencias única: `routers → services → engine | models/db`
 ## Reglas del motor (v1 — no ampliar sin tocar el plan)
 
 - Tarea con hijas = *resumen*: sin duración propia, fechas por rollup (envolvente).
-- Dependencias solo **Fin→Inicio** y solo entre tareas hoja. Ciclos: detectados y
-  rechazados al guardar, con error claro — jamás un 500 ni un loop.
+- Dependencias solo **Fin→Inicio con lag** (en días hábiles, puede ser negativo = solape)
+  y solo entre tareas hoja. Ciclos: detectados y rechazados al guardar, con error claro
+  — jamás un 500 ni un loop.
 - Duración en **días hábiles** (L-V, sin feriados en v1). Restricción opcional por
   tarea: "no arrancar antes de X" (SNET).
 - Recálculo total del cronograma en cada cambio — no optimizar lo que no duele.

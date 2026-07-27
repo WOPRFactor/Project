@@ -27,12 +27,16 @@ acá arrancan fijas y simples. Corregí lo que no cierre antes de la Fase 3.
 1. **Jerarquía:** las tareas forman árbol de profundidad libre. Una tarea con hijas es
    *resumen*: no tiene duración propia — sus fechas son la envolvente de sus hijas
    (rollup, como en MS Project).
-2. **Dependencias solo Fin→Inicio (FS)** y solo entre tareas hoja. Lag/lead, y otros
-   tipos (SS, FF), quedan para v2. Ciclos: prohibidos y detectados al guardar.
+2. **Dependencias solo Fin→Inicio (FS), con lag**, y solo entre tareas hoja. El lag se
+   expresa en días hábiles y puede ser negativo (solape): "arranca 3 días después de que
+   termine X" o "puede empezar 2 días antes de que X termine". Otros tipos (SS, FF)
+   quedan para v2. Ciclos: prohibidos y detectados al guardar.
 3. **Duración en días hábiles** (lunes a viernes). Feriados configurables: v2.
-4. **Cálculo:** el proyecto tiene fecha de inicio; una tarea arranca en el máximo fin de
-   sus predecesoras (o al inicio del proyecto si no tiene). Restricción opcional por
-   tarea: "no arrancar antes de X" (SNET). Sin recursos ni nivelación — no hay equipo.
+4. **Cálculo:** el proyecto tiene fecha de inicio; una tarea arranca en el máximo
+   (fin de predecesora + 1 día hábil + lag) sobre todas sus predecesoras, o al inicio del
+   proyecto si no tiene. Restricción opcional por tarea: "no arrancar antes de X" (SNET).
+   Nada arranca antes del inicio del proyecto, ni siquiera con lag negativo. Sin recursos
+   ni nivelación — no hay equipo.
 5. **Recálculo total en cada cambio.** Con proyectos personales (cientos de tareas, no
    decenas de miles) el recálculo completo es instantáneo; no se optimiza lo que no duele.
 6. **Un solo usuario, sin login**, solo `127.0.0.1`. Si algún día se expone fuera,
