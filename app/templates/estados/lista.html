@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block titulo %}Estados — {{ proyecto.nombre }}{% endblock %}
+
+{% block contenido %}
+  <p class="pie"><a href="/proyectos/{{ proyecto.id }}">← {{ proyecto.nombre }}</a></p>
+  <h1>Estados de tarea</h1>
+  <p class="pie tenue">
+    Los estados los definís vos. Lo único que la app necesita saber de cada uno es si
+    cuenta como <strong>terminado</strong>: eso es lo que usa para el avance y para
+    descartar hitos ya pasados. El <strong>avance sugerido</strong> es cuánto aporta al
+    avance ponderado una tarea que está en ese estado.
+  </p>
+
+  {% if aviso %}<p class="aviso">{{ aviso }}</p>{% endif %}
+
+  <div class="lista-estados">
+    <div class="cabecera">
+      <span class="e-nombre">Nombre</span>
+      <span class="e-color">Color</span>
+      <span class="e-final">Terminado</span>
+      <span class="e-avance">Avance</span>
+      <span class="e-ops"></span>
+    </div>
+
+    {% for estado in estados %}
+      <div class="fila-estado">
+        <form method="post" action="/proyectos/{{ proyecto.id }}/estados/{{ estado.id }}"
+              class="campos">
+          <span class="e-nombre">
+            <input name="nombre" value="{{ estado.nombre }}" maxlength="40"
+                   class="celda" required>
+          </span>
+          <span class="e-color">
+            <select name="color" class="celda color-{{ estado.color.value }}">
+              {% for valor, etiqueta in colores.items() %}
+                <option value="{{ valor.value }}" {{ 'selected' if estado.color == valor }}>{{ etiqueta }}</option>
+              {% endfor %}
+            </select>
+          </span>
+          <span class="e-final">
+            <select name="es_final" class="celda"
+                    title="Terminado: la tarea no tiene más trabajo por delante">
+              <option value="0" {{ 'selected' if not estado.es_final }}>No</option>
+              <option value="1" {{ 'selected' if estado.es_final }}>Sí</option>
+            </select>
+          </span>
+          <span class="e-avance">
+            <input name="avance_sugerido" type="number" min="0" max="100"
+                   value="{{ estado.avance_sugerido }}" class="celda mono chico">%
+          </span>
+          <span class="e-ops"><button class="boton" type="submit">Guardar</button></span>
+        </form>
+
+        {% if estados | length > 1 %}
+          <form method="post" class="borrar"
+                action="/proyectos/{{ proyecto.id }}/estados/{{ estado.id }}/eliminar">
+            <select name="reemplazo_id" class="celda" title="A qué estado pasan sus tareas">
+              {% for otro in estados if otro.id != estado.id %}
+                <option value="{{ otro.id }}">sus tareas → {{ otro.nombre }}</option>
+              {% endfor %}
+            </select>
+            <button class="boton peligro" type="submit">Borrar</button>
+          </form>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2>Agregar estado</h2>
+  <form method="post" action="/proyectos/{{ proyecto.id }}/estados" class="tarjeta en-fila">
+    <input name="nombre" placeholder="Bloqueada" maxlength="40" class="celda" required>
+    <select name="color" class="celda">
+      {% for valor, etiqueta in colores.items() %}
+        <option value="{{ valor.value }}">{{ etiqueta }}</option>
+      {% endfor %}
+    </select>
+    <select name="es_final" class="celda">
+      <option value="0">No terminado</option>
+      <option value="1">Terminado</option>
+    </select>
+    <input name="avance_sugerido" type="number" min="0" max="100" value="0"
+           class="celda mono chico" title="Avance sugerido">%
+    <button class="boton primario" type="submit">Agregar</button>
+  </form>
+{% endblock %}

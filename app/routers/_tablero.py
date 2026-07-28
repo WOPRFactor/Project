@@ -24,6 +24,7 @@ def contexto(session: Session, project_id: int) -> dict:
         "filas": datos.filas,
         "grilla": datos.grilla,
         "columna_hoy": datos.columna_hoy,
+        "estados": datos.estados,
         "resumen": datos.resumen,
         "por_ambito": datos.por_ambito,
         "ventana": datos.ventana,

@@ -13,7 +13,7 @@ from app.services import arbol as arbol_service
 from app.services import predecesoras as predecesoras_service
 from app.services import tasks as tasks_service
 from app.services import vista as vista_service
-from app.models import EstadoTarea
+from app.services import estados as estados_service
 
 
 def agregar(session, proyecto, titulo, duracion=1):
@@ -89,7 +89,7 @@ def test_el_avance_sale_de_las_tareas_hechas(session: Session, proyecto):
     agregar(session, proyecto, "B", duracion=1)
     assert resumen(session, proyecto).avance == 0
 
-    tasks_service.cambiar_estado(session, a.id, EstadoTarea.hecha)
+    tasks_service.cambiar_estado(session, a.id, estados_service.final(session, proyecto.id).id)
     assert resumen(session, proyecto).avance == 50
 
 
@@ -152,7 +152,7 @@ def test_un_hito_ya_hecho_no_es_el_proximo(session: Session, proyecto):
     a = agregar(session, proyecto, "A", duracion=5)
     siguiente = agregar(session, proyecto, "Hito siguiente", duracion=0)
     predecesoras_service.guardar(session, proyecto.id, siguiente.id, a.codigo)
-    tasks_service.cambiar_estado(session, hecho.id, EstadoTarea.hecha)
+    tasks_service.cambiar_estado(session, hecho.id, estados_service.final(session, proyecto.id).id)
 
     datos = vista_service.armar(session, proyecto.id, hoy=date(2026, 1, 1))
     assert datos.proximo_hito.tarea.id == siguiente.id

@@ -35,16 +35,29 @@ ETIQUETA_AMBITO = {
 }
 
 
-class EstadoTarea(str, Enum):
-    pendiente = "pendiente"
-    en_curso = "en_curso"
-    hecha = "hecha"
+class ColorEstado(str, Enum):
+    """Paleta cerrada para los estados.
+
+    Se guarda el *nombre* del color y no un hex: el valor termina en una clase CSS,
+    así que un enum cerrado deja fuera de discusión que alguien escriba cualquier
+    cosa ahí, y de paso los colores quedan consistentes entre proyectos.
+    """
+
+    gris = "gris"
+    azul = "azul"
+    verde = "verde"
+    ambar = "ambar"
+    rojo = "rojo"
+    violeta = "violeta"
 
 
-ETIQUETA_ESTADO_TAREA = {
-    EstadoTarea.pendiente: "Pendiente",
-    EstadoTarea.en_curso: "En curso",
-    EstadoTarea.hecha: "Hecha",
+ETIQUETA_COLOR = {
+    ColorEstado.gris: "Gris",
+    ColorEstado.azul: "Azul",
+    ColorEstado.verde: "Verde",
+    ColorEstado.ambar: "Ámbar",
+    ColorEstado.rojo: "Rojo",
+    ColorEstado.violeta: "Violeta",
 }
 
 ETIQUETA_ESTADO_PROYECTO = {
@@ -60,6 +73,37 @@ class Project(SQLModel, table=True):
     descripcion: str = Field(default="", max_length=2000)
     fecha_inicio: date
     estado: EstadoProyecto = Field(default=EstadoProyecto.activo)
+
+
+class Estado(SQLModel, table=True):
+    """Un estado de tarea, definido por el usuario, por proyecto.
+
+    Un estado con nombre libre no le sirve al motor: la app necesita saber si una
+    tarea está terminada para contar el avance y para descartar hitos ya pasados.
+    Por eso cada estado **declara su significado** con `es_final`, que es el único
+    contrato entre el vocabulario del usuario y el cálculo. `avance_sugerido` es el
+    puente hasta que exista avance real por tarea: es lo que la tarea aporta al
+    avance ponderado mientras tanto.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    project_id: int = Field(foreign_key="project.id", index=True)
+    nombre: str = Field(max_length=40)
+    color: ColorEstado = Field(default=ColorEstado.gris)
+    orden: int = Field(default=0)
+    # Terminal: la tarea no tiene más trabajo por delante. Reemplaza al viejo
+    # `estado == "hecha"` clavado en el código.
+    es_final: bool = Field(default=False)
+    avance_sugerido: int = Field(default=0, ge=0, le=100)
+
+
+# Los tres con los que arranca todo proyecto: mismo comportamiento que la v1, pero
+# ahora son filas editables y no un enum del código.
+ESTADOS_POR_DEFECTO = [
+    ("Pendiente", ColorEstado.gris, False, 0),
+    ("En curso", ColorEstado.azul, False, 50),
+    ("Hecha", ColorEstado.verde, True, 100),
+]
 
 
 class Task(SQLModel, table=True):
@@ -83,7 +127,7 @@ class Task(SQLModel, table=True):
     duracion_optimista: int | None = Field(default=None, ge=0, le=3650)
     duracion_pesimista: int | None = Field(default=None, ge=0, le=3650)
     snet: date | None = Field(default=None)
-    estado: EstadoTarea = Field(default=EstadoTarea.pendiente)
+    estado_id: int | None = Field(default=None, foreign_key="estado.id", index=True)
     orden: int = Field(default=0)
 
 

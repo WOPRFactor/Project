@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from sqlmodel import Session
 
 from ..db import get_session
-from ..models import Ambito, EstadoTarea
+from ..models import Ambito
 from ..schemas import ProyectoIn, TareaIn
 from ..services import arbol as arbol_service
 from ..services import importar_aplicar
@@ -46,6 +46,7 @@ def guardar_celda(
     inicio: str = Form(""),
     critica: str = Form("0"),
     ambito: str = Form("proyecto"),
+    estado_id: str = Form(""),
     duracion_optimista: str = Form(""),
     duracion_pesimista: str = Form(""),
     session: Session = Depends(get_session),
@@ -66,7 +67,7 @@ def guardar_celda(
             duracion_optimista=int(duracion_optimista) if duracion_optimista.strip() else None,
             duracion_pesimista=int(duracion_pesimista) if duracion_pesimista.strip() else None,
             snet=date.fromisoformat(inicio) if inicio.strip() else None,
-            estado=tarea.estado,
+            estado_id=int(estado_id) if estado_id.strip().isdigit() else tarea.estado_id,
         )
     except (ValidationError, ValueError) as error:
         return render(request, session, project_id, aviso=_mensaje(error))
@@ -106,10 +107,10 @@ def cambiar_estado(
     project_id: int,
     task_id: int,
     request: Request,
-    estado: EstadoTarea = Form(...),
+    estado_id: int = Form(...),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    tasks_service.cambiar_estado(session, task_id, estado)
+    tasks_service.cambiar_estado(session, task_id, estado_id)
     return render(request, session, project_id)
 
 

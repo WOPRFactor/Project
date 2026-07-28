@@ -13,8 +13,9 @@ from sqlmodel import Session
 
 from ..engine.calendar import contar_habiles
 from ..engine.timeline import Extremo, Grilla, ancho_columna, barra, construir_grilla, flecha
-from ..models import ETIQUETA_AMBITO, Ambito, Dependency, Task
+from ..models import ETIQUETA_AMBITO, Ambito, Dependency, Estado, Task
 from . import dependencies as dependencies_service
+from . import estados as estados_service
 from . import predecesoras as predecesoras_service
 from . import schedule as schedule_service
 from . import tasks as tasks_service
@@ -25,6 +26,9 @@ class Fila:
     tarea: Task
     nivel: int
     es_resumen: bool
+    # El estado ya no es un enum del código: es una fila del proyecto, y es quien
+    # dice —vía `es_final`— si esta tarea cuenta como terminada.
+    estado: Estado | None = None
     es_hito: bool = False
     inicio: date | None = None
     fin: date | None = None
@@ -78,12 +82,18 @@ class Resumen:
         return round(100 * self.hechas / self.tareas) if self.tareas else 0
 
 
+def esta_hecha(fila: "Fila") -> bool:
+    """Único lugar donde se decide si una tarea está terminada."""
+    return fila.estado is not None and fila.estado.es_final
+
+
 @dataclass
 class VistaProyecto:
     filas: list[Fila]
     grilla: Grilla | None
     columna_hoy: int | None
     error: str | None
+    estados: list[Estado] = field(default_factory=list)
     resumen: Resumen = field(default_factory=Resumen)
     por_ambito: list[Resumen] = field(default_factory=list)
     ventana: dict = field(default_factory=dict)
@@ -121,6 +131,8 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
 
     ancho = ancho_columna(grilla.columnas) if grilla else 22
     codigos = {t.id: t.codigo for t, _ in nodos}
+    estados = estados_service.listar(session, project_id)
+    por_estado = {e.id: e for e in estados}
     filas: list[Fila] = []
     for tarea, nivel in nodos:
         calculada = cronograma.get(tarea.id or 0)
@@ -129,6 +141,7 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
             tarea=tarea,
             nivel=nivel,
             es_resumen=bool(calculada and calculada.es_resumen),
+            estado=por_estado.get(tarea.estado_id or 0),
             es_hito=tarea.duracion == 0,
             es_estimada=tarea.duracion_optimista is not None
             or tarea.duracion_pesimista is not None,
@@ -150,6 +163,7 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
         grilla=grilla,
         columna_hoy=grilla.columna_de(hoy or date.today()) if grilla else None,
         error=error,
+        estados=estados,
         resumen=_resumir(filas, "Total", cronograma.inicio, cronograma.fin),
         por_ambito=_por_ambito(filas),
         ventana=schedule_service.ventana(session, project_id),
@@ -196,7 +210,7 @@ def _proximo_hito(filas: list[Fila], hoy: date) -> Fila | None:
     """El primer hito que todavía no pasó. Es lo que se mira un martes a la mañana."""
     pendientes = [
         f for f in filas
-        if f.es_hito and f.fin and f.fin >= hoy and f.tarea.estado.value != "hecha"
+        if f.es_hito and f.fin and f.fin >= hoy and not esta_hecha(f)
     ]
     if pendientes:
         return min(pendientes, key=lambda f: f.fin)
@@ -236,6 +250,6 @@ def _resumir(
         dias_corridos=(fin - inicio).days + 1 if inicio and fin else 0,
         tareas=len([f for f in hojas if not f.es_hito]),
         hitos=len([f for f in hojas if f.es_hito]),
-        hechas=len([f for f in hojas if f.tarea.estado.value == "hecha"]),
+        hechas=len([f for f in hojas if esta_hecha(f)]),
         esfuerzo=sum(f.tarea.duracion for f in hojas),
     )

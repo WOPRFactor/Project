@@ -11,13 +11,14 @@
       <span class="c-fecha">Inicio</span>
       <span class="c-fecha">Fin</span>
       <span class="c-crit">Crít.</span>
+      <span class="c-estado">Estado</span>
       <span class="c-ambito">Ámbito</span>
       <span class="c-ops"></span>
     </div>
 
     {% for fila in filas %}
       {% set t = fila.tarea %}
-      <form class="fila {{ 'resumen' if fila.es_resumen }} estado-{{ t.estado.value }}"
+      <form class="fila {{ 'resumen' if fila.es_resumen }} {{ 'terminada' if fila.estado and fila.estado.es_final }}"
             hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ t.id }}/celda"
             hx-trigger="change" hx-target="#tablero" hx-swap="innerHTML">
         <span class="c-cod">
@@ -78,6 +79,15 @@
                   title="Criticidad de negocio: la marcás vos.{% if not fila.es_resumen %} El motor calcula {{ fila.holgura }} días de holgura para esta tarea.{% endif %}">
             <option value="0" {{ 'selected' if not t.critica }}>No</option>
             <option value="1" {{ 'selected' if t.critica }}>Sí</option>
+          </select>
+        </span>
+        <span class="c-estado">
+          <select id="est-{{ t.id }}" name="estado_id"
+                  class="celda color-{{ fila.estado.color.value if fila.estado else 'gris' }}"
+                  title="Los estados los definís vos en «Estados»">
+            {% for estado in estados %}
+              <option value="{{ estado.id }}" {{ 'selected' if fila.estado and fila.estado.id == estado.id }}>{{ estado.nombre }}</option>
+            {% endfor %}
           </select>
         </span>
         <span class="c-ambito">
@@ -153,7 +163,7 @@
         {% for fila in filas %}
           <div class="fila-barra">
             {% if fila.columnas %}
-              <div class="barra-tarea {{ 'resumen' if fila.es_resumen }} {{ 'hito' if fila.es_hito }} {{ 'estimada' if fila.es_estimada }} {{ 'critica' if fila.tarea.critica and not fila.es_resumen }} estado-{{ fila.tarea.estado.value }}"
+              <div class="barra-tarea {{ 'resumen' if fila.es_resumen }} {{ 'hito' if fila.es_hito }} {{ 'estimada' if fila.es_estimada }} {{ 'critica' if fila.tarea.critica and not fila.es_resumen }} color-{{ fila.estado.color.value if fila.estado else 'gris' }}"
                    style="grid-column: {{ fila.columnas[0] }} / {{ fila.columnas[1] }}"
                    title="{{ fila.tarea.titulo }}: {{ fila.inicio | fecha }} → {{ fila.fin | fecha }}{% if not fila.es_resumen %} · holgura {{ fila.holgura }}d{% if fila.sin_holgura %} (sin margen){% endif %}{% endif %}">
                 <span>{{ fila.tarea.titulo }}</span>

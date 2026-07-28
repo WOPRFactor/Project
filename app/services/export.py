@@ -12,7 +12,7 @@ from datetime import date
 
 from sqlmodel import Session
 
-from ..models import ETIQUETA_ESTADO_TAREA, Project
+from ..models import Project
 from . import dependencies as dependencies_service
 from . import projects as projects_service
 from . import vista as vista_service
@@ -59,7 +59,8 @@ def a_json(session: Session, project_id: int) -> dict | None:
                 "es_resumen": fila.es_resumen,
                 "duracion_dias_habiles": None if fila.es_resumen else fila.tarea.duracion,
                 "no_antes_de": fila.tarea.snet.isoformat() if fila.tarea.snet else None,
-                "estado": fila.tarea.estado.value,
+                "estado": fila.estado.nombre if fila.estado else None,
+                "terminada": vista_service.esta_hecha(fila),
                 "inicio": fila.inicio.isoformat() if fila.inicio else None,
                 "fin": fila.fin.isoformat() if fila.fin else None,
                 "responsable": fila.tarea.responsable,
@@ -125,7 +126,7 @@ def a_markdown(session: Session, project_id: int) -> str | None:
 
 def _linea_de_tarea(fila: vista_service.Fila) -> str:
     sangria = "  " * fila.nivel
-    marca = "~~" if fila.tarea.estado.value == "hecha" else ""
+    marca = "~~" if vista_service.esta_hecha(fila) else ""
     titulo = f"{marca}{fila.tarea.titulo}{marca}"
     if fila.es_resumen:
         titulo = f"**{titulo}**"
@@ -137,7 +138,8 @@ def _linea_de_tarea(fila: vista_service.Fila) -> str:
             detalle.append("crítica")
         if fila.tarea.responsable:
             detalle.append(fila.tarea.responsable)
-    detalle.append(ETIQUETA_ESTADO_TAREA[fila.tarea.estado].lower())
+    if fila.estado is not None:
+        detalle.append(fila.estado.nombre.lower())
     return f"{sangria}- {titulo} — {' · '.join(detalle)}"
 
 

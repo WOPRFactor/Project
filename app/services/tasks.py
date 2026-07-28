@@ -8,8 +8,9 @@ from __future__ import annotations
 
 from sqlmodel import Session, select
 
-from ..models import Dependency, EstadoTarea, Task
+from ..models import Dependency, Task
 from ..schemas import TareaIn
+from . import estados as estados_service
 
 
 class TareaInvalida(Exception):
@@ -76,6 +77,7 @@ def crear(session: Session, project_id: int, datos: TareaIn) -> Task:
         default=-1,
     )
     tarea = Task(project_id=project_id, orden=ultimo + 1, **datos.model_dump())
+    tarea.estado_id = _estado_valido(session, project_id, datos.estado_id)
     session.add(tarea)
     session.commit()
     session.refresh(tarea)
@@ -86,9 +88,12 @@ def actualizar(session: Session, task_id: int, datos: TareaIn) -> Task | None:
     tarea = session.get(Task, task_id)
     if tarea is None:
         return None
-    valores = datos.model_dump(exclude={"parent_id"})
+    valores = datos.model_dump(exclude={"parent_id", "estado_id"})
     for campo, valor in valores.items():
         setattr(tarea, campo, valor)
+    tarea.estado_id = _estado_valido(
+        session, tarea.project_id, datos.estado_id or tarea.estado_id
+    )
     session.add(tarea)
     session.commit()
     session.refresh(tarea)
@@ -116,15 +121,28 @@ def mover(session: Session, task_id: int, nuevo_padre_id: int | None) -> Task:
     return tarea
 
 
-def cambiar_estado(session: Session, task_id: int, estado: EstadoTarea) -> Task | None:
+def cambiar_estado(session: Session, task_id: int, estado_id: int | None) -> Task | None:
     tarea = session.get(Task, task_id)
     if tarea is None:
         return None
-    tarea.estado = estado
+    tarea.estado_id = _estado_valido(session, tarea.project_id, estado_id)
     session.add(tarea)
     session.commit()
     session.refresh(tarea)
     return tarea
+
+
+def _estado_valido(session: Session, project_id: int, estado_id: int | None) -> int | None:
+    """Un id de estado solo vale si es de este proyecto; si no, cae en el inicial.
+
+    El id llega de un formulario, así que no se toma como viene: un estado de otro
+    proyecto mezclaría vocabularios y rompería el conteo de avance.
+    """
+    if estado_id is not None:
+        estado = estados_service.obtener(session, estado_id)
+        if estado is not None and estado.project_id == project_id:
+            return estado.id
+    return estados_service.inicial(session, project_id).id
 
 
 def eliminar(session: Session, task_id: int, promover_hijas: bool = False) -> bool:

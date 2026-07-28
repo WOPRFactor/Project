@@ -3,9 +3,10 @@ from datetime import date
 
 from sqlmodel import Session
 
-from app.models import EstadoTarea, Project
+from app.models import Project
 from app.schemas import DependenciaIn, TareaIn
 from app.services import dependencies as dependencies_service
+from app.services import estados as estados_service
 from app.services import export as export_service
 from app.services import tasks as tasks_service
 
@@ -70,7 +71,7 @@ def test_markdown_arma_el_arbol_con_fechas(session: Session, proyecto):
 
 def test_markdown_marca_las_tareas_hechas(session: Session, proyecto):
     _, a, _ = armar_proyecto(session, proyecto)
-    tasks_service.cambiar_estado(session, a.id, EstadoTarea.hecha)
+    tasks_service.cambiar_estado(session, a.id, estados_service.final(session, proyecto.id).id)
     texto = export_service.a_markdown(session, proyecto.id)
     assert "~~Entrevistas~~" in texto
 

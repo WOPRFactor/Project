@@ -4,7 +4,7 @@ import pytest
 from pydantic import ValidationError
 from sqlmodel import Session
 
-from app.models import EstadoTarea
+from app.services import estados as estados_service
 from app.schemas import DependenciaIn, TareaIn
 from app.services import dependencies as dependencies_service
 from app.services import schedule as schedule_service
@@ -77,8 +77,9 @@ def test_titulo_vacio_no_valida():
 
 def test_cambiar_estado(session: Session, proyecto):
     tarea = crear(session, proyecto, "Tarea")
-    actualizada = tasks_service.cambiar_estado(session, tarea.id, EstadoTarea.hecha)
-    assert actualizada.estado == EstadoTarea.hecha
+    hecha = estados_service.final(session, proyecto.id)
+    actualizada = tasks_service.cambiar_estado(session, tarea.id, hecha.id)
+    assert actualizada.estado_id == hecha.id
 
 
 def test_dependencia_calcula_fechas(session: Session, proyecto):

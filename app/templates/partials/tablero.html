@@ -74,6 +74,8 @@
           hx-target="#tablero" hx-swap="innerHTML"
           hx-confirm="Renumera todos los WBS según la posición actual. Las dependencias se reescriben solas, pero si tenías códigos a mano se pierden. ¿Sigo?"
           title="Reasigna los códigos WBS según el orden del árbol">Renumerar WBS</button>
+  <a class="boton" href="/proyectos/{{ proyecto.id }}/estados"
+     title="Definir los estados de tarea de este proyecto">Estados</a>
   <button class="boton" type="button"
           onclick="document.getElementById('importar-bloque').classList.toggle('oculto')">
     Importar planilla

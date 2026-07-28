@@ -10,7 +10,7 @@ from datetime import date
 
 from pydantic import BaseModel, Field, field_validator
 
-from .models import Ambito, EstadoProyecto, EstadoTarea, TipoDependencia
+from .models import Ambito, ColorEstado, EstadoProyecto, TipoDependencia
 
 
 def _texto_obligatorio(valor: str) -> str:
@@ -48,7 +48,9 @@ class TareaIn(BaseModel):
     duracion_optimista: int | None = Field(default=None, ge=0, le=3650)
     duracion_pesimista: int | None = Field(default=None, ge=0, le=3650)
     snet: date | None = None
-    estado: EstadoTarea = EstadoTarea.pendiente
+    # None = la tarea toma el estado inicial del proyecto. Los estados son filas, no
+    # un enum, así que acá viaja un id y el service valida que sea de este proyecto.
+    estado_id: int | None = None
     parent_id: int | None = None
 
     @field_validator("titulo")
@@ -60,6 +62,18 @@ class TareaIn(BaseModel):
     @classmethod
     def sin_espacios_sobrantes(cls, valor: str) -> str:
         return valor.strip()
+
+
+class EstadoIn(BaseModel):
+    nombre: str = Field(min_length=1, max_length=40)
+    color: ColorEstado = ColorEstado.gris
+    es_final: bool = False
+    avance_sugerido: int = Field(default=0, ge=0, le=100)
+
+    @field_validator("nombre")
+    @classmethod
+    def nombre_con_contenido(cls, valor: str) -> str:
+        return _texto_obligatorio(valor)
 
 
 class DependenciaIn(BaseModel):

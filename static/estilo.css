@@ -11,6 +11,13 @@
   --critico: #ff6b5e;
   --hecho: #3ecf8e;
   --curso: #f5b544;
+  /* Paleta cerrada de los estados definibles (ver models.ColorEstado). */
+  --c-gris: #96a0b5;
+  --c-azul: #4c8dff;
+  --c-verde: #3ecf8e;
+  --c-ambar: #f5b544;
+  --c-rojo: #ff6b5e;
+  --c-violeta: #b07cff;
   --fila: 32px;
   --ancho-dia: 22px;
   --cabecera: 44px;
@@ -93,19 +100,20 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .gantt { display: flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--panel); margin-bottom: 18px; }
 /* Ancho fijo. Tiene que alcanzar para todas las columnas fijas (~615px) más la
    de Tarea; si se achica, el título se aplasta a cero. */
-.panel-izq { flex: 0 0 1080px; max-width: 1080px; border-right: 2px solid var(--borde); }
+.panel-izq { flex: 0 0 1180px; max-width: 1180px; border-right: 2px solid var(--borde); }
 .panel-der { flex: 1 1 auto; overflow-x: auto; }
 
 .panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
 .panel-izq .cabecera { height: var(--cabecera); border-bottom: 1px solid var(--borde); color: var(--tenue); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; }
 .panel-izq .fila { height: var(--fila); border-bottom: 1px solid rgba(44, 52, 70, .5); font-size: .85rem; margin: 0; }
 .panel-izq .fila.resumen { background: rgba(76, 141, 255, .06); }
-.panel-izq .fila.estado-hecha .c-tarea input { color: var(--tenue); text-decoration: line-through; }
+.panel-izq .fila.terminada .c-tarea input { color: var(--tenue); text-decoration: line-through; }
 
 /* Columnas de la grilla.
    min-width: 0 es obligatorio: sin eso, el ancho intrínseco de un <input type=date>
    estira su columna y desalinea el encabezado de las filas. */
-.c-cod, .c-resp, .c-pred, .c-dias, .c-fecha, .c-crit, .c-ops, .c-ambito, .c-rango { min-width: 0; }
+.c-cod, .c-resp, .c-pred, .c-dias, .c-fecha, .c-crit, .c-ops, .c-ambito, .c-rango,
+.c-estado { min-width: 0; }
 .c-cod   { flex: 0 0 52px; }
 .c-tarea { flex: 1 1 auto; min-width: 240px; display: flex; align-items: center; gap: 2px; }
 .c-resp  { flex: 0 0 88px; }
@@ -159,8 +167,6 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .marca-snet { color: var(--curso); font-style: normal; margin-left: 4px; }
 
 .chip-boton { border: 1px solid var(--borde); background: transparent; color: var(--tenue); border-radius: 999px; padding: 1px 8px; font-size: .7rem; cursor: pointer; }
-.chip-boton.estado-hecha { border-color: var(--hecho); color: var(--hecho); }
-.chip-boton.estado-en_curso { border-color: var(--curso); color: var(--curso); }
 
 .pista { position: relative; min-width: max-content; }
 .cabecera-grilla { height: var(--cabecera); border-bottom: 1px solid var(--borde); }
@@ -186,8 +192,6 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .barra-tarea.critica { background: var(--critico); color: #240b09; }
 .barra-tarea.resumen { height: 9px; border-radius: 2px; background: var(--tenue); }
 .barra-tarea.resumen span { display: none; }
-.barra-tarea.estado-hecha { opacity: .5; }
-.barra-tarea.estado-en_curso { box-shadow: inset 0 0 0 2px var(--curso); }
 /* Hito: rombo, no barra — marca un momento, no un tramo de trabajo. */
 .barra-tarea.hito {
   background: none; color: var(--texto); padding: 0; height: var(--fila);
@@ -268,6 +272,46 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .c-ambito select.celda { font-size: .74rem; padding: 2px; }
 .c-ambito select.ambito-seguimiento { color: var(--curso); }
 .c-ambito select.ambito-control { color: var(--hecho); }
+
+/* Estados definibles: el color lo elige el usuario dentro de una paleta cerrada,
+   así que acá solo hay seis clases y ningún estilo inline (la CSP no los permitiría). */
+.c-estado { flex: 0 0 104px; }
+.c-estado select.celda { font-size: .74rem; padding: 2px; }
+.color-gris    { color: var(--c-gris); }
+.color-azul    { color: var(--c-azul); }
+.color-verde   { color: var(--c-verde); }
+.color-ambar   { color: var(--c-ambar); }
+.color-rojo    { color: var(--c-rojo); }
+.color-violeta { color: var(--c-violeta); }
+
+/* En la barra el color es fondo, no texto: se lee de lejos. */
+.barra-tarea.color-gris    { background: var(--c-gris); color: #0e1118; }
+.barra-tarea.color-azul    { background: var(--c-azul); color: #08101f; }
+.barra-tarea.color-verde   { background: var(--c-verde); color: #062017; }
+.barra-tarea.color-ambar   { background: var(--c-ambar); color: #241a05; }
+.barra-tarea.color-rojo    { background: var(--c-rojo); color: #240b09; }
+.barra-tarea.color-violeta { background: var(--c-violeta); color: #170a26; }
+/* La criticidad de negocio manda sobre el color de estado: es la que grita. */
+.barra-tarea.critica { background: var(--critico); color: #240b09; }
+.barra-tarea.resumen { background: var(--tenue); }
+
+/* Pantalla de estados */
+.lista-estados { border: 1px solid var(--borde); border-radius: 8px; overflow: hidden; }
+.lista-estados .cabecera,
+.lista-estados .fila-estado { display: flex; align-items: center; gap: 8px; padding: 4px 10px; }
+.lista-estados .cabecera {
+  border-bottom: 1px solid var(--borde); color: var(--tenue);
+  font-size: .7rem; text-transform: uppercase; letter-spacing: .04em;
+}
+.lista-estados .fila-estado { border-bottom: 1px solid rgba(44, 52, 70, .5); }
+.lista-estados .campos { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; margin: 0; }
+.lista-estados .borrar { display: flex; align-items: center; gap: 4px; margin: 0; }
+.e-nombre { flex: 1 1 auto; min-width: 140px; }
+.e-color, .e-final { flex: 0 0 110px; }
+.e-avance { flex: 0 0 96px; display: flex; align-items: center; gap: 2px; color: var(--tenue); }
+.e-ops { flex: 0 0 84px; }
+.en-fila { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.boton.peligro { border-color: var(--critico); color: var(--critico); }
 .resumen.por-ambito .dato { border-style: dashed; }
 
 /* Rango de estimación: mejor y peor caso, opcionales. */

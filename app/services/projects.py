@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from sqlmodel import Session, select
 
-from ..models import Dependency, EstadoProyecto, Project, Task
+from ..models import Dependency, Estado, EstadoProyecto, Project, Task
 from ..schemas import ProyectoIn
+from . import estados as estados_service
 
 
 def listar(session: Session, incluir_archivados: bool = False) -> list[Project]:
@@ -26,6 +27,7 @@ def crear(session: Session, datos: ProyectoIn) -> Project:
     session.add(proyecto)
     session.commit()
     session.refresh(proyecto)
+    estados_service.asegurar_defaults(session, proyecto.id or 0)
     return proyecto
 
 
@@ -63,6 +65,8 @@ def eliminar(session: Session, project_id: int) -> bool:
         session.delete(dep)
     for tarea in session.exec(select(Task).where(Task.project_id == project_id)):
         session.delete(tarea)
+    for estado in session.exec(select(Estado).where(Estado.project_id == project_id)):
+        session.delete(estado)
     session.delete(proyecto)
     session.commit()
     return True
