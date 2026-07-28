@@ -75,7 +75,29 @@ def calcular(
     nodos = _nodos(tareas)
     aristas = _aristas(dependencias)
     cronograma = motor_calcular(proyecto.fecha_inicio, nodos, aristas, escenario)
-    return marcar(cronograma, nodos, aristas)
+    return marcar(cronograma, nodos, aristas, _topes_por_ambito(tareas, cronograma))
+
+
+def _topes_por_ambito(tareas: list[Task], cronograma: Schedule) -> dict[int, date]:
+    """Contra qué fecha se mide la holgura de cada tarea: el fin de *su* bloque.
+
+    Medir todo contra el fin global regala margen: el acompañamiento posterior
+    corre meses después del cierre, y contra esa fecha hasta la firma del acta
+    aparece con medio año de aire.
+    """
+    fin_de: dict[str, date] = {}
+    for tarea in tareas:
+        calculada = cronograma.get(tarea.id or 0)
+        if calculada is None or calculada.es_resumen:
+            continue
+        clave = tarea.ambito.value
+        if clave not in fin_de or calculada.fin > fin_de[clave]:
+            fin_de[clave] = calculada.fin
+    return {
+        t.id: fin_de[t.ambito.value]
+        for t in tareas
+        if t.id is not None and t.ambito.value in fin_de
+    }
 
 
 def calcular_seguro(session: Session, project_id: int) -> tuple[Schedule, str | None]:

@@ -28,6 +28,7 @@ def contexto(session: Session, project_id: int) -> dict:
         "por_ambito": datos.por_ambito,
         "ventana": datos.ventana,
         "estimadas": datos.estimadas,
+        "proximo_hito": datos.proximo_hito,
         "flechas": datos.flechas,
         "alto_pista": datos.alto_pista,
         "ancho_dia": datos.ancho_dia,

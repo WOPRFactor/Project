@@ -127,3 +127,24 @@ def test_sobre_la_planilla_real_solo_se_aplican_las_estructurales():
                for x in d.estructurales)
     # ninguna corrección mete un lag positivo grande, que anclaría el cronograma
     assert not any("+1" in x.sugerencia and x.estructural for x in d.discrepancias)
+
+
+def test_un_solape_corto_es_estructural():
+    """Arrancar unos días antes es fast-tracking deliberado: se puede declarar."""
+    imp = Importacion(filas=[
+        fila("1", "A", 10, date(2026, 1, 5), date(2026, 1, 16)),
+        fila("2", "B", 3, date(2026, 1, 14), date(2026, 1, 19), pred=["1"]),
+    ])
+    d = diagnostico_service.analizar(imp)
+    assert d.estructurales and d.estructurales[0].sugerencia == "1-3"
+
+
+def test_un_solape_enorme_no_se_aplica():
+    """120 días de solape sobre una tarea de 30 no es una relación: es una fecha."""
+    imp = Importacion(filas=[
+        fila("1", "A", 30, date(2026, 6, 1), date(2026, 7, 10)),
+        fila("2", "B", 5, date(2026, 1, 5), date(2026, 1, 9), pred=["1"]),
+    ])
+    d = diagnostico_service.analizar(imp)
+    assert d.estructurales == [] and len(d.a_revisar) == 1
+    assert diagnostico_service.aplicar_sugerencias(imp, d) == 0

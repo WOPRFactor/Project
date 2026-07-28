@@ -281,3 +281,11 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 }
 .contradicciones .sub { font-size: .82rem; color: var(--texto); margin: 12px 0 4px; }
 .contradicciones ul.a-revisar { border-left: 2px solid var(--curso); padding-left: 14px; }
+
+.resumen .dato.hito-proximo { border-color: var(--texto); }
+.resumen .dato.hito-proximo strong {
+  font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.resumen.por-ambito .dato strong { font-size: .92rem; }
+.resumen.por-ambito .dato .tenue b { color: var(--texto); font-weight: 600; }
+.nota-ventanas { margin: -6px 0 14px; font-size: .76rem; max-width: 900px; }

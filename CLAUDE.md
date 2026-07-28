@@ -94,8 +94,11 @@ en el lugar y cada cambio recalcula el cronograma entero. No hay formularios apa
   el usuario por KPI o impacto, y es la que pinta la barra en rojo. La ruta crítica
   del motor (holgura cero) es otra cosa y se expone como `Fila.sin_holgura` y como
   la holgura en días. Nunca se pisan entre sí.
-- Arriba de la grilla, el **resumen** muestra inicio, fin, duración total en días
-  hábiles, tareas, hitos y avance. Vive dentro del tablero para recalcularse en
+- Arriba de la grilla, el **resumen** muestra inicio, fin, próximo hito y avance; abajo,
+  un bloque por ámbito con su **ventana** (calendario, se superponen entre sí) y su
+  **esfuerzo** (suma de duraciones, es trabajo). Dos unidades distintas, nunca juntas.
+  La holgura se mide contra el fin del **ámbito** de cada tarea, no contra el fin
+  global: si no, el acompañamiento posterior le regala meses de margen al resto. Vive dentro del tablero para recalcularse en
   cada cambio. La **fecha de inicio del proyecto se edita ahí mismo**: moverla
   recalcula todas las fechas conservando duraciones y dependencias.
 - **Inicio** solo es editable si la tarea no tiene predecesoras; si las tiene, la fecha

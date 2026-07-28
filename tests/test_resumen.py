@@ -123,3 +123,66 @@ def test_la_criticidad_del_usuario_no_depende_de_la_holgura(session: Session, pr
     assert not clave.sin_holgura
     assert filas["Larga"].sin_holgura       # esta sí está en la ruta crítica
     assert filas["Larga"].tarea.critica is False
+
+
+# --- esfuerzo, próximo hito y holgura por ámbito ---
+
+def test_el_esfuerzo_suma_duraciones_aunque_corran_en_paralelo(session: Session, proyecto):
+    """Ventana y esfuerzo miden cosas distintas: dos de 10 en paralelo son 20 de
+    trabajo pero 10 de calendario."""
+    agregar(session, proyecto, "A", duracion=10)
+    agregar(session, proyecto, "B", duracion=10)
+    r = resumen(session, proyecto)
+    assert r.dias_habiles == 10
+    assert r.esfuerzo == 20
+
+
+def test_el_proximo_hito_es_el_primero_que_falta(session: Session, proyecto):
+    a = agregar(session, proyecto, "A", duracion=5)
+    lejano = agregar(session, proyecto, "Hito lejano", duracion=0)
+    predecesoras_service.guardar(session, proyecto.id, lejano.id, a.codigo)
+    cercano = agregar(session, proyecto, "Hito cercano", duracion=0)
+
+    datos = vista_service.armar(session, proyecto.id, hoy=date(2026, 1, 1))
+    assert datos.proximo_hito.tarea.id == cercano.id
+
+
+def test_un_hito_ya_hecho_no_es_el_proximo(session: Session, proyecto):
+    hecho = agregar(session, proyecto, "Hito hecho", duracion=0)
+    a = agregar(session, proyecto, "A", duracion=5)
+    siguiente = agregar(session, proyecto, "Hito siguiente", duracion=0)
+    predecesoras_service.guardar(session, proyecto.id, siguiente.id, a.codigo)
+    tasks_service.cambiar_estado(session, hecho.id, EstadoTarea.hecha)
+
+    datos = vista_service.armar(session, proyecto.id, hoy=date(2026, 1, 1))
+    assert datos.proximo_hito.tarea.id == siguiente.id
+
+
+def test_sin_hitos_no_hay_tarjeta(session: Session, proyecto):
+    agregar(session, proyecto, "A", duracion=3)
+    assert vista_service.armar(session, proyecto.id).proximo_hito is None
+
+
+def test_la_holgura_se_mide_contra_el_fin_del_ambito(session: Session, proyecto):
+    """El acompañamiento largo no debe regalarle margen al alcance comprometido."""
+    from app.models import Ambito
+
+    cierre = agregar(session, proyecto, "Firma del acta", duracion=5)
+    acomp = agregar(session, proyecto, "Acompañamiento", duracion=120)
+    tasks_service.actualizar(
+        session, acomp.id,
+        TareaIn(titulo="Acompañamiento", duracion=120, ambito=Ambito.seguimiento),
+    )
+
+    filas = {f.tarea.id: f for f in vista_service.armar(session, proyecto.id).filas}
+    # medido contra el fin de su propio bloque, el cierre no tiene margen
+    assert filas[cierre.id].holgura == 0
+    assert filas[acomp.id].holgura == 0
+
+
+def test_sin_ambitos_distintos_la_holgura_es_la_de_siempre(session: Session, proyecto):
+    agregar(session, proyecto, "Corta", duracion=2)
+    agregar(session, proyecto, "Larga", duracion=20)
+    filas = {f.tarea.titulo: f for f in vista_service.armar(session, proyecto.id).filas}
+    assert filas["Larga"].holgura == 0
+    assert filas["Corta"].holgura == 18

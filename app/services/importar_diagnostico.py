@@ -78,6 +78,10 @@ class Diagnostico:
 # a partir de una semana hábil vale la pena preguntarse si falta una dependencia.
 _HUECO_MINIMO = 5
 
+# Hasta acá un solape es una decisión de planificación (arrancar antes de que la
+# anterior termine). Más que esto es una fecha escrita a mano, no una relación.
+_SOLAPE_CREIBLE = 10
+
 
 def analizar(importacion: Importacion, inicio_proyecto: date | None = None) -> Diagnostico:
     """Revisa, tarea por tarea, si las fechas respetan las dependencias declaradas.
@@ -160,9 +164,13 @@ def _revisar(
             ))
         else:
             solape = _distancia_habil(declarado, fecha)
+            # Un solape corto es fast-tracking deliberado y se puede declarar como
+            # lag negativo. Uno enorme no: es la misma fecha a mano de siempre, y
+            # convertirla en lag ancla el cronograma igual que un +104.
             salida.append(Discrepancia(
                 fila.wbs, fila.titulo, codigo, f"{codigo}{lag - solape}",
                 f"en la planilla se solapa {solape} días hábiles con {codigo}",
+                estructural=solape <= _SOLAPE_CREIBLE,
             ))
     return salida
 

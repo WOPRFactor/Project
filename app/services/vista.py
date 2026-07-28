@@ -65,6 +65,9 @@ class Resumen:
     tareas: int = 0
     hitos: int = 0
     hechas: int = 0
+    # Suma de las duraciones de las tareas del bloque. Es *trabajo*, no calendario:
+    # tareas en paralelo suman acá pero no estiran la ventana.
+    esfuerzo: int = 0
 
     @property
     def semanas(self) -> int:
@@ -85,6 +88,7 @@ class VistaProyecto:
     por_ambito: list[Resumen] = field(default_factory=list)
     ventana: dict = field(default_factory=dict)
     estimadas: int = 0
+    proximo_hito: Fila | None = None
     flechas: list[Flecha] = field(default_factory=list)
     ancho_dia: int = 22
     alto_fila: int = 32
@@ -150,6 +154,7 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
         por_ambito=_por_ambito(filas),
         ventana=schedule_service.ventana(session, project_id),
         estimadas=len([f for f in filas if f.es_estimada and not f.es_resumen]),
+        proximo_hito=_proximo_hito(filas, hoy or date.today()),
         flechas=_flechas(filas, dependencies_service.listar(session, project_id), ancho),
         ancho_dia=ancho,
     )
@@ -187,6 +192,18 @@ def _flechas(filas: list[Fila], dependencias, ancho_dia: int) -> list[Flecha]:
     return salida
 
 
+def _proximo_hito(filas: list[Fila], hoy: date) -> Fila | None:
+    """El primer hito que todavía no pasó. Es lo que se mira un martes a la mañana."""
+    pendientes = [
+        f for f in filas
+        if f.es_hito and f.fin and f.fin >= hoy and f.tarea.estado.value != "hecha"
+    ]
+    if pendientes:
+        return min(pendientes, key=lambda f: f.fin)
+    futuros = [f for f in filas if f.es_hito and f.fin]
+    return max(futuros, key=lambda f: f.fin) if futuros else None
+
+
 def _por_ambito(filas: list[Fila]) -> list[Resumen]:
     """Un contador por ámbito que tenga tareas, en el orden del enum."""
     salida = []
@@ -203,7 +220,7 @@ def _por_ambito(filas: list[Fila]) -> list[Resumen]:
             min(i for i, _ in fechas),
             max(f for _, f in fechas),
         ))
-    return salida if len(salida) > 1 else []
+    return salida
 
 
 def _resumir(
@@ -220,4 +237,5 @@ def _resumir(
         tareas=len([f for f in hojas if not f.es_hito]),
         hitos=len([f for f in hojas if f.es_hito]),
         hechas=len([f for f in hojas if f.tarea.estado.value == "hecha"]),
+        esfuerzo=sum(f.tarea.duracion for f in hojas),
     )

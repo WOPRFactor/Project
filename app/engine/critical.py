@@ -18,8 +18,16 @@ def marcar(
     schedule: Schedule,
     nodos: list[TaskNode],
     aristas: list[DependencyEdge],
+    tope_por_tarea: dict[int, date] | None = None,
 ) -> Schedule:
-    """Anota holgura y `critica` sobre el cronograma recibido y lo devuelve."""
+    """Anota holgura y `critica` sobre el cronograma recibido y lo devuelve.
+
+    `tope_por_tarea` es la fecha contra la que se mide la holgura de cada tarea que
+    no tiene sucesoras. Por default es el fin del proyecto, pero medir todo contra
+    él infla los márgenes: si una actividad de acompañamiento estira el fin seis
+    meses, el resto del plan aparece con seis meses de comodidad que no tiene. El
+    llamador puede pasar el fin del bloque al que pertenece cada tarea.
+    """
     if not schedule.tareas or schedule.fin is None:
         return schedule
 
@@ -31,7 +39,7 @@ def marcar(
         a for a in aristas if a.predecessor_id in ids_hoja and a.successor_id in ids_hoja
     ]
 
-    _holgura_de_hojas(schedule, hojas, relevantes, por_id)
+    _holgura_de_hojas(schedule, hojas, relevantes, por_id, tope_por_tarea or {})
     _holgura_de_resumenes(schedule, grupos)
     return schedule
 
@@ -41,6 +49,7 @@ def _holgura_de_hojas(
     hojas: list[TaskNode],
     aristas: list[DependencyEdge],
     por_id: dict[int, TaskNode],
+    tope_por_tarea: dict[int, date],
 ) -> None:
     salientes = graph.sucesoras_por_tarea(aristas)
     orden = graph.orden_topologico([n.id for n in hojas], aristas)
@@ -53,7 +62,7 @@ def _holgura_de_hojas(
         nodo = por_id[task_id]
         duracion = max(nodo.duracion, 1)
 
-        fin_tardio = fin_proyecto
+        fin_tardio = tope_por_tarea.get(task_id, fin_proyecto)
         for arista in salientes.get(task_id, []):
             fin_tardio = min(
                 fin_tardio,
