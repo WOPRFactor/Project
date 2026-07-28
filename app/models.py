@@ -73,6 +73,9 @@ class Project(SQLModel, table=True):
     descripcion: str = Field(default="", max_length=2000)
     fecha_inicio: date
     estado: EstadoProyecto = Field(default=EstadoProyecto.activo)
+    # Rendición de cuentas del proyecto entero. Distinto del dueño, que en la
+    # Fase 11 va a ser un permiso: no tienen por qué ser la misma persona.
+    responsable_id: int | None = Field(default=None, foreign_key="contacto.id")
 
 
 class Estado(SQLModel, table=True):
@@ -116,7 +119,7 @@ class Task(SQLModel, table=True):
     codigo: str = Field(default="", max_length=40, index=True)
     titulo: str = Field(max_length=200)
     notas: str = Field(default="", max_length=4000)
-    responsable: str = Field(default="", max_length=120)
+    responsable_id: int | None = Field(default=None, foreign_key="contacto.id", index=True)
     # Criticidad de negocio: la decide el usuario por KPI o impacto. No confundir
     # con la ruta crítica, que el motor deduce del grafo y expone como holgura.
     critica: bool = Field(default=False)
@@ -138,6 +141,28 @@ class Task(SQLModel, table=True):
     fin_real: date | None = Field(default=None)
     estado_id: int | None = Field(default=None, foreign_key="estado.id", index=True)
     orden: int = Field(default=0)
+
+
+class Contacto(SQLModel, table=True):
+    """Una persona del proyecto. Puede no tener cuenta en la app.
+
+    Antes el responsable era texto libre en cada tarea, así que «Ariel», «ariel» y
+    «A. Clerici» eran tres personas distintas y no había forma de preguntar "qué
+    tiene asignado cada uno". Ahora es una fila, y la celda de la grilla resuelve lo
+    que escribís contra esta lista.
+
+    `usuario_id` queda reservado para cuando existan cuentas (Fase 10): un contacto
+    externo —alguien del cliente— tiene que poder ser responsable sin tener acceso.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    project_id: int = Field(foreign_key="project.id", index=True)
+    nombre: str = Field(max_length=120)
+    # Clave de comparación: sin acentos, sin mayúsculas, sin espacios de más. Es lo
+    # que evita que la misma persona entre dos veces escrita distinto.
+    clave: str = Field(default="", max_length=120, index=True)
+    mail: str = Field(default="", max_length=160)
+    usuario_id: int | None = Field(default=None)
 
 
 class EstadoRiesgo(str, Enum):

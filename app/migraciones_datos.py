@@ -16,7 +16,8 @@ import logging
 from sqlalchemy import Engine, inspect, text
 from sqlmodel import Session, select
 
-from .models import Estado, Project, Task
+from .models import Contacto, Estado, Project, Task
+from .services import contactos as contactos_service
 from .services import estados as estados_service
 
 log = logging.getLogger("wopr.migraciones")
@@ -35,6 +36,7 @@ def poner_al_dia(engine: Engine, agregadas: list[str] | None = None) -> list[str
     with Session(engine) as session:
         aplicadas += _sembrar_estados(session)
     aplicadas += _migrar_estado_a_tabla(engine)
+    aplicadas += _migrar_responsable_a_contacto(engine)
     if "task.avance" in (agregadas or []):
         with Session(engine) as session:
             aplicadas += _avance_desde_estado(session)
@@ -57,6 +59,40 @@ def _avance_desde_estado(session: Session) -> list[str]:
             tocadas += 1
     session.commit()
     return [f"avance sembrado desde el estado en {tocadas} tareas"] if tocadas else []
+
+
+def _migrar_responsable_a_contacto(engine: Engine) -> list[str]:
+    """Convierte el viejo `task.responsable` (texto) en contactos del proyecto.
+
+    Deduplica por nombre normalizado, así los «Ariel» / «ariel» de una planilla
+    entran como una sola persona. Igual que con los estados: primero se traduce y
+    recién después se borra la columna, para que un fallo en el medio no pierda nada.
+    """
+    inspector = inspect(engine)
+    if "task" not in set(inspector.get_table_names()):
+        return []
+    if "responsable" not in {c["name"] for c in inspector.get_columns("task")}:
+        return []  # ya migrada
+
+    with Session(engine) as session:
+        filas = session.exec(text("SELECT id, project_id, responsable FROM task")).all()
+        creados = 0
+        for task_id, project_id, nombre in filas:
+            if not (nombre or "").strip():
+                continue
+            antes = len(contactos_service.listar(session, project_id))
+            contacto_id = contactos_service.resolver(session, project_id, nombre)
+            creados += len(contactos_service.listar(session, project_id)) - antes
+            tarea = session.get(Task, task_id)
+            if tarea is not None:
+                tarea.responsable_id = contacto_id
+                session.add(tarea)
+        session.commit()
+
+    with engine.begin() as conexion:
+        conexion.execute(text("ALTER TABLE task DROP COLUMN responsable"))
+    log.info("Columna task.responsable migrada a contactos (%s creados)", creados)
+    return [f"task.responsable → contacto ({creados} personas)"]
 
 
 def _sembrar_estados(session: Session) -> list[str]:

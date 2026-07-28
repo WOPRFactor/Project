@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block titulo %}Equipo — {{ proyecto.nombre }}{% endblock %}
+
+{% block contenido %}
+  <p class="pie"><a href="/proyectos/{{ proyecto.id }}">← {{ proyecto.nombre }}</a></p>
+  <h1>Equipo</h1>
+  <p class="pie tenue">
+    Las personas del proyecto. No hace falta darlas de alta acá: escribí el nombre en
+    la columna <strong>Resp.</strong> de la grilla y se crea sola, uniéndose con la
+    que ya exista aunque la hayas escrito con otra mayúscula o sin acento. Esta
+    pantalla es para <strong>ver la carga</strong> y para unir lo que la app no puede
+    adivinar —«A. Clerici» y «Ariel Clerici» son la misma persona, pero eso lo sabés vos.
+  </p>
+
+  {% if aviso %}<p class="aviso">{{ aviso }}</p>{% endif %}
+
+  {% if etapas_sin_responsable %}
+    <p class="aviso">
+      {{ etapas_sin_responsable | length }}
+      {{ 'etapa no tiene' if etapas_sin_responsable | length == 1 else 'etapas no tienen' }}
+      responsable:
+      {{ etapas_sin_responsable | map(attribute='tarea') | map(attribute='titulo') | join(' · ') }}.
+    </p>
+  {% endif %}
+
+  <h2>Carga</h2>
+  <div class="lista-estados">
+    <div class="cabecera">
+      <span class="e-nombre">Persona</span>
+      <span class="e-color">Tareas</span>
+      <span class="e-color">Esfuerzo</span>
+      <span class="e-color">Avance</span>
+      <span class="e-color">Alertas</span>
+    </div>
+    {% for carga in cargas %}
+      <div class="fila-estado {{ 'sin-asignar' if not carga.contacto }}">
+        <span class="e-nombre">
+          {% if carga.contacto %}
+            <strong>{{ carga.contacto.nombre }}</strong>
+            {% if carga.contacto.mail %}<span class="tenue">{{ carga.contacto.mail }}</span>{% endif %}
+          {% else %}
+            <em class="tenue">Sin asignar</em>
+          {% endif %}
+        </span>
+        <span class="e-color tenue">
+          {{ carga.tareas }}{% if carga.hitos %} + {{ carga.hitos }} hitos{% endif %}
+        </span>
+        <span class="e-color tenue">{{ carga.esfuerzo }} d</span>
+        <span class="e-color tenue">{{ carga.avance }}%</span>
+        <span class="e-color">
+          {% if carga.atrasadas %}<b class="atrasado">{{ carga.atrasadas }} atrasadas</b>{% endif %}
+          {% if carga.sin_margen %}<span class="tenue">{{ carga.sin_margen }} sin margen</span>{% endif %}
+          {% if not carga.atrasadas and not carga.sin_margen %}<span class="tenue">—</span>{% endif %}
+        </span>
+      </div>
+    {% endfor %}
+  </div>
+  <p class="pie tenue">
+    El <strong>esfuerzo</strong> es la suma de las duraciones de sus tareas: es trabajo,
+    no calendario. Dos personas con 40 d cada una pueden terminar el mismo día.
+  </p>
+
+  <h2>Personas</h2>
+  <div class="lista-estados">
+    {% for persona in contactos %}
+      <div class="fila-estado">
+        <form method="post" action="/proyectos/{{ proyecto.id }}/equipo/{{ persona.id }}"
+              class="campos">
+          <span class="e-nombre">
+            <input name="nombre" value="{{ persona.nombre }}" maxlength="120"
+                   class="celda" required>
+          </span>
+          <span class="e-nombre">
+            <input name="mail" value="{{ persona.mail }}" maxlength="160"
+                   class="celda" placeholder="mail (opcional)">
+          </span>
+          <span class="e-ops"><button class="boton" type="submit">Guardar</button></span>
+        </form>
+
+        {% if contactos | length > 1 %}
+          <form method="post" class="borrar"
+                action="/proyectos/{{ proyecto.id }}/equipo/{{ persona.id }}/unir"
+                onsubmit="return confirm('Unir «{{ persona.nombre }}» con la persona elegida? Sus tareas se le reasignan y este contacto se borra.')">
+            <select name="destino_id" class="celda" title="Es la misma persona que...">
+              {% for otra in contactos if otra.id != persona.id %}
+                <option value="{{ otra.id }}">es la misma que {{ otra.nombre }}</option>
+              {% endfor %}
+            </select>
+            <button class="boton" type="submit">Unir</button>
+          </form>
+        {% endif %}
+
+        <form method="post" class="borrar"
+              action="/proyectos/{{ proyecto.id }}/equipo/{{ persona.id }}/eliminar"
+              onsubmit="return confirm('Borrar a «{{ persona.nombre }}»? Sus tareas quedan sin asignar, no se borran.')">
+          <button class="boton peligro" type="submit">Borrar</button>
+        </form>
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2>Agregar persona</h2>
+  <form method="post" action="/proyectos/{{ proyecto.id }}/equipo" class="tarjeta en-fila">
+    <input name="nombre" placeholder="Nombre y apellido" maxlength="120" class="celda" required>
+    <button class="boton primario" type="submit">Agregar</button>
+  </form>
+{% endblock %}

@@ -503,3 +503,5 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
   .atrasado { color: #b3261e; }
   .adelantado { color: #146c43; }
 }
+
+.fila-estado.sin-asignar { background: rgba(245, 181, 68, .06); }

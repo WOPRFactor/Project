@@ -60,6 +60,10 @@ Dirección de dependencias única: `routers → services → engine | models/db`
   bloquea**: frenar la carga a mitad de camino sería infumable. El avance del proyecto
   es **ponderado** — Σ (peso absoluto × avance de la tarea) —, porque contar cabezas
   hace pesar lo mismo una firma de acta de un día que 120 días de acompañamiento.
+- **Responsable = persona del proyecto**, no texto por tarea. La celda sigue siendo
+  texto libre con autocompletado y el service la resuelve contra los contactos
+  existentes, uniendo por nombre normalizado (sin acentos ni mayúsculas). Obligar a
+  dar de alta a alguien antes de escribirlo se abandona a la tercera fila.
 - **Estados definibles por proyecto.** El nombre y el color los elige el usuario; lo
   único que el motor necesita saber de un estado es `es_final`. Nunca comparar contra
   el string "hecha". `avance_sugerido` es lo que la tarea aporta al avance ponderado
@@ -100,8 +104,8 @@ La grilla **es** la aplicación, como en MS Project o Smartsheet: cada celda se 
 en el lugar y cada cambio recalcula el cronograma entero. No hay formularios aparte.
 
 - Columnas editables: WBS, Tarea, Resp., Predec., Días, Opt·Pes, Inicio, **Crít.**,
-  **Peso**, **Estado**, Ámbito. Calculadas (nunca editables): Fin y el % del proyecto
-  que se muestra al lado del peso.
+  **Peso**, **Avance**, **Riesgo**, **Estado**, Ámbito. Calculadas (nunca editables): Fin y el % del proyecto
+  que se muestra al lado del peso, y el **Desvío** contra la línea base vigente.
 - **Criticidad ≠ ruta crítica.** `Task.critica` es criticidad *de negocio*: la marca
   el usuario por KPI o impacto, y es la que pinta la barra en rojo. La ruta crítica
   del motor (holgura cero) es otra cosa y se expone como `Fila.sin_holgura` y como

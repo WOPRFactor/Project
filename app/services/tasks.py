@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 
 from ..models import Dependency, Task
 from ..schemas import TareaIn
+from . import contactos as contactos_service
 from . import estados as estados_service
 from . import riesgos as riesgos_service
 
@@ -79,8 +80,10 @@ def crear(session: Session, project_id: int, datos: TareaIn) -> Task:
         (t.orden for t in listar(session, project_id) if t.parent_id == datos.parent_id),
         default=-1,
     )
-    tarea = Task(project_id=project_id, orden=ultimo + 1, **datos.model_dump())
+    valores = datos.model_dump(exclude={"responsable"})
+    tarea = Task(project_id=project_id, orden=ultimo + 1, **valores)
     tarea.estado_id = _estado_valido(session, project_id, datos.estado_id)
+    tarea.responsable_id = contactos_service.resolver(session, project_id, datos.responsable)
     session.add(tarea)
     session.commit()
     session.refresh(tarea)
@@ -92,11 +95,16 @@ def actualizar(session: Session, task_id: int, datos: TareaIn) -> Task | None:
     if tarea is None:
         return None
     anterior = tarea.estado_id
-    valores = datos.model_dump(exclude={"parent_id", "estado_id", "avance"})
+    valores = datos.model_dump(
+        exclude={"parent_id", "estado_id", "avance", "responsable"}
+    )
     for campo, valor in valores.items():
         setattr(tarea, campo, valor)
     tarea.estado_id = _estado_valido(
         session, tarea.project_id, datos.estado_id or tarea.estado_id
+    )
+    tarea.responsable_id = contactos_service.resolver(
+        session, tarea.project_id, datos.responsable
     )
     tarea.avance = _avance(session, tarea, anterior, datos.avance)
     _sellar_fechas_reales(tarea)

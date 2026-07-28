@@ -14,7 +14,7 @@ from app.schemas import ProyectoIn
 
 
 AGREGADAS_DESPUES = (
-    "responsable", "codigo", "critica", "ambito",
+    "responsable_id", "codigo", "critica", "ambito",
     "duracion_optimista", "duracion_pesimista", "estado_id",
 )
 
@@ -101,7 +101,7 @@ def test_las_filas_viejas_quedan_con_el_default(tmp_path):
     with Session(engine) as session:
         tareas = tasks_service.listar(session, 1)
         assert [t.titulo for t in tareas] == ["Tarea vieja"]
-        assert tareas[0].responsable == ""
+        assert tareas[0].responsable_id is None
         assert tareas[0].codigo == ""
         assert tareas[0].critica is False
         assert tareas[0].ambito.value == "proyecto"
@@ -117,7 +117,8 @@ def test_la_app_sigue_funcionando_tras_migrar(tmp_path):
         tarea = tasks_service.crear(
             session, proyecto.id, TareaIn(titulo="Nueva", responsable="Ariel")
         )
-        assert tarea.responsable == "Ariel"
+        from app.services import contactos as contactos_service
+        assert contactos_service.obtener(session, tarea.responsable_id).nombre == "Ariel"
 
 
 def test_correrla_dos_veces_no_hace_nada(tmp_path):

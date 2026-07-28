@@ -68,6 +68,7 @@ def contexto(session: Session, project_id: int, mirada: Mirada | None = None) ->
         "grilla": datos.grilla,
         "columna_hoy": datos.columna_hoy,
         "estados": datos.estados,
+        "contactos": datos.contactos,
         "resumen": datos.resumen,
         "por_ambito": datos.por_ambito,
         "ventana": datos.ventana,

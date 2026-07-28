@@ -110,7 +110,7 @@
             <tr>
               <td class="mono">{{ fila.tarea.codigo }}</td>
               <td>{{ fila.tarea.titulo }}</td>
-              <td>{{ fila.tarea.responsable or '—' }}</td>
+              <td>{{ fila.responsable.nombre if fila.responsable else '—' }}</td>
               <td>{{ fila.fin | fecha }}</td>
               <td class="num atrasado">{{ '%+d' % fila.desvio }} d</td>
               <td class="num">{{ fila.tarea.avance }}%</td>
@@ -135,7 +135,7 @@
             <tr>
               <td class="mono">{{ fila.tarea.codigo }}</td>
               <td>{{ fila.tarea.titulo }}</td>
-              <td>{{ fila.tarea.responsable or '—' }}</td>
+              <td>{{ fila.responsable.nombre if fila.responsable else '—' }}</td>
               <td>{{ fila.inicio | fecha }}</td>
               <td>{{ fila.fin | fecha }}</td>
               <td class="num">{{ fila.tarea.avance }}%</td>

@@ -108,7 +108,8 @@ def test_exportar_y_reimportar_reproduce_el_proyecto(session: Session, proyecto)
         return [
             (
                 f.tarea.codigo, f.tarea.titulo, f.nivel, f.tarea.duracion,
-                f.tarea.responsable, f.tarea.critica, f.tarea.ambito.value,
+                f.responsable.nombre if f.responsable else "",
+                f.tarea.critica, f.tarea.ambito.value,
                 f.tarea.peso, f.tarea.duracion_optimista, f.tarea.duracion_pesimista,
                 f.predecesoras_texto, f.es_hito, f.es_resumen,
             )

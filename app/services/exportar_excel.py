@@ -83,7 +83,7 @@ def _valores(fila, con_riesgo: set[int]) -> list:
     return [
         tarea.codigo,
         tarea.titulo,
-        tarea.responsable,
+        fila.responsable.nombre if fila.responsable else "",
         fila.predecesoras_texto,
         # Un resumen no tiene duración propia: la escribe el rollup de sus hijas.
         None if fila.es_resumen else tarea.duracion,

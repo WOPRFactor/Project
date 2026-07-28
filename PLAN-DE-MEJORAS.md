@@ -276,7 +276,7 @@ cerrado se comparte la URL.
 
 ### Bloque B — El modelo de trabajo
 
-**Fase 14 — Personas: responsable de verdad.** Hoy `responsable` es texto libre, así que
+**Fase 14 — Personas: responsable de verdad. ✔** Hoy `responsable` es texto libre, así que
 "Ariel", "ariel" y "A. Clerici" son tres personas distintas. Tabla `Contacto` por proyecto
 (nombre, mail, opcionalmente vinculado a un `Usuario`), y `responsable_id` en **proyecto,
 etapa y tarea**. Migración que convierte los textos actuales en contactos, deduplicando.
@@ -407,8 +407,10 @@ usuarios y no exponen nada:
 Las que **sí** necesitan el bloque A cerrado, porque sin autor no significan nada: 14
 (responsables como personas), 20 (comentarios), 21 (adjuntos), y todo el informe.
 
-**Estado: hecho el camino corto más el bloque de informes** (fases 15, 16, 17, 18, 19,
-22, 23 y 24, marcadas con ✔ arriba).
+**Estado: hecho todo lo que funciona monousuario** (fases 14, 15, 16, 17, 18, 19, 22, 23
+y 24, marcadas con ✔ arriba). La Fase 14 entró sin la parte de cuentas: `Contacto` tiene
+`usuario_id` nullable esperando la Fase 10, porque un contacto externo —alguien del
+cliente— tiene que poder ser responsable sin tener acceso.
 Ariel decidió seguir monousuario por ahora, así que el bloque A sigue pendiente y la app
 no salió de `127.0.0.1`. Cuando entre el equipo, se retoma por la Fase 10 y el orden del
 plan vuelve a mandar.

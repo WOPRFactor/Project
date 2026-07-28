@@ -13,8 +13,9 @@ from sqlmodel import Session
 
 from ..engine.comparar import dias_habiles_con_signo
 from ..engine.timeline import Extremo, Grilla, ancho_columna, barra, construir_grilla, flecha
-from ..models import Dependency, Estado, Task
+from ..models import Contacto, Dependency, Estado, Task
 from . import dependencies as dependencies_service
+from . import contactos as contactos_service
 from . import estados as estados_service
 from . import gantt_vista
 from . import pesos as pesos_service
@@ -34,6 +35,8 @@ class Fila:
     # El estado ya no es un enum del código: es una fila del proyecto, y es quien
     # dice —vía `es_final`— si esta tarea cuenta como terminada.
     estado: Estado | None = None
+    # El responsable es una persona del proyecto, no un texto por tarea.
+    responsable: Contacto | None = None
     es_hito: bool = False
     inicio: date | None = None
     fin: date | None = None
@@ -77,6 +80,7 @@ class VistaProyecto:
     error: str | None
     todas_las_filas: list[Fila] = field(default_factory=list)
     estados: list[Estado] = field(default_factory=list)
+    contactos: list[Contacto] = field(default_factory=list)
     resumen: Resumen = field(default_factory=Resumen)
     por_ambito: list[Resumen] = field(default_factory=list)
     ventana: dict = field(default_factory=dict)
@@ -132,6 +136,7 @@ def armar(
     ]
     peso_absoluto = pesos_service.absolutos(nodos_peso)
     con_riesgo = riesgos_service.ids_con_riesgo(session, project_id)
+    personas = contactos_service.mapa(session, project_id)
     base = base or {}
     filas: list[Fila] = []
     for tarea, nivel in nodos:
@@ -142,6 +147,7 @@ def armar(
             nivel=nivel,
             es_resumen=bool(calculada and calculada.es_resumen),
             estado=por_estado.get(tarea.estado_id or 0),
+            responsable=personas.get(tarea.responsable_id or 0),
             es_hito=tarea.duracion == 0,
             es_estimada=tarea.duracion_optimista is not None
             or tarea.duracion_pesimista is not None,
@@ -171,6 +177,7 @@ def armar(
         columna_hoy=grilla.columna_de(hoy or date.today()) if grilla else None,
         error=error,
         estados=estados,
+        contactos=list(personas.values()),
         resumen=resumen_service.armar(filas, "Total", cronograma.inicio, cronograma.fin),
         por_ambito=resumen_service.por_ambito(filas),
         ventana=schedule_service.ventana(session, project_id),

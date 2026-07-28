@@ -1,4 +1,7 @@
 {# La grilla ES la app: cada celda edita en el lugar y recalcula todo el cronograma. #}
+<datalist id="personas">
+  {% for persona in contactos %}<option value="{{ persona.nombre }}"></option>{% endfor %}
+</datalist>
 <div class="gantt">
   <div class="panel-izq">
     <div class="cabecera">
@@ -35,8 +38,13 @@
                  class="celda {{ 'negrita' if fila.es_resumen }}" autocomplete="off" required>
         </span>
         <span class="c-resp">
-          <input id="res-{{ t.id }}" name="responsable" value="{{ t.responsable }}"
-                 maxlength="120" class="celda" autocomplete="off">
+          {# Texto libre con autocompletado, no un desplegable: obligar a dar de alta
+             a la persona antes de escribirla se abandona a la tercera fila. El
+             service resuelve lo escrito contra los contactos que ya existen. #}
+          <input id="res-{{ t.id }}" name="responsable" list="personas"
+                 value="{{ fila.responsable.nombre if fila.responsable else '' }}"
+                 maxlength="120" class="celda" autocomplete="off"
+                 title="Escribí un nombre; se une solo con los que ya existen">
         </span>
         <span class="c-pred">
           <input id="pre-{{ t.id }}" name="predecesoras" value="{{ fila.predecesoras_texto }}"
