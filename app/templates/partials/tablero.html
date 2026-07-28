@@ -5,6 +5,34 @@
   <p class="aviso">El cronograma no se pudo calcular: {{ error_motor }}</p>
 {% endif %}
 
+{% if filas %}
+  <div class="resumen">
+    <div class="dato">
+      <span class="etiqueta">Inicio</span>
+      <strong>{{ resumen.inicio | fecha }}</strong>
+    </div>
+    <div class="dato">
+      <span class="etiqueta">Fin</span>
+      <strong>{{ resumen.fin | fecha }}</strong>
+    </div>
+    <div class="dato destacado">
+      <span class="etiqueta">Duración</span>
+      <strong>{{ resumen.dias_habiles }} días hábiles</strong>
+      <span class="tenue">{{ resumen.semanas }} semanas · {{ resumen.dias_corridos }} corridos</span>
+    </div>
+    <div class="dato">
+      <span class="etiqueta">Tareas</span>
+      <strong>{{ resumen.tareas }}</strong>
+      {% if resumen.hitos %}<span class="tenue">+ {{ resumen.hitos }} hitos</span>{% endif %}
+    </div>
+    <div class="dato">
+      <span class="etiqueta">Avance</span>
+      <strong>{{ resumen.avance }}%</strong>
+      <span class="tenue">{{ resumen.hechas }} de {{ resumen.tareas }} hechas</span>
+    </div>
+  </div>
+{% endif %}
+
 <div class="barra-grilla">
   <button class="boton primario" hx-post="/proyectos/{{ proyecto.id }}/tareas/agregar"
           hx-target="#tablero" hx-swap="innerHTML">+ Tarea</button>

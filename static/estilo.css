@@ -130,6 +130,23 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 input[type=date].celda { font-size: .75rem; }
 input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); }
 
+/* Resumen del proyecto: vive dentro del tablero para recalcularse en cada cambio. */
+.resumen {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
+}
+.resumen .dato {
+  flex: 1 1 auto; min-width: 130px; padding: 8px 14px;
+  background: var(--panel); border: 1px solid var(--borde); border-radius: 8px;
+  display: flex; flex-direction: column; gap: 1px;
+}
+.resumen .dato.destacado { border-color: var(--acento); }
+.resumen .etiqueta { font-size: .68rem; color: var(--tenue); text-transform: uppercase; letter-spacing: .05em; }
+.resumen strong { font-size: 1.02rem; font-variant-numeric: tabular-nums; }
+.resumen .tenue { font-size: .74rem; }
+
+.c-crit select.celda { font-size: .78rem; padding: 2px; }
+.c-crit select.es-critica { color: var(--critico); font-weight: 600; }
+
 .barra-grilla { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
 .oculto { display: none; }
 #pegar-bloque textarea { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; }

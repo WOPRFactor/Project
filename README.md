@@ -29,7 +29,9 @@ el cronograma y repinta el timeline sin recargar la página.
 Lo que ves en el timeline:
 
 - **Barras azules** — tareas con holgura.
-- **Barras rojas** — ruta crítica: atrasar cualquiera de ellas atrasa el proyecto entero.
+- **Barras rojas** — tareas que marcaste como críticas en la columna *Crít.*
+  (criticidad de negocio: la decidís vos, no el cálculo). La holgura que sí calcula
+  el motor está en el tooltip de cada barra.
 - **Barras grises finas** — tareas resumen (las que tienen subtareas): su fecha es la
   envolvente de sus hijas, no se cargan a mano.
 - **Rombos ◆** — hitos: marcan un momento, no ocupan días.

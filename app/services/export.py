@@ -62,8 +62,12 @@ def a_json(session: Session, project_id: int) -> dict | None:
                 "estado": fila.tarea.estado.value,
                 "inicio": fila.inicio.isoformat() if fila.inicio else None,
                 "fin": fila.fin.isoformat() if fila.fin else None,
+                "responsable": fila.tarea.responsable,
+                # Dos cosas distintas: la criticidad la marca el usuario, la holgura
+                # sale del grafo. Se exportan por separado a propósito.
+                "critica_para_el_negocio": fila.tarea.critica,
                 "holgura_dias": fila.holgura,
-                "critica": fila.critica,
+                "sin_margen": fila.sin_holgura,
             }
             for fila in datos.filas
         ],
@@ -129,8 +133,10 @@ def _linea_de_tarea(fila: vista_service.Fila) -> str:
     detalle = [f"{_fecha(fila.inicio)} → {_fecha(fila.fin)}"]
     if not fila.es_resumen:
         detalle.append(f"{fila.tarea.duracion}d")
-        if fila.critica:
+        if fila.tarea.critica:
             detalle.append("crítica")
+        if fila.tarea.responsable:
+            detalle.append(fila.tarea.responsable)
     detalle.append(ETIQUETA_ESTADO_TAREA[fila.tarea.estado].lower())
     return f"{sangria}- {titulo} — {' · '.join(detalle)}"
 

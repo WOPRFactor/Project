@@ -41,6 +41,7 @@ def aplicar(
             TareaIn(
                 titulo=fila.titulo[:200],
                 responsable=fila.responsable[:120],
+                critica=fila.critica,
                 duracion=0 if fila.es_hito else max(fila.duracion, 1),
                 parent_id=padre_id,
             ),
@@ -78,6 +79,7 @@ def agregar_a_proyecto(
             TareaIn(
                 titulo=fila.titulo[:200],
                 responsable=fila.responsable[:120],
+                critica=fila.critica,
                 duracion=0 if fila.es_hito else max(fila.duracion, 1),
                 parent_id=padre_id,
             ),

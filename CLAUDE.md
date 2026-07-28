@@ -77,8 +77,15 @@ Dirección de dependencias única: `routers → services → engine | models/db`
 La grilla **es** la aplicación, como en MS Project o Smartsheet: cada celda se edita
 en el lugar y cada cambio recalcula el cronograma entero. No hay formularios aparte.
 
-- Columnas editables: WBS, Tarea, Resp., Predec., Días, Inicio.
-  Calculadas (nunca editables): Fin y Crít.
+- Columnas editables: WBS, Tarea, Resp., Predec., Días, Inicio, **Crít.**
+  Calculada (nunca editable): Fin.
+- **Criticidad ≠ ruta crítica.** `Task.critica` es criticidad *de negocio*: la marca
+  el usuario por KPI o impacto, y es la que pinta la barra en rojo. La ruta crítica
+  del motor (holgura cero) es otra cosa y se expone como `Fila.sin_holgura` y como
+  la holgura en días. Nunca se pisan entre sí.
+- Arriba de la grilla, el **resumen** muestra inicio, fin, duración total en días
+  hábiles, tareas, hitos y avance. Vive dentro del tablero para recalcularse en
+  cada cambio.
 - **Inicio** solo es editable si la tarea no tiene predecesoras; si las tiene, la fecha
   la manda la dependencia y se muestra en gris.
 - Las **predecesoras se escriben por código WBS**: `1.3`, `1.3+2` (espera 2 días

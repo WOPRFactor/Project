@@ -23,6 +23,7 @@ class FilaImportada:
     tipo: str = "tarea"
     duracion: int = 1
     responsable: str = ""
+    critica: bool = False
     predecesoras: list[str] = field(default_factory=list)
     nivel: int = 0
 
@@ -88,6 +89,7 @@ def desde_json(carga: str) -> Importacion | None:
                 tipo=tipo if tipo in TIPOS else "tarea",
                 duracion=_entero(cruda.get("duracion"), 1, 0, 3650),
                 responsable=str(cruda.get("responsable", ""))[:120],
+                critica=cruda.get("critica") is True,
                 predecesoras=[
                     str(p)[:40]
                     for p in (predecesoras if isinstance(predecesoras, list) else [])

@@ -42,6 +42,7 @@ def guardar_celda(
     predecesoras: str = Form(""),
     duracion: str = Form(""),
     inicio: str = Form(""),
+    critica: str = Form("0"),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     """Guarda la fila completa: el formulario manda todas sus celdas en cada cambio."""
@@ -54,6 +55,7 @@ def guardar_celda(
             titulo=titulo,
             notas=tarea.notas,
             responsable=responsable,
+            critica=critica.strip() in {"1", "true", "on", "sí", "si"},
             duracion=int(duracion) if duracion.strip() else tarea.duracion,
             snet=date.fromisoformat(inicio) if inicio.strip() else None,
             estado=tarea.estado,

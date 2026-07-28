@@ -12,7 +12,7 @@ from app.services import tasks as tasks_service
 from app.schemas import ProyectoIn
 
 
-AGREGADAS_DESPUES = ("responsable", "codigo")
+AGREGADAS_DESPUES = ("responsable", "codigo", "critica")
 
 
 def base_vieja(tmp_path):
@@ -75,6 +75,7 @@ def test_las_filas_viejas_quedan_con_el_default(tmp_path):
         assert [t.titulo for t in tareas] == ["Tarea vieja"]
         assert tareas[0].responsable == ""
         assert tareas[0].codigo == ""
+        assert tareas[0].critica is False
 
 
 def test_la_app_sigue_funcionando_tras_migrar(tmp_path):

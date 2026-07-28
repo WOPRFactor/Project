@@ -64,6 +64,15 @@ def test_repara_las_predecesoras_convertidas_en_fecha():
     assert por_wbs["5.7"].predecesoras == ["5.1"]
 
 
+def test_importa_la_criticidad_marcada_en_la_planilla():
+    """La columna «Crít.» del usuario entra como criticidad de negocio."""
+    imp = importar_excel.leer(contenido(), "Sheet2")
+    criticas = [f.wbs for f in imp.filas if f.critica]
+    assert criticas, "la planilla marca varias tareas con Sí"
+    assert "1.2" in criticas
+    assert not any(f.critica for f in imp.filas if f.wbs == "1.1")
+
+
 def test_avisa_de_las_filas_sin_wbs():
     imp = importar_excel.leer(contenido(), "Sheet2")
     assert any("no tiene WBS" in a for a in imp.avisos)

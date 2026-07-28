@@ -6,11 +6,12 @@ tonto: iterar y pintar, sin calcular nada.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 from sqlmodel import Session
 
+from ..engine.calendar import contar_habiles
 from ..engine.timeline import Grilla, ancho_columna, barra, construir_grilla
 from ..models import Dependency, Task
 from . import dependencies as dependencies_service
@@ -27,11 +28,34 @@ class Fila:
     inicio: date | None = None
     fin: date | None = None
     holgura: int = 0
-    critica: bool = False
+    # Ruta crítica según el motor (holgura cero). Distinta de `tarea.critica`,
+    # que es la criticidad de negocio que marca el usuario.
+    sin_holgura: bool = False
     columnas: tuple[int, int] | None = None
     predecesoras: list[Dependency] | None = None
     predecesoras_texto: str = ""
     tiene_predecesoras: bool = False
+
+
+@dataclass
+class Resumen:
+    """Cuánto dura el proyecto según el cronograma de este momento."""
+
+    inicio: date | None = None
+    fin: date | None = None
+    dias_habiles: int = 0
+    dias_corridos: int = 0
+    tareas: int = 0
+    hitos: int = 0
+    hechas: int = 0
+
+    @property
+    def semanas(self) -> int:
+        return -(-self.dias_habiles // 5)  # redondeo hacia arriba
+
+    @property
+    def avance(self) -> int:
+        return round(100 * self.hechas / self.tareas) if self.tareas else 0
 
 
 @dataclass
@@ -40,6 +64,7 @@ class VistaProyecto:
     grilla: Grilla | None
     columna_hoy: int | None
     error: str | None
+    resumen: Resumen = field(default_factory=Resumen)
     ancho_dia: int = 22
 
 
@@ -83,7 +108,7 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
             fila.inicio = calculada.inicio
             fila.fin = calculada.fin
             fila.holgura = calculada.holgura
-            fila.critica = calculada.critica
+            fila.sin_holgura = calculada.critica
             if grilla is not None:
                 fila.columnas = barra(grilla, calculada.inicio, calculada.fin)
         filas.append(fila)
@@ -93,5 +118,20 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
         grilla=grilla,
         columna_hoy=grilla.columna_de(hoy or date.today()) if grilla else None,
         error=error,
+        resumen=_resumir(filas, cronograma.inicio, cronograma.fin),
         ancho_dia=ancho_columna(grilla.columnas) if grilla else 22,
+    )
+
+
+def _resumir(filas: list[Fila], inicio: date | None, fin: date | None) -> Resumen:
+    """Duración total del proyecto: se recalcula sola al agregar o quitar tareas."""
+    hojas = [f for f in filas if not f.es_resumen]
+    return Resumen(
+        inicio=inicio,
+        fin=fin,
+        dias_habiles=contar_habiles(inicio, fin) if inicio and fin else 0,
+        dias_corridos=(fin - inicio).days + 1 if inicio and fin else 0,
+        tareas=len([f for f in hojas if not f.es_hito]),
+        hitos=len([f for f in hojas if f.es_hito]),
+        hechas=len([f for f in hojas if f.tarea.estado.value == "hecha"]),
     )

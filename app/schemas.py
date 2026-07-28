@@ -42,6 +42,7 @@ class TareaIn(BaseModel):
     titulo: str = Field(min_length=1, max_length=200)
     notas: str = Field(default="", max_length=4000)
     responsable: str = Field(default="", max_length=120)
+    critica: bool = False
     duracion: int = Field(default=1, ge=0, le=3650)
     snet: date | None = None
     estado: EstadoTarea = EstadoTarea.pendiente

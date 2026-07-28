@@ -52,6 +52,9 @@ class Task(SQLModel, table=True):
     titulo: str = Field(max_length=200)
     notas: str = Field(default="", max_length=4000)
     responsable: str = Field(default="", max_length=120)
+    # Criticidad de negocio: la decide el usuario por KPI o impacto. No confundir
+    # con la ruta crítica, que el motor deduce del grafo y expone como holgura.
+    critica: bool = Field(default=False)
     # duración 0 = hito: marca un momento, no consume días del cronograma
     duracion: int = Field(default=1, ge=0, le=3650)
     snet: date | None = Field(default=None)

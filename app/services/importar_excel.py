@@ -28,9 +28,17 @@ _COLUMNAS = {
     "predecesoras": "predecesoras",
     "dias": "duracion",
     "días": "duracion",
+    "crit": "critica",
+    "crit.": "critica",
+    "crít": "critica",
+    "crít.": "critica",
+    "critica": "critica",
+    "crítica": "critica",
+    "criticidad": "critica",
     "_tipo": "tipo",
     "tipo": "tipo",
 }
+_AFIRMATIVOS = {"si", "sí", "s", "yes", "y", "true", "verdadero", "x", "1"}
 _VACIAS_SEGUIDAS = 15
 
 
@@ -114,6 +122,7 @@ def _armar_fila(
         tipo=tipo,
         duracion=0 if tipo == "hito" else max(int(duracion or 1), 1),
         responsable=_texto(celdas.get("responsable")),
+        critica=_texto(celdas.get("critica")).lower() in _AFIRMATIVOS,
         predecesoras=predecesoras,
         nivel=wbs.count(".") if wbs else 0,
     )

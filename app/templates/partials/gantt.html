@@ -57,10 +57,12 @@
         </span>
         <span class="c-fecha"><span class="celda calculada">{{ fila.fin | fecha }}</span></span>
         <span class="c-crit">
-          <span class="celda calculada {{ 'es-critica' if fila.critica }}"
-                title="{{ 'Holgura %sd' % fila.holgura if not fila.es_resumen else '' }}">
-            {{ 'Sí' if fila.critica else 'No' }}
-          </span>
+          <select id="cri-{{ t.id }}" name="critica"
+                  class="celda {{ 'es-critica' if t.critica }}"
+                  title="Criticidad de negocio: la marcás vos.{% if not fila.es_resumen %} El motor calcula {{ fila.holgura }} días de holgura para esta tarea.{% endif %}">
+            <option value="0" {{ 'selected' if not t.critica }}>No</option>
+            <option value="1" {{ 'selected' if t.critica }}>Sí</option>
+          </select>
         </span>
         <span class="c-ops">
           <button type="button" class="icono" title="Insertar fila debajo"
@@ -103,9 +105,9 @@
         {% for fila in filas %}
           <div class="fila-barra">
             {% if fila.columnas %}
-              <div class="barra-tarea {{ 'resumen' if fila.es_resumen }} {{ 'hito' if fila.es_hito }} {{ 'critica' if fila.critica and not fila.es_resumen }} estado-{{ fila.tarea.estado.value }}"
+              <div class="barra-tarea {{ 'resumen' if fila.es_resumen }} {{ 'hito' if fila.es_hito }} {{ 'critica' if fila.tarea.critica and not fila.es_resumen }} estado-{{ fila.tarea.estado.value }}"
                    style="grid-column: {{ fila.columnas[0] }} / {{ fila.columnas[1] }}"
-                   title="{{ fila.tarea.titulo }}: {{ fila.inicio | fecha }} → {{ fila.fin | fecha }}{% if not fila.es_resumen %} · holgura {{ fila.holgura }}d{% endif %}">
+                   title="{{ fila.tarea.titulo }}: {{ fila.inicio | fecha }} → {{ fila.fin | fecha }}{% if not fila.es_resumen %} · holgura {{ fila.holgura }}d{% if fila.sin_holgura %} (sin margen){% endif %}{% endif %}">
                 <span>{{ fila.tarea.titulo }}</span>
               </div>
             {% endif %}
