@@ -287,7 +287,7 @@ cuentas. No son lo mismo y no tienen por qué ser la misma persona.
 *Hecho cuando:* ningún responsable queda como texto suelto tras la migración; un contacto sin
 cuenta funciona igual que uno con cuenta; borrar un contacto usado pide reasignación.
 
-**Fase 15 — Estados definibles.** Tabla `Estado` por proyecto (nombre, color, orden,
+**Fase 15 — Estados definibles. ✔** Tabla `Estado` por proyecto (nombre, color, orden,
 `es_final`, `avance_sugerido`), sembrada con los tres actuales. Los 9 archivos que hoy
 preguntan `== "hecha"` pasan a preguntar `estado.es_final`. ABM de estados para el dueño;
 borrar uno en uso obliga a reasignar.
@@ -295,7 +295,7 @@ borrar uno en uso obliga a reasignar.
 un proyecto con estados propios calcula avance, próximo hito y export igual de bien; no queda
 ninguna comparación contra el string "hecha" en el código.
 
-**Fase 16 — Pesos por etapa y por tarea.** `Task` gana `peso` (nullable, % del padre).
+**Fase 16 — Pesos por etapa y por tarea. ✔** `Task` gana `peso` (nullable, % del padre).
 `services/pesos.py` **puro, sin sesión**: normaliza un nivel, calcula el peso absoluto
 multiplicando hacia abajo, y valida el cierre por nivel. Columna **Peso** en la grilla, con el
 % del proyecto al lado como dato derivado. El nivel que no cierra se marca en rojo con el
@@ -328,7 +328,7 @@ simple sigue disponible como dato secundario.
 
 ### Bloque C — Riesgos y contenido
 
-**Fase 19 — Riesgos: registro y cuadrante.** Tabla `Riesgo` (proyecto, `task_id` nullable,
+**Fase 19 — Riesgos: registro y cuadrante. ✔** Tabla `Riesgo` (proyecto, `task_id` nullable,
 descripción, probabilidad 1-5, impacto 1-5, mitigación, responsable, estado). Checkbox en la
 grilla que marca la fila y abre el detalle; ⚠ visible en la fila que tiene riesgos. Cuadrante
 5×5 pintado con CSS Grid server-side —igual que el Gantt, sin librería de gráficos— con
@@ -358,7 +358,7 @@ escapa del directorio; superar la cuota da un error claro; y el backup de la Fas
 
 ### Bloque D — Vista y salida
 
-**Fase 22 — Gantt: nivel de detalle, filtro por etapa y colores.** Nivel de detalle (todo /
+**Fase 22 — Gantt: nivel de detalle, filtro por etapa y colores. ✔** Nivel de detalle (todo /
 hasta nivel N / solo etapas) y filtro por etapa, **en la URL** (`?vista=etapas&etapa=2`) para
 que el estado sea compartible y sin JS. Selector de modo de color: criticidad / estado /
 ámbito / avance — excluyentes, porque dos criterios de color a la vez dan barro. El % de
@@ -369,7 +369,7 @@ inline (la CSP de la Fase 13 no los permitiría).
 proyecto de 200 tareas entra en una pantalla; ningún color es la única señal (hay etiqueta o
 patrón), y la paleta se distingue impresa en blanco y negro.
 
-**Fase 23 — Export a Excel, con vuelta.** `services/exportar_excel.py` con openpyxl (ya es
+**Fase 23 — Export a Excel, con vuelta. ✔** `services/exportar_excel.py` con openpyxl (ya es
 dependencia): la grilla completa —WBS, tarea, responsable, predecesoras en notación WBS,
 días, opt/pes, inicio, fin, crít., ámbito, peso, estado, avance, riesgo— más fechas base y
 desvío cuando hay línea base. **El contrato es la ida y vuelta:** exportar un proyecto e
@@ -407,8 +407,10 @@ usuarios y no exponen nada:
 Las que **sí** necesitan el bloque A cerrado, porque sin autor no significan nada: 14
 (responsables como personas), 20 (comentarios), 21 (adjuntos), y todo el informe.
 
-Mi consejo: si vas a usar la app vos solo unas semanas más, adelantá ese lote —te cambia el
-día a día y no compromete nada. Si el equipo entra ya, andá por el orden del plan.
+**Estado: el camino corto está hecho** (fases 15, 16, 19, 22 y 23, marcadas con ✔ arriba).
+Ariel decidió seguir monousuario por ahora, así que el bloque A sigue pendiente y la app
+no salió de `127.0.0.1`. Cuando entre el equipo, se retoma por la Fase 10 y el orden del
+plan vuelve a mandar.
 
 ## Lo que este plan deja explícitamente afuera
 
