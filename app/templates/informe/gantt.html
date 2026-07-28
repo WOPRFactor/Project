@@ -1,0 +1,69 @@
+{# El Gantt del informe: solo barras, sin celdas editables ni operaciones.
+   Es un documento, no una herramienta. Reusa las mismas clases del tablero para
+   que lo impreso y lo de pantalla no se separen con el tiempo. #}
+{% if informe.grilla %}
+<div class="gantt informe-gantt">
+  <div class="panel-izq">
+    <div class="cabecera">
+      <span class="c-tarea">Etapa / hito</span>
+      <span class="c-fecha">Inicio</span>
+      <span class="c-fecha">Fin</span>
+      {% if informe.hay_base %}<span class="c-desvio">Desvío</span>{% endif %}
+      <span class="c-avance">Avance</span>
+    </div>
+    {% for fila in informe.filas %}
+      <div class="fila {{ 'resumen' if fila.es_resumen }}">
+        <span class="c-tarea" style="padding-left: {{ fila.nivel * 12 }}px">
+          {% if fila.es_hito %}◆ {% endif %}{{ fila.tarea.titulo }}
+        </span>
+        <span class="c-fecha">{{ fila.inicio | fecha }}</span>
+        <span class="c-fecha">{{ fila.fin | fecha }}</span>
+        {% if informe.hay_base %}
+          <span class="c-desvio {{ 'atrasado' if fila.desvio and fila.desvio > 0 }}{{ 'adelantado' if fila.desvio and fila.desvio < 0 }}">
+            {{ ('%+d' % fila.desvio) if fila.desvio is not none else ('nueva' if fila.es_nueva else '—') }}
+          </span>
+        {% endif %}
+        <span class="c-avance">{{ fila.tarea.avance }}%</span>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="panel-der">
+    <div class="pista" style="--cols: {{ informe.grilla.columnas }}; --ancho-dia: {{ informe.ancho_dia }}px">
+      {% if informe.columna_hoy %}
+        <div class="linea-hoy" style="--col: {{ informe.columna_hoy }}" title="Fecha de corte"></div>
+      {% endif %}
+      <div class="cabecera-grilla">
+        <div class="fila-meses">
+          {% for mes in informe.grilla.meses %}
+            <span class="mes" style="grid-column: span {{ mes.dias }}">{{ mes.etiqueta }}</span>
+          {% endfor %}
+        </div>
+        <div class="fila-semanas">
+          {% for semana in informe.grilla.semanas %}
+            <span class="semana" style="grid-column: span {{ semana.dias }}">{{ semana.etiqueta }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% for fila in informe.filas %}
+        <div class="fila-barra">
+          {% if fila.columnas %}
+            {% if fila.columnas_base and not fila.es_resumen %}
+              <div class="barra-base"
+                   style="grid-column: {{ fila.columnas_base[0] }} / {{ fila.columnas_base[1] }}"></div>
+            {% endif %}
+            <div class="barra-tarea {{ 'hito' if fila.es_hito }} {{ clase_color(fila, 'avance') }}"
+                 style="grid-column: {{ fila.columnas[0] }} / {{ fila.columnas[1] }}">
+              {% if not fila.es_resumen and not fila.es_hito and fila.tarea.avance %}
+                <span class="relleno" style="width: {{ fila.tarea.avance }}%"></span>
+              {% endif %}
+              <span class="rotulo">{{ fila.tarea.titulo }}</span>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}

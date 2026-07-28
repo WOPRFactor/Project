@@ -452,3 +452,54 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 
 .c-avance { flex: 0 0 60px; }
 .c-avance .celda { text-align: right; }
+
+
+/* --- Informe (Fase 24) --- */
+.informe { max-width: 1100px; }
+.informe .portada { border-bottom: 2px solid var(--borde); padding-bottom: 12px; margin-bottom: 18px; }
+.informe .bajada { font-size: 1rem; margin: 6px 0; }
+.informe .bloque { margin: 22px 0; }
+.informe .bloque h2 {
+  font-size: 1.05rem; border-bottom: 1px solid var(--borde);
+  padding-bottom: 4px; margin-bottom: 10px;
+}
+.informe .corte { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 10px; }
+.informe .sub { margin: 8px 0 2px; font-weight: 600; font-size: .85rem; }
+
+.tabla-informe { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.tabla-informe th, .tabla-informe td {
+  text-align: left; padding: 4px 8px; border-bottom: 1px solid rgba(44, 52, 70, .6);
+}
+.tabla-informe th { color: var(--tenue); font-weight: 600; text-transform: uppercase; font-size: .7rem; }
+.tabla-informe .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* El Gantt del informe es de lectura: sin panel fijo ni scroll horizontal propio. */
+.informe-gantt .panel-izq { flex: 0 0 420px; max-width: 420px; }
+.informe-gantt .fila { font-size: .78rem; }
+.informe-gantt .c-tarea { flex: 1 1 auto; min-width: 160px; }
+
+@media print {
+  /* Un informe impreso no lleva navegación ni controles: son ruido en papel. */
+  .barra, .sin-imprimir, .boton { display: none !important; }
+  @page { size: A4 portrait; margin: 14mm; }
+  html, body {
+    background: #fff; color: #111;
+    font-size: 10.5pt; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  main { padding: 0; }
+  .informe { max-width: none; }
+  /* Los bloques no se parten al medio; los grandes arrancan en hoja nueva. */
+  .informe .bloque { break-inside: avoid; }
+  .informe .bloque.salto { break-before: page; }
+  .tabla-informe tr, .fila, .fila-barra, .celda-riesgo { break-inside: avoid; }
+  .tenue, .pie { color: #555; }
+  .tabla-informe th { color: #333; }
+  .gantt { overflow: visible; }
+  .panel-der { overflow: visible; }
+  .informe-gantt .panel-izq { flex: 0 0 300px; max-width: 300px; }
+  .barra-tarea { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .35); }
+  .barra-base { opacity: .8; }
+  .resumen .dato { border-color: #bbb; }
+  .atrasado { color: #b3261e; }
+  .adelantado { color: #146c43; }
+}
