@@ -40,45 +40,101 @@ def test_home_sin_proyectos(cliente):
     assert "Todavía no hay proyectos" in respuesta.text
 
 
-def test_alta_de_proyecto_y_tarea(cliente):
-    alta = cliente.post(
+def crear_proyecto(cliente, nombre="Mudanza", inicio="2026-01-05"):
+    return cliente.post(
         "/proyectos",
-        data={"nombre": "Mudanza", "descripcion": "", "fecha_inicio": "2026-01-05"},
+        data={"nombre": nombre, "descripcion": "", "fecha_inicio": inicio},
         follow_redirects=True,
     )
-    assert alta.status_code == 200
-    assert "Mudanza" in alta.text
-
-    tarea = cliente.post(
-        "/proyectos/1/tareas",
-        data={"titulo": "Buscar depto", "duracion": "3", "snet": "", "parent_id": ""},
-    )
-    assert tarea.status_code == 200
-    assert "Buscar depto" in tarea.text
-    assert "05/01/2026" in tarea.text
 
 
-def test_dependencia_circular_muestra_aviso_y_no_rompe(cliente):
-    cliente.post(
-        "/proyectos",
-        data={"nombre": "Obra", "descripcion": "", "fecha_inicio": "2026-01-05"},
-    )
-    for titulo in ("A", "B"):
-        cliente.post(
-            "/proyectos/1/tareas",
-            data={"titulo": titulo, "duracion": "2", "snet": "", "parent_id": ""},
-        )
-    cliente.post(
-        "/proyectos/1/dependencias",
-        data={"predecessor_id": "1", "successor_id": "2", "lag": "0"},
-    )
-    respuesta = cliente.post(
-        "/proyectos/1/dependencias",
-        data={"predecessor_id": "2", "successor_id": "1", "lag": "0"},
-    )
+def celda(cliente, task_id, **campos):
+    """Guarda una fila de la grilla como lo hace el navegador."""
+    datos = {
+        "codigo": "", "titulo": "Tarea", "responsable": "",
+        "predecesoras": "", "duracion": "1", "inicio": "",
+    }
+    datos.update({k: str(v) for k, v in campos.items()})
+    return cliente.post(f"/proyectos/1/tareas/{task_id}/celda", data=datos)
+
+
+def test_alta_de_proyecto_y_tarea(cliente):
+    alta = crear_proyecto(cliente)
+    assert alta.status_code == 200 and "Mudanza" in alta.text
+
+    assert cliente.post("/proyectos/1/tareas/agregar").status_code == 200
+    respuesta = celda(cliente, 1, codigo="1", titulo="Buscar depto", duracion=3)
+    assert respuesta.status_code == 200
+    assert "Buscar depto" in respuesta.text
+    assert "05/01/2026" in respuesta.text
+
+
+def test_las_dependencias_se_escriben_por_codigo(cliente):
+    crear_proyecto(cliente, "Obra")
+    for _ in range(2):
+        cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, codigo="1", titulo="A", duracion=3)
+    respuesta = celda(cliente, 2, codigo="2", titulo="B", duracion=2, predecesoras="1")
+
+    assert respuesta.status_code == 200
+    # B arranca el día hábil siguiente al fin de A (05/01 + 3 días = 07/01)
+    assert "08/01/2026" in respuesta.text
+
+
+def test_una_dependencia_circular_avisa_y_no_rompe(cliente):
+    crear_proyecto(cliente, "Obra")
+    for _ in range(2):
+        cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, codigo="1", titulo="A", duracion=2)
+    celda(cliente, 2, codigo="2", titulo="B", duracion=2, predecesoras="1")
+    respuesta = celda(cliente, 1, codigo="1", titulo="A", duracion=2, predecesoras="2")
+
     assert respuesta.status_code == 200
     assert "ciclo" in respuesta.text.lower()
     assert "Traceback" not in respuesta.text
+
+
+def test_un_codigo_inexistente_avisa(cliente):
+    crear_proyecto(cliente, "Obra")
+    cliente.post("/proyectos/1/tareas/agregar")
+    respuesta = celda(cliente, 1, codigo="1", titulo="A", predecesoras="9.9")
+    assert "No existe ninguna tarea con código 9.9" in respuesta.text
+
+
+def test_indentar_y_desindentar(cliente):
+    crear_proyecto(cliente, "Obra")
+    for _ in range(2):
+        cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, codigo="1", titulo="Padre", duracion=2)
+    celda(cliente, 2, codigo="2", titulo="Hija", duracion=3)
+
+    indentada = cliente.post("/proyectos/1/tareas/2/indentar")
+    assert indentada.status_code == 200
+    # el padre pasa a ser resumen: su duración deja de mostrarse
+    assert "Padre" in indentada.text
+
+    vuelta = cliente.post("/proyectos/1/tareas/2/desindentar")
+    assert vuelta.status_code == 200
+    assert "Hija" in vuelta.text
+
+
+def test_indentar_la_primera_fila_avisa_sin_romper(cliente):
+    crear_proyecto(cliente, "Obra")
+    cliente.post("/proyectos/1/tareas/agregar")
+    respuesta = cliente.post("/proyectos/1/tareas/1/indentar")
+    assert respuesta.status_code == 200
+    assert "No hay una tarea arriba" in respuesta.text
+
+
+def test_pegar_una_lista_en_un_proyecto_existente(cliente):
+    crear_proyecto(cliente, "Obra")
+    respuesta = cliente.post(
+        "/proyectos/1/pegar",
+        data={"texto": "Etapa 1\n    Definir alcance   5\n    Relevamiento   10"},
+    )
+    assert respuesta.status_code == 200
+    assert "Definir alcance" in respuesta.text
+    assert "Relevamiento" in respuesta.text
 
 
 def test_export_json_se_descarga(cliente):
@@ -86,10 +142,8 @@ def test_export_json_se_descarga(cliente):
         "/proyectos",
         data={"nombre": "Obra Norte", "descripcion": "", "fecha_inicio": "2026-01-05"},
     )
-    cliente.post(
-        "/proyectos/1/tareas",
-        data={"titulo": "Excavación", "duracion": "3", "snet": "", "parent_id": ""},
-    )
+    cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, codigo="1", titulo="Excavación", duracion=3)
     respuesta = cliente.get("/proyectos/1/export/json")
     assert respuesta.status_code == 200
     assert respuesta.headers["content-disposition"] == 'attachment; filename="obra-norte.json"'
@@ -156,14 +210,25 @@ def test_proyecto_inexistente_da_404_sin_stack_trace(cliente):
     assert "Traceback" not in respuesta.text
 
 
-def test_duracion_invalida_no_rompe_la_vista(cliente):
-    cliente.post(
-        "/proyectos",
-        data={"nombre": "Test", "descripcion": "", "fecha_inicio": "2026-01-05"},
-    )
-    respuesta = cliente.post(
-        "/proyectos/1/tareas",
-        data={"titulo": "Rara", "duracion": "0", "snet": "", "parent_id": ""},
-    )
+def test_duracion_invalida_no_rompe_la_grilla(cliente):
+    crear_proyecto(cliente, "Test")
+    cliente.post("/proyectos/1/tareas/agregar")
+    respuesta = celda(cliente, 1, titulo="Rara", duracion=-5)
+    assert respuesta.status_code == 200
+    assert "Traceback" not in respuesta.text
+
+
+def test_duracion_cero_crea_un_hito(cliente):
+    crear_proyecto(cliente, "Test")
+    cliente.post("/proyectos/1/tareas/agregar")
+    respuesta = celda(cliente, 1, codigo="1", titulo="Firma del acta", duracion=0)
+    assert respuesta.status_code == 200
+    assert "Hito" in respuesta.text or "◆" in respuesta.text
+
+
+def test_titulo_vacio_no_rompe_la_grilla(cliente):
+    crear_proyecto(cliente, "Test")
+    cliente.post("/proyectos/1/tareas/agregar")
+    respuesta = celda(cliente, 1, titulo="   ")
     assert respuesta.status_code == 200
     assert "Traceback" not in respuesta.text

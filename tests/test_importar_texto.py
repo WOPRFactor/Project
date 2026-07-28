@@ -3,6 +3,7 @@ from datetime import date
 from sqlmodel import Session
 
 from app.services import importar as importar_service
+from app.services import importar_aplicar
 from app.services import importar_texto
 from app.services import schedule as schedule_service
 from app.services import tasks as tasks_service
@@ -73,7 +74,7 @@ def test_no_confunde_un_numero_del_titulo_con_la_duracion():
 
 def test_aplicar_crea_el_arbol(session: Session, proyecto):
     imp = importar_texto.leer(PEGADO)
-    nuevo, avisos = importar_service.aplicar(session, "Pegado", date(2026, 1, 5), imp)
+    nuevo, avisos = importar_aplicar.aplicar(session, "Pegado", date(2026, 1, 5), imp)
     arbol = tasks_service.arbol(session, nuevo.id)
     assert [(t.titulo, n) for t, n in arbol][:3] == [
         ("Relevamiento", 0),
@@ -85,7 +86,7 @@ def test_aplicar_crea_el_arbol(session: Session, proyecto):
 
 def test_el_proyecto_pegado_calcula_fechas(session: Session):
     imp = importar_texto.leer(PEGADO)
-    nuevo, _ = importar_service.aplicar(session, "Pegado", date(2026, 1, 5), imp)
+    nuevo, _ = importar_aplicar.aplicar(session, "Pegado", date(2026, 1, 5), imp)
     plan, error = schedule_service.calcular_seguro(session, nuevo.id)
     assert error is None
     assert plan.inicio == date(2026, 1, 5)

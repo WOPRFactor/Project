@@ -42,7 +42,22 @@ def poner_al_dia(engine: Engine) -> list[str]:
             aplicadas.append(f"{nombre_tabla}.{columna.name}")
             log.info("Columna agregada: %s.%s", nombre_tabla, columna.name)
 
+        aplicadas += _crear_indices(engine, tabla, nombre_tabla)
+
     return aplicadas
+
+
+def _crear_indices(engine: Engine, tabla, nombre_tabla: str) -> list[str]:
+    """Un ALTER TABLE agrega la columna pero no su índice; hay que crearlo aparte."""
+    existentes = {i["name"] for i in inspect(engine).get_indexes(nombre_tabla)}
+    creados = []
+    for indice in tabla.indexes:
+        if indice.name in existentes:
+            continue
+        indice.create(bind=engine)
+        creados.append(f"{nombre_tabla}::{indice.name}")
+        log.info("Índice creado: %s", indice.name)
+    return creados
 
 
 def _alter(tabla: str, columna, engine: Engine) -> str:

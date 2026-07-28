@@ -14,6 +14,7 @@ from sqlmodel import Session
 
 from ..db import get_session
 from ..services import importar as importar_service
+from ..services import importar_aplicar
 from ..services import importar_excel, importar_texto
 from ..templating import templates
 
@@ -71,7 +72,7 @@ def confirmar(
     if importacion is None or not importacion.filas:
         return _error(request, "Se perdió la previsualización. Volvé a cargar la fuente.")
 
-    proyecto, avisos = importar_service.aplicar(session, nombre, fecha_inicio, importacion)
+    proyecto, avisos = importar_aplicar.aplicar(session, nombre, fecha_inicio, importacion)
     destino = f"/proyectos/{proyecto.id}"
     if avisos:
         destino += "?avisos=" + str(len(avisos))

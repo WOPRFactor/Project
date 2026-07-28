@@ -87,20 +87,52 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 
 /* ---------- Gantt ---------- */
 .gantt { display: flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--panel); margin-bottom: 18px; }
-/* Ancho fijo: con títulos largos, si crece se come el timeline. */
-.panel-izq { flex: 0 0 560px; max-width: 560px; border-right: 2px solid var(--borde); }
+/* Ancho fijo. Tiene que alcanzar para todas las columnas fijas (~615px) más la
+   de Tarea; si se achica, el título se aplasta a cero. */
+.panel-izq { flex: 0 0 900px; max-width: 900px; border-right: 2px solid var(--borde); }
 .panel-der { flex: 1 1 auto; overflow-x: auto; }
 
-.panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 8px; padding: 0 12px; }
-.panel-izq .cabecera { height: var(--cabecera); border-bottom: 1px solid var(--borde); color: var(--tenue); font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; }
-.panel-izq .fila { height: var(--fila); border-bottom: 1px solid rgba(44, 52, 70, .5); font-size: .9rem; }
-.panel-izq .fila.resumen { font-weight: 600; background: rgba(76, 141, 255, .06); }
-.panel-izq .fila.estado-hecha .col-tarea { color: var(--tenue); text-decoration: line-through; }
+.panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
+.panel-izq .cabecera { height: var(--cabecera); border-bottom: 1px solid var(--borde); color: var(--tenue); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; }
+.panel-izq .fila { height: var(--fila); border-bottom: 1px solid rgba(44, 52, 70, .5); font-size: .85rem; margin: 0; }
+.panel-izq .fila.resumen { background: rgba(76, 141, 255, .06); }
+.panel-izq .fila.estado-hecha .c-tarea input { color: var(--tenue); text-decoration: line-through; }
 
-.col-tarea { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.col-fecha { flex: 0 0 84px; color: var(--tenue); font-size: .82rem; font-variant-numeric: tabular-nums; }
-.col-dias { flex: 0 0 44px; text-align: right; color: var(--tenue); font-size: .82rem; }
-.col-acciones { flex: 0 0 132px; display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+/* Columnas de la grilla.
+   min-width: 0 es obligatorio: sin eso, el ancho intrínseco de un <input type=date>
+   estira su columna y desalinea el encabezado de las filas. */
+.c-cod, .c-resp, .c-pred, .c-dias, .c-fecha, .c-crit, .c-ops { min-width: 0; }
+.c-cod   { flex: 0 0 52px; }
+.c-tarea { flex: 1 1 auto; min-width: 240px; display: flex; align-items: center; gap: 2px; }
+.c-resp  { flex: 0 0 88px; }
+.c-pred  { flex: 0 0 86px; }
+.c-dias  { flex: 0 0 46px; }
+.c-fecha { flex: 0 0 96px; }
+.c-crit  { flex: 0 0 38px; }
+.c-ops   { flex: 0 0 92px; display: flex; align-items: center; justify-content: flex-end; gap: 1px; }
+
+/* Celdas: parecen texto hasta que las tocás. */
+.celda {
+  width: 100%; margin: 0; padding: 3px 5px; font: inherit; font-size: .85rem;
+  background: transparent; border: 1px solid transparent; border-radius: 4px;
+  color: var(--texto); min-width: 0;
+}
+.celda:hover:not(.calculada) { border-color: var(--borde); }
+.celda:focus { outline: none; border-color: var(--acento); background: var(--fondo); }
+.celda.mono { font-variant-numeric: tabular-nums; font-size: .8rem; }
+.celda.negrita { font-weight: 600; }
+.celda:disabled { color: var(--tenue); opacity: .5; }
+.celda.calculada {
+  display: block; color: var(--tenue); font-size: .8rem;
+  font-variant-numeric: tabular-nums; cursor: default;
+}
+.celda.calculada.es-critica { color: var(--critico); font-weight: 600; }
+input[type=date].celda { font-size: .75rem; }
+input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); }
+
+.barra-grilla { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.oculto { display: none; }
+#pegar-bloque textarea { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; }
 
 .punto-critico { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--critico); margin-right: 6px; }
 .marca-snet { color: var(--curso); font-style: normal; margin-left: 4px; }

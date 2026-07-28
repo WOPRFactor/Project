@@ -6,6 +6,7 @@ from pathlib import Path
 from sqlmodel import Session
 
 from app.services import importar as importar_service
+from app.services import importar_aplicar
 from app.services import importar_excel
 from app.services import schedule as schedule_service
 from app.services import tasks as tasks_service
@@ -102,7 +103,7 @@ def test_una_planilla_minima_alcanza_con_wbs_y_tarea():
 
 def test_aplicar_crea_el_proyecto_con_arbol_y_dependencias(session: Session):
     imp = importar_excel.leer(contenido(), "Sheet2")
-    proyecto, avisos = importar_service.aplicar(
+    proyecto, avisos = importar_aplicar.aplicar(
         session, "Traspaso operativo", date(2026, 8, 3), imp
     )
 
@@ -118,7 +119,7 @@ def test_aplicar_crea_el_proyecto_con_arbol_y_dependencias(session: Session):
 
 def test_el_cronograma_del_import_calcula_sin_errores(session: Session):
     imp = importar_excel.leer(contenido(), "Sheet2")
-    proyecto, _ = importar_service.aplicar(
+    proyecto, _ = importar_aplicar.aplicar(
         session, "Traspaso", date(2026, 8, 3), imp
     )
     plan, error = schedule_service.calcular_seguro(session, proyecto.id)

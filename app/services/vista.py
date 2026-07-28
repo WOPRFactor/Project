@@ -30,6 +30,8 @@ class Fila:
     critica: bool = False
     columnas: tuple[int, int] | None = None
     predecesoras: list[Dependency] | None = None
+    predecesoras_texto: str = ""
+    tiene_predecesoras: bool = False
 
 
 @dataclass
@@ -41,6 +43,19 @@ class VistaProyecto:
     ancho_dia: int = 22
 
 
+def _texto_predecesoras(deps: list[Dependency], codigos: dict[int, str]) -> str:
+    """Lo que se ve en la celda: `1.3, 2.1+2`."""
+    partes = []
+    for dep in deps:
+        codigo = codigos.get(dep.predecessor_id) or str(dep.predecessor_id)
+        if dep.lag > 0:
+            codigo += f"+{dep.lag}"
+        elif dep.lag < 0:
+            codigo += str(dep.lag)
+        partes.append(codigo)
+    return ", ".join(sorted(partes))
+
+
 def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaProyecto:
     cronograma, error = schedule_service.calcular_seguro(session, project_id)
     nodos = tasks_service.arbol(session, project_id)
@@ -50,15 +65,19 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
     if cronograma.inicio is not None and cronograma.fin is not None:
         grilla = construir_grilla(cronograma.inicio, cronograma.fin)
 
+    codigos = {t.id: t.codigo for t, _ in nodos}
     filas: list[Fila] = []
     for tarea, nivel in nodos:
         calculada = cronograma.get(tarea.id or 0)
+        propias = entrantes.get(tarea.id or 0, [])
         fila = Fila(
             tarea=tarea,
             nivel=nivel,
             es_resumen=bool(calculada and calculada.es_resumen),
             es_hito=tarea.duracion == 0,
-            predecesoras=entrantes.get(tarea.id or 0, []),
+            predecesoras=propias,
+            predecesoras_texto=_texto_predecesoras(propias, codigos),
+            tiene_predecesoras=bool(propias),
         )
         if calculada is not None:
             fila.inicio = calculada.inicio

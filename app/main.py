@@ -17,7 +17,7 @@ from pydantic import ValidationError
 
 from .config import RAIZ, settings
 from .db import init_db
-from .routers import dependencies, export, importar, projects, tasks
+from .routers import export, importar, projects, tasks
 from .templating import templates
 
 log = logging.getLogger("wopr")
@@ -38,7 +38,6 @@ app = FastAPI(
 app.mount("/static", StaticFiles(directory=RAIZ / "static"), name="static")
 app.include_router(projects.router)
 app.include_router(tasks.router)
-app.include_router(dependencies.router)
 app.include_router(export.router)
 app.include_router(importar.router)
 

@@ -1,4 +1,4 @@
-"""Rutas de tareas. Toda mutación devuelve el tablero recalculado."""
+"""Rutas de la grilla. Toda edición recalcula el cronograma y devuelve el tablero."""
 
 from __future__ import annotations
 
@@ -12,94 +12,86 @@ from sqlmodel import Session
 from ..db import get_session
 from ..models import EstadoTarea
 from ..schemas import TareaIn
+from ..services import arbol as arbol_service
+from ..services import importar_aplicar
+from ..services import importar_texto
+from ..services import predecesoras as predecesoras_service
 from ..services import tasks as tasks_service
 from ..services.tasks import TareaInvalida
-from ..templating import templates
 from ._tablero import render
 
-router = APIRouter(prefix="/proyectos/{project_id}/tareas")
+router = APIRouter(prefix="/proyectos/{project_id}")
 
 
-def _datos(
-    titulo: str, notas: str, duracion: int, snet: date | None, estado: EstadoTarea,
-    parent_id: int | None = None,
-) -> TareaIn:
-    return TareaIn(
-        titulo=titulo, notas=notas, duracion=duracion, snet=snet,
-        estado=estado, parent_id=parent_id,
-    )
-
-
-@router.post("", response_class=HTMLResponse)
-def crear(
-    project_id: int,
-    request: Request,
-    titulo: str = Form(...),
-    notas: str = Form(""),
-    duracion: int = Form(1),
-    snet: str = Form(""),
-    parent_id: str = Form(""),
-    session: Session = Depends(get_session),
+@router.post("/tareas/agregar", response_class=HTMLResponse)
+def agregar(
+    project_id: int, request: Request, session: Session = Depends(get_session)
 ) -> HTMLResponse:
-    try:
-        datos = _datos(
-            titulo, notas, duracion,
-            date.fromisoformat(snet) if snet else None,
-            EstadoTarea.pendiente,
-            int(parent_id) if parent_id else None,
-        )
-        tasks_service.crear(session, project_id, datos)
-    except (ValidationError, ValueError, TareaInvalida) as error:
-        return render(request, session, project_id, aviso=_mensaje(error))
+    arbol_service.agregar_al_final(session, project_id, TareaIn(titulo="Tarea nueva"))
     return render(request, session, project_id)
 
 
-@router.get("/{task_id}/editar", response_class=HTMLResponse)
-def form_editar(
+@router.post("/tareas/{task_id}/celda", response_class=HTMLResponse)
+def guardar_celda(
     project_id: int,
     task_id: int,
     request: Request,
+    codigo: str = Form(""),
+    titulo: str = Form(...),
+    responsable: str = Form(""),
+    predecesoras: str = Form(""),
+    duracion: str = Form(""),
+    inicio: str = Form(""),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
+    """Guarda la fila completa: el formulario manda todas sus celdas en cada cambio."""
     tarea = tasks_service.obtener(session, task_id)
-    return templates.TemplateResponse(
-        request,
-        "partials/tarea_form.html",
-        {
-            "tarea": tarea,
-            "proyecto_id": project_id,
-            "candidatos": tasks_service.arbol(session, project_id),
-        },
-    )
+    if tarea is None or tarea.project_id != project_id:
+        return render(request, session, project_id, aviso="Esa tarea ya no existe")
 
-
-@router.post("/{task_id}/editar", response_class=HTMLResponse)
-def actualizar(
-    project_id: int,
-    task_id: int,
-    request: Request,
-    titulo: str = Form(...),
-    notas: str = Form(""),
-    duracion: int = Form(1),
-    snet: str = Form(""),
-    estado: EstadoTarea = Form(EstadoTarea.pendiente),
-    parent_id: str = Form(""),
-    session: Session = Depends(get_session),
-) -> HTMLResponse:
     try:
-        datos = _datos(
-            titulo, notas, duracion,
-            date.fromisoformat(snet) if snet else None,
-            estado,
+        datos = TareaIn(
+            titulo=titulo,
+            notas=tarea.notas,
+            responsable=responsable,
+            duracion=int(duracion) if duracion.strip() else tarea.duracion,
+            snet=date.fromisoformat(inicio) if inicio.strip() else None,
+            estado=tarea.estado,
         )
-        tasks_service.actualizar(session, task_id, datos)
-        tasks_service.mover(session, task_id, int(parent_id) if parent_id else None)
-    except (ValidationError, ValueError, TareaInvalida) as error:
+    except (ValidationError, ValueError) as error:
         return render(request, session, project_id, aviso=_mensaje(error))
-    return render(request, session, project_id)
+
+    tasks_service.actualizar(session, task_id, datos)
+    _guardar_codigo(session, task_id, codigo)
+
+    avisos: list[str] = []
+    if not tasks_service.tiene_hijas(session, task_id):
+        avisos = predecesoras_service.guardar(session, project_id, task_id, predecesoras)
+    return render(request, session, project_id, aviso="; ".join(avisos) or None)
 
 
-@router.post("/{task_id}/estado", response_class=HTMLResponse)
+@router.post("/tareas/{task_id}/insertar", response_class=HTMLResponse)
+def insertar(
+    project_id: int, task_id: int, request: Request, session: Session = Depends(get_session)
+) -> HTMLResponse:
+    return _mover(request, session, project_id, arbol_service.insertar_debajo, task_id)
+
+
+@router.post("/tareas/{task_id}/indentar", response_class=HTMLResponse)
+def indentar(
+    project_id: int, task_id: int, request: Request, session: Session = Depends(get_session)
+) -> HTMLResponse:
+    return _mover(request, session, project_id, arbol_service.indentar, task_id)
+
+
+@router.post("/tareas/{task_id}/desindentar", response_class=HTMLResponse)
+def desindentar(
+    project_id: int, task_id: int, request: Request, session: Session = Depends(get_session)
+) -> HTMLResponse:
+    return _mover(request, session, project_id, arbol_service.desindentar, task_id)
+
+
+@router.post("/tareas/{task_id}/estado", response_class=HTMLResponse)
 def cambiar_estado(
     project_id: int,
     task_id: int,
@@ -111,7 +103,7 @@ def cambiar_estado(
     return render(request, session, project_id)
 
 
-@router.post("/{task_id}/eliminar", response_class=HTMLResponse)
+@router.post("/tareas/{task_id}/eliminar", response_class=HTMLResponse)
 def eliminar(
     project_id: int,
     task_id: int,
@@ -123,7 +115,48 @@ def eliminar(
     return render(request, session, project_id)
 
 
+@router.post("/renumerar", response_class=HTMLResponse)
+def renumerar(
+    project_id: int, request: Request, session: Session = Depends(get_session)
+) -> HTMLResponse:
+    cambiados = arbol_service.renumerar(session, project_id)
+    return render(request, session, project_id, aviso=f"{cambiados} códigos reasignados")
+
+
+@router.post("/pegar", response_class=HTMLResponse)
+def pegar(
+    project_id: int,
+    request: Request,
+    texto: str = Form(""),
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    if len(texto) > 200_000:
+        return render(request, session, project_id, aviso="El texto pegado es demasiado grande")
+    importacion = importar_texto.leer(texto)
+    if not importacion.filas:
+        return render(request, session, project_id, aviso="No encontré tareas en lo que pegaste")
+    avisos = importar_aplicar.agregar_a_proyecto(session, project_id, importacion)
+    return render(request, session, project_id, aviso="; ".join(avisos) or None)
+
+
+def _mover(request: Request, session: Session, project_id: int, operacion, task_id: int):
+    try:
+        operacion(session, task_id)
+    except TareaInvalida as error:
+        return render(request, session, project_id, aviso=str(error))
+    return render(request, session, project_id)
+
+
+def _guardar_codigo(session: Session, task_id: int, codigo: str) -> None:
+    tarea = tasks_service.obtener(session, task_id)
+    limpio = codigo.strip()[:40]
+    if tarea is not None and tarea.codigo != limpio:
+        tarea.codigo = limpio
+        session.add(tarea)
+        session.commit()
+
+
 def _mensaje(error: Exception) -> str:
     if isinstance(error, ValidationError):
         return "; ".join(e.get("msg", "dato inválido") for e in error.errors())
-    return str(error) or "No se pudo completar la operación"
+    return str(error) or "No se pudo guardar"

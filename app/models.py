@@ -45,6 +45,10 @@ class Task(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     project_id: int = Field(foreign_key="project.id", index=True)
     parent_id: int | None = Field(default=None, foreign_key="task.id", index=True)
+    # Código tipo WBS (1, 1.2, 1.2.3). Es cómo el usuario referencia una tarea al
+    # escribir dependencias, así que se genera al crear y después queda estable:
+    # renumerar solo cuando lo pide, para no romper referencias escritas a mano.
+    codigo: str = Field(default="", max_length=40, index=True)
     titulo: str = Field(max_length=200)
     notas: str = Field(default="", max_length=4000)
     responsable: str = Field(default="", max_length=120)

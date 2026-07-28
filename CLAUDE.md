@@ -71,3 +71,19 @@ Dirección de dependencias única: `routers → services → engine | models/db`
 - Sin secretos en el repo ni en el código; si aparece uno, va por variable de entorno.
 - Debug apagado por default; los errores al navegador no muestran stack traces.
 - La DB SQLite (`*.db`) no se commitea.
+
+## La grilla (Fase 7)
+
+La grilla **es** la aplicación, como en MS Project o Smartsheet: cada celda se edita
+en el lugar y cada cambio recalcula el cronograma entero. No hay formularios aparte.
+
+- Columnas editables: WBS, Tarea, Resp., Predec., Días, Inicio.
+  Calculadas (nunca editables): Fin y Crít.
+- **Inicio** solo es editable si la tarea no tiene predecesoras; si las tiene, la fecha
+  la manda la dependencia y se muestra en gris.
+- Las **predecesoras se escriben por código WBS**: `1.3`, `1.3+2` (espera 2 días
+  hábiles), `1.3-1` (solapa 1). Varias, separadas por coma. La celda es la fuente de
+  verdad: lo que no está escrito, se borra.
+- El **código WBS** se genera al crear la fila y después queda estable — renumerar es
+  una acción explícita, porque reescribirlo rompería las referencias escritas a mano.
+  Es único en todo el proyecto, no solo entre hermanas.

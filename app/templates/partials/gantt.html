@@ -1,44 +1,83 @@
-{# Árbol + timeline. Las dos mitades comparten alto de fila para quedar alineadas. #}
+{# La grilla ES la app: cada celda edita en el lugar y recalcula todo el cronograma. #}
 <div class="gantt">
   <div class="panel-izq">
     <div class="cabecera">
-      <span class="col-tarea">Tarea</span>
-      <span class="col-fecha">Inicio</span>
-      <span class="col-fecha">Fin</span>
-      <span class="col-dias">Días</span>
-      <span class="col-acciones"></span>
+      <span class="c-cod">WBS</span>
+      <span class="c-tarea">Tarea</span>
+      <span class="c-resp">Resp.</span>
+      <span class="c-pred">Predec.</span>
+      <span class="c-dias">Días</span>
+      <span class="c-fecha">Inicio</span>
+      <span class="c-fecha">Fin</span>
+      <span class="c-crit">Crít.</span>
+      <span class="c-ops"></span>
     </div>
+
     {% for fila in filas %}
-      <div class="fila {{ 'resumen' if fila.es_resumen }} estado-{{ fila.tarea.estado.value }}">
-        <span class="col-tarea" style="padding-left: {{ fila.nivel * 16 }}px"
-              title="{{ fila.tarea.notas }}{% if fila.tarea.responsable %} · Responsable: {{ fila.tarea.responsable }}{% endif %}">
-          {% if fila.critica and not fila.es_resumen %}<i class="punto-critico" title="Ruta crítica"></i>{% endif %}
-          {% if fila.es_hito %}<i class="marca-hito" title="Hito">◆</i>{% endif %}
-          {{ fila.tarea.titulo }}
-          {% if fila.tarea.responsable %}<i class="responsable">{{ fila.tarea.responsable }}</i>{% endif %}
-          {% if fila.tarea.snet %}<i class="marca-snet" title="No arranca antes del {{ fila.tarea.snet | fecha }}">⚑</i>{% endif %}
+      {% set t = fila.tarea %}
+      <form class="fila {{ 'resumen' if fila.es_resumen }} estado-{{ t.estado.value }}"
+            hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ t.id }}/celda"
+            hx-trigger="change" hx-target="#tablero" hx-swap="innerHTML">
+        <span class="c-cod">
+          <input id="cod-{{ t.id }}" name="codigo" value="{{ t.codigo }}" maxlength="40"
+                 class="celda mono" autocomplete="off">
         </span>
-        <span class="col-fecha">{{ fila.inicio | fecha }}</span>
-        <span class="col-fecha">{{ fila.fin | fecha }}</span>
-        <span class="col-dias">{{ '—' if fila.es_resumen or fila.es_hito else fila.tarea.duracion }}</span>
-        <span class="col-acciones">
-          <form hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ fila.tarea.id }}/estado"
-                hx-target="#tablero" hx-swap="innerHTML" class="en-linea">
-            <input type="hidden" name="estado"
-                   value="{{ 'pendiente' if fila.tarea.estado.value == 'hecha' else ('hecha' if fila.tarea.estado.value == 'en_curso' else 'en_curso') }}">
-            <button class="chip-boton estado-{{ fila.tarea.estado.value }}" type="submit"
-                    title="Cambiar estado">{{ etiqueta_estado_tarea[fila.tarea.estado] }}</button>
-          </form>
-          <button class="icono" title="Editar"
-                  hx-get="/proyectos/{{ proyecto.id }}/tareas/{{ fila.tarea.id }}/editar"
-                  hx-target="#panel-edicion" hx-swap="innerHTML">✎</button>
-          <form hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ fila.tarea.id }}/eliminar"
-                hx-target="#tablero" hx-swap="innerHTML" class="en-linea"
-                hx-confirm="¿Borrar «{{ fila.tarea.titulo }}» y sus subtareas?">
-            <button class="icono" type="submit" title="Borrar">✕</button>
-          </form>
+        <span class="c-tarea" style="padding-left: {{ fila.nivel * 14 }}px">
+          {% if fila.es_hito %}<i class="marca-hito" title="Hito (0 días)">◆</i>{% endif %}
+          <input id="tit-{{ t.id }}" name="titulo" value="{{ t.titulo }}" maxlength="200"
+                 class="celda {{ 'negrita' if fila.es_resumen }}" autocomplete="off" required>
         </span>
-      </div>
+        <span class="c-resp">
+          <input id="res-{{ t.id }}" name="responsable" value="{{ t.responsable }}"
+                 maxlength="120" class="celda" autocomplete="off">
+        </span>
+        <span class="c-pred">
+          <input id="pre-{{ t.id }}" name="predecesoras" value="{{ fila.predecesoras_texto }}"
+                 class="celda mono" autocomplete="off" placeholder="—"
+                 title="Códigos separados por coma. 1.3 · 1.3+2 espera 2 días · 1.3-1 solapa 1"
+                 {{ 'disabled' if fila.es_resumen }}>
+        </span>
+        <span class="c-dias">
+          {% if fila.es_resumen %}
+            <span class="celda calculada">—</span>
+          {% else %}
+            <input id="dur-{{ t.id }}" name="duracion" value="{{ t.duracion }}" type="number"
+                   min="0" max="3650" class="celda mono" title="0 = hito">
+          {% endif %}
+        </span>
+        <span class="c-fecha">
+          {% if fila.es_resumen or fila.tiene_predecesoras %}
+            <span class="celda calculada"
+                  title="{{ 'La calcula el rollup de sus subtareas' if fila.es_resumen else 'La manda la dependencia' }}">{{ fila.inicio | fecha }}</span>
+          {% else %}
+            <input id="ini-{{ t.id }}" name="inicio" type="date" class="celda"
+                   value="{{ t.snet.isoformat() if t.snet else (fila.inicio.isoformat() if fila.inicio else '') }}"
+                   title="Sin predecesoras: la fecha la ponés vos">
+          {% endif %}
+        </span>
+        <span class="c-fecha"><span class="celda calculada">{{ fila.fin | fecha }}</span></span>
+        <span class="c-crit">
+          <span class="celda calculada {{ 'es-critica' if fila.critica }}"
+                title="{{ 'Holgura %sd' % fila.holgura if not fila.es_resumen else '' }}">
+            {{ 'Sí' if fila.critica else 'No' }}
+          </span>
+        </span>
+        <span class="c-ops">
+          <button type="button" class="icono" title="Insertar fila debajo"
+                  hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ t.id }}/insertar"
+                  hx-target="#tablero" hx-swap="innerHTML">+</button>
+          <button type="button" class="icono" title="Indentar (hacerla subtarea)"
+                  hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ t.id }}/indentar"
+                  hx-target="#tablero" hx-swap="innerHTML">→</button>
+          <button type="button" class="icono" title="Desindentar"
+                  hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ t.id }}/desindentar"
+                  hx-target="#tablero" hx-swap="innerHTML">←</button>
+          <button type="button" class="icono" title="Borrar"
+                  hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ t.id }}/eliminar"
+                  hx-target="#tablero" hx-swap="innerHTML"
+                  hx-confirm="¿Borrar «{{ t.titulo }}» y sus subtareas?">✕</button>
+        </span>
+      </form>
     {% endfor %}
   </div>
 
@@ -76,30 +115,3 @@
     {% endif %}
   </div>
 </div>
-
-<div id="panel-edicion"></div>
-
-{% set con_deps = filas | selectattr('predecesoras') | list %}
-{% if con_deps %}
-  <section class="tarjeta">
-    <h2>Dependencias</h2>
-    <ul class="lista-deps">
-      {% for fila in con_deps %}
-        {% for dep in fila.predecesoras %}
-          <li>
-            <span>
-              <strong>{{ fila.tarea.titulo }}</strong> arranca cuando termina
-              <strong>{{ (filas | selectattr('tarea.id', 'equalto', dep.predecessor_id) | first).tarea.titulo }}</strong>
-              {% if dep.lag > 0 %}+ {{ dep.lag }} días hábiles
-              {% elif dep.lag < 0 %}con {{ -dep.lag }} días de solape{% endif %}
-            </span>
-            <form hx-post="/proyectos/{{ proyecto.id }}/dependencias/{{ dep.id }}/eliminar"
-                  hx-target="#tablero" hx-swap="innerHTML" class="en-linea">
-              <button class="icono" type="submit" title="Quitar dependencia">✕</button>
-            </form>
-          </li>
-        {% endfor %}
-      {% endfor %}
-    </ul>
-  </section>
-{% endif %}
