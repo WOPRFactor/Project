@@ -239,3 +239,14 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .contradicciones code { background: var(--fondo); border: 1px solid var(--borde); border-radius: 4px; padding: 1px 5px; color: var(--texto); }
 .en-linea-check { display: flex; align-items: flex-start; gap: 8px; font-size: .86rem; color: var(--texto); }
 .en-linea-check input { width: auto; margin-top: 3px; }
+
+/* El arranque del proyecto se edita en el resumen: mover esa fecha recalcula todo. */
+.resumen .dato.editable { margin: 0; }
+.resumen .dato.editable input[type=date] {
+  margin: 0; padding: 1px 4px; font-size: .95rem; font-weight: 600;
+  background: transparent; border: 1px solid transparent; border-radius: 4px;
+  color: var(--texto); font-variant-numeric: tabular-nums;
+}
+.resumen .dato.editable input[type=date]:hover { border-color: var(--borde); }
+.resumen .dato.editable input[type=date]:focus { border-color: var(--acento); background: var(--fondo); outline: none; }
+.resumen .dato.editable input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.6); }

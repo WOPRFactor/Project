@@ -7,10 +7,16 @@
 
 {% if filas %}
   <div class="resumen">
-    <div class="dato">
-      <span class="etiqueta">Inicio</span>
-      <strong>{{ resumen.inicio | fecha }}</strong>
-    </div>
+    <form class="dato editable" hx-post="/proyectos/{{ proyecto.id }}/inicio"
+          hx-trigger="change" hx-target="#tablero" hx-swap="innerHTML">
+      <span class="etiqueta">Inicio del proyecto</span>
+      <input id="inicio-proyecto" type="date" name="fecha_inicio"
+             value="{{ proyecto.fecha_inicio.isoformat() }}"
+             title="Cambiala y todo el cronograma se recalcula">
+      {% if resumen.inicio and resumen.inicio != proyecto.fecha_inicio %}
+        <span class="tenue">primera tarea: {{ resumen.inicio | fecha }}</span>
+      {% endif %}
+    </form>
     <div class="dato">
       <span class="etiqueta">Fin</span>
       <strong>{{ resumen.fin | fecha }}</strong>

@@ -89,7 +89,8 @@ en el lugar y cada cambio recalcula el cronograma entero. No hay formularios apa
   la holgura en días. Nunca se pisan entre sí.
 - Arriba de la grilla, el **resumen** muestra inicio, fin, duración total en días
   hábiles, tareas, hitos y avance. Vive dentro del tablero para recalcularse en
-  cada cambio.
+  cada cambio. La **fecha de inicio del proyecto se edita ahí mismo**: moverla
+  recalcula todas las fechas conservando duraciones y dependencias.
 - **Inicio** solo es editable si la tarea no tiene predecesoras; si las tiene, la fecha
   la manda la dependencia y se muestra en gris.
 - Las **predecesoras se escriben por código WBS**: `1.3`, `1.3+2` (espera 2 días

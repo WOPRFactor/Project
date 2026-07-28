@@ -26,6 +26,10 @@ Flujo: creás un proyecto con su fecha de inicio, cargás tareas (indentándolas
 subtareas si querés), y vinculás las que dependen entre sí. Cada cambio recalcula todo
 el cronograma y repinta el timeline sin recargar la página.
 
+La **fecha de inicio del proyecto se edita en el resumen**, arriba de la grilla: si el
+arranque se corre, todas las fechas se recalculan solas manteniendo las duraciones y las
+dependencias.
+
 Lo que ves en el timeline:
 
 - **Barras azules** — tareas con holgura.

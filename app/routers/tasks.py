@@ -11,12 +11,13 @@ from sqlmodel import Session
 
 from ..db import get_session
 from ..models import EstadoTarea
-from ..schemas import TareaIn
+from ..schemas import ProyectoIn, TareaIn
 from ..services import arbol as arbol_service
 from ..services import importar_aplicar
 from ..services import importar_excel
 from ..services import importar_texto
 from ..services import predecesoras as predecesoras_service
+from ..services import projects as projects_service
 from ..services import tasks as tasks_service
 from ..services.tasks import TareaInvalida
 from ._tablero import render
@@ -116,6 +117,40 @@ def eliminar(
 ) -> HTMLResponse:
     tasks_service.eliminar(session, task_id, promover_hijas=promover)
     return render(request, session, project_id)
+
+
+@router.post("/inicio", response_class=HTMLResponse)
+def cambiar_inicio(
+    project_id: int,
+    request: Request,
+    fecha_inicio: str = Form(...),
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    """Mueve el arranque del proyecto: todo el cronograma se recalcula detrás."""
+    proyecto = projects_service.obtener(session, project_id)
+    if proyecto is None:
+        return render(request, session, project_id, aviso="Ese proyecto ya no existe")
+    try:
+        nueva = date.fromisoformat(fecha_inicio.strip())
+    except ValueError:
+        return render(request, session, project_id, aviso="Esa fecha no es válida")
+
+    anterior = proyecto.fecha_inicio
+    projects_service.actualizar(
+        session,
+        project_id,
+        ProyectoIn(
+            nombre=proyecto.nombre,
+            descripcion=proyecto.descripcion,
+            fecha_inicio=nueva,
+            estado=proyecto.estado,
+        ),
+    )
+    corrimiento = (nueva - anterior).days
+    aviso = None if not corrimiento else (
+        f"Arranque movido {corrimiento:+d} días: el cronograma se recalculó entero"
+    )
+    return render(request, session, project_id, aviso=aviso)
 
 
 @router.post("/renumerar", response_class=HTMLResponse)

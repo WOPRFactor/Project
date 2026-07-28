@@ -270,3 +270,37 @@ def test_titulo_vacio_no_rompe_la_grilla(cliente):
     respuesta = celda(cliente, 1, titulo="   ")
     assert respuesta.status_code == 200
     assert "Traceback" not in respuesta.text
+
+
+def test_mover_el_arranque_recalcula_todo(cliente):
+    crear_proyecto(cliente, "Obra", inicio="2026-01-05")
+    for _ in range(2):
+        cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, codigo="1", titulo="A", duracion=3)
+    respuesta = celda(cliente, 2, codigo="2", titulo="B", duracion=2, predecesoras="1")
+    assert "08/01/2026" in respuesta.text   # B arranca tras A
+
+    # se mueve el arranque un mes: todo el encadenado se corre
+    movido = cliente.post("/proyectos/1/inicio", data={"fecha_inicio": "2026-02-02"})
+    assert movido.status_code == 200
+    assert "02/02/2026" in movido.text     # A
+    assert "05/02/2026" in movido.text     # B, tres días hábiles después
+    assert "08/01/2026" not in movido.text
+    assert "Arranque movido" in movido.text
+
+
+def test_mover_el_arranque_a_un_fin_de_semana_corre_al_lunes(cliente):
+    crear_proyecto(cliente, "Obra", inicio="2026-01-05")
+    cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, codigo="1", titulo="A", duracion=1)
+    movido = cliente.post("/proyectos/1/inicio", data={"fecha_inicio": "2026-02-07"})
+    assert "09/02/2026" in movido.text     # sábado 07 → lunes 09
+
+
+def test_una_fecha_de_arranque_invalida_no_rompe(cliente):
+    crear_proyecto(cliente, "Obra")
+    cliente.post("/proyectos/1/tareas/agregar")
+    respuesta = cliente.post("/proyectos/1/inicio", data={"fecha_inicio": "no-es-fecha"})
+    assert respuesta.status_code == 200
+    assert "no es válida" in respuesta.text
+    assert "Traceback" not in respuesta.text
