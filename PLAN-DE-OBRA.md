@@ -184,6 +184,42 @@ antes de crear nada; y pegado de texto indentado para la carga rápida. Suma
 avisos, el cronograma calcula sin errores, y una base de la versión anterior sigue
 abriendo. ✔ Verificado en navegador; 125 tests.
 
+### Fase 7 — La grilla es la aplicación ✔
+Ariel corrigió el rumbo: editar en formularios aparte no es trabajar como en Project o
+Smartsheet. Toda la edición pasa a la grilla —WBS, Tarea, Resp., Predec., Días, Inicio,
+Crít.— con recálculo del cronograma entero en cada celda. Las predecesoras se escriben por
+**código WBS** (`1.3`, `1.3+2`), y esa celda es la fuente de verdad. Inicio solo editable
+sin predecesoras. Detalle de las reglas en la sección *La grilla* de CLAUDE.md.
+**Hecho cuando:** un proyecto se carga entero sin salir de la grilla y cada cambio repinta
+el Gantt recalculado. ✔
+
+### Fase 8 — Tipos de dependencia y planilla que se contradice ✔
+Suma **SS y FF** al motor: el trabajo que corre *en paralelo* declarado como FS empujaba el
+cronograma. Y `services/importar_diagnostico.py`, que compara **relaciones y no fechas
+absolutas** para detectar dependencias mal declaradas. Separa lo estructural (se corrige
+solo) de las fechas puestas a mano (se reportan, no se tocan): convertirlas en lag duro
+reproduce la planilla pero congela el accidente.
+**Hecho cuando:** las tres tareas en paralelo de la planilla real se detectan como SS y el
+corrector no ancla el cronograma con lags inventados. ✔
+
+### Fase 9 — Ámbitos, tres escenarios y resumen honesto ✔
+Nace de un hallazgo de Ariel: el proyecto "duraba" 14,7 meses por 120 días de
+acompañamiento posterior que nada bloqueaba. Suma **ámbito** por tarea (proyecto /
+seguimiento / control) con un contador propio cada uno, **estimación a tres puntos** para
+las duraciones que son estadística y no dato (la búsqueda de personal), y un resumen que
+distingue **ventana** (calendario, se superponen) de **esfuerzo** (suma de tareas). La
+holgura pasa a medirse contra el fin del **ámbito**, no del proyecto: si no, el
+acompañamiento le regala meses de margen falso al alcance comprometido.
+**Hecho cuando:** el alcance comprometido se lee separado del seguimiento y ninguna tarea
+muestra holgura que no tiene. ✔ 224 tests.
+
+## Qué sigue
+
+Las fases 10 en adelante —multiusuario e informes— están en **`PLAN-DE-MEJORAS.md`**. Ese
+documento cambia la clasificación del proyecto: deja de ser una herramienta personal local
+y pasa a ser un servicio con datos de terceros, con una puerta de seguridad dura antes de
+exponer nada.
+
 ## Prompts para Code
 
 Uno por fase, en orden; cada uno asume el anterior terminado.
