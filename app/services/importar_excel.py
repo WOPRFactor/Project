@@ -37,6 +37,12 @@ _COLUMNAS = {
     "criticidad": "critica",
     "_tipo": "tipo",
     "tipo": "tipo",
+    "inicio": "inicio",
+    "comienzo": "inicio",
+    "fin": "fin",
+    "final": "fin",
+    "termino": "fin",
+    "término": "fin",
 }
 _AFIRMATIVOS = {"si", "sí", "s", "yes", "y", "true", "verdadero", "x", "1"}
 _VACIAS_SEGUIDAS = 15
@@ -147,6 +153,8 @@ def _armar_fila(
         responsable=_texto(celdas.get("responsable")),
         critica=_texto(celdas.get("critica")).lower() in _AFIRMATIVOS,
         predecesoras=predecesoras,
+        inicio_declarado=_fecha(celdas.get("inicio")),
+        fin_declarado=_fecha(celdas.get("fin")),
         nivel=wbs.count(".") if wbs else 0,
     )
 
@@ -168,6 +176,13 @@ def _codigo(valor, numero: int, campo: str, avisos: list[str]) -> str:
         return recuperado
     texto = _texto(valor)
     return texto.rstrip(".") if texto else ""
+
+
+def _fecha(valor) -> datetime.date | None:
+    """Solo se usa para diagnosticar; nunca para fijar el cronograma."""
+    if isinstance(valor, datetime.datetime):
+        return valor.date()
+    return valor if isinstance(valor, datetime.date) else None
 
 
 def _texto(valor) -> str:

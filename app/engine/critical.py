@@ -5,11 +5,13 @@ crítica cuando su holgura es cero: atrasarla atrasa el fin del proyecto.
 """
 
 from __future__ import annotations
+from datetime import date
+
 
 from . import graph
 from .calendar import contar_habiles, sumar_habiles
 from .scheduler import salto_tras
-from .types import DependencyEdge, Schedule, TaskNode
+from .types import DependencyEdge, Schedule, TaskNode, TipoDependencia
 
 
 def marcar(
@@ -43,20 +45,42 @@ def _holgura_de_hojas(
     salientes = graph.sucesoras_por_tarea(aristas)
     orden = graph.orden_topologico([n.id for n in hojas], aristas)
     fin_proyecto = max(schedule.tareas[i].fin for i in orden)
-    inicio_tardio: dict[int, object] = {}
+    inicio_tardio: dict[int, date] = {}
+    fin_tardio_de: dict[int, date] = {}
 
     for task_id in reversed(orden):
         tarea = schedule.tareas[task_id]
-        fin_tardio = fin_proyecto
-        salto = salto_tras(por_id[task_id])
-        for arista in salientes.get(task_id, []):
-            tardio_sucesora = inicio_tardio[arista.successor_id]
-            fin_tardio = min(fin_tardio, sumar_habiles(tardio_sucesora, -(salto + arista.lag)))
+        nodo = por_id[task_id]
+        duracion = max(nodo.duracion, 1)
 
-        duracion = max(por_id[task_id].duracion, 1)
+        fin_tardio = fin_proyecto
+        for arista in salientes.get(task_id, []):
+            fin_tardio = min(
+                fin_tardio,
+                _tope_por_sucesora(arista, nodo, duracion, inicio_tardio, fin_tardio_de),
+            )
+
+        fin_tardio_de[task_id] = fin_tardio
         inicio_tardio[task_id] = sumar_habiles(fin_tardio, -(duracion - 1))
         tarea.holgura = max(contar_habiles(tarea.fin, fin_tardio) - 1, 0)
         tarea.critica = tarea.holgura == 0
+
+
+def _tope_por_sucesora(
+    arista: DependencyEdge,
+    nodo: TaskNode,
+    duracion: int,
+    inicio_tardio: dict[int, date],
+    fin_tardio_de: dict[int, date],
+) -> date:
+    """Hasta cuándo puede estirarse la predecesora sin mover a esta sucesora."""
+    if arista.tipo is TipoDependencia.SS:
+        tope_inicio = sumar_habiles(inicio_tardio[arista.successor_id], -arista.lag)
+        return sumar_habiles(tope_inicio, duracion - 1)
+    if arista.tipo is TipoDependencia.FF:
+        return sumar_habiles(fin_tardio_de[arista.successor_id], -arista.lag)
+    salto = salto_tras(nodo)
+    return sumar_habiles(inicio_tardio[arista.successor_id], -(salto + arista.lag))
 
 
 def _holgura_de_resumenes(

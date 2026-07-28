@@ -165,7 +165,7 @@ def _vincular(
                     "se escribe 1.3 o 1.3+2"
                 )
                 continue
-            codigo, lag = referencia
+            codigo, lag, tipo = referencia
             origen = por_wbs.get(codigo)
             if origen is None:
                 avisos.append(
@@ -177,7 +177,12 @@ def _vincular(
                 dependencies_service.crear(
                     session,
                     project_id,
-                    DependenciaIn(predecessor_id=origen, successor_id=destino, lag=lag),
+                    DependenciaIn(
+                        predecessor_id=origen,
+                        successor_id=destino,
+                        lag=lag,
+                        tipo=tipo,
+                    ),
                 )
             except TareaInvalida as error:
                 avisos.append(f"«{fila.titulo}» ← WBS {codigo}: {error}")

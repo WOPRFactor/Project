@@ -46,8 +46,10 @@ la pantalla sin scrollear kilómetros.
 - Duración en **días hábiles** (lunes a viernes; sin feriados todavía).
 - **Duración 0 = hito**: inicio y fin el mismo día, y no consume tiempo — lo que
   depende de un hito arranca el mismo día que el hito.
-- Dependencias **solo Fin→Inicio**, con lag en días hábiles: positivo espera, negativo
-  solapa. Solo entre tareas sin subtareas.
+- Tres tipos de dependencia, entre tareas sin subtareas:
+  **Fin→Inicio** (`1.3`, el normal), **Inicio→Inicio** (`1.3SS`, arrancan juntas) y
+  **Fin→Fin** (`1.3FF`, terminan juntas). El lag va pegado: `1.3+2` espera dos días
+  hábiles, `1.3SS-1` arranca uno antes.
 - Una tarea arranca en el máximo entre el inicio del proyecto, su restricción SNET, y
   (fin de cada predecesora + 1 día hábil + lag). Nada arranca antes del inicio del
   proyecto, ni con lag negativo.
@@ -76,12 +78,17 @@ las calcula la app.
 Si el archivo tiene varias hojas, elegís cuál; por default toma la última que tenga las
 columnas de tareas, salteando hojas de notas o ayuda.
 
-Dos cosas del mundo real que el importador resuelve y **te reporta**:
+Tres cosas del mundo real que el importador resuelve y **te reporta**:
 
 - Excel suele convertir un WBS como `4.6` en la fecha `2026-06-04`. La conversión es
   reversible sin ambigüedad, así que se repara y queda anotado en los avisos.
 - Una predecesora que apunta a un WBS que no está en la planilla no se crea, y te dice
   cuál era.
+- **Fechas que contradicen a las dependencias.** Las columnas Inicio/Fin no se importan
+  —el cronograma lo calcula el motor— pero sí se leen para detectar cuándo la planilla
+  dice una cosa en Predec. y otra en las fechas. El caso típico: dos tareas declaradas
+  en serie que figuran arrancando el mismo día, que en realidad son Inicio→Inicio. La
+  previsualización te lo muestra y ofrece corregirlo.
 
 **Pegando texto.** Una tarea por línea; la indentación (tabs o espacios) arma el árbol,
 el número al final es la duración en días hábiles y `@alguien` el responsable. Una línea

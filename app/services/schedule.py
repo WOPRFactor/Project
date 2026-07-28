@@ -8,7 +8,15 @@ from __future__ import annotations
 
 from sqlmodel import Session, select
 
-from ..engine import DependencyEdge, Schedule, ScheduleError, TaskNode, calcular as motor_calcular, marcar
+from ..engine import (
+    DependencyEdge,
+    Schedule,
+    ScheduleError,
+    TaskNode,
+    TipoDependencia,
+    calcular as motor_calcular,
+    marcar,
+)
 from ..models import Dependency, Project, Task
 
 
@@ -32,6 +40,7 @@ def _aristas(dependencias: list[Dependency]) -> list[DependencyEdge]:
             predecessor_id=d.predecessor_id,
             successor_id=d.successor_id,
             lag=d.lag,
+            tipo=TipoDependencia(d.tipo.value),
         )
         for d in dependencias
     ]

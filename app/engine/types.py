@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date
+from enum import Enum
 
 
 @dataclass(frozen=True)
@@ -29,13 +30,36 @@ class TaskNode:
         return self.duracion == 0
 
 
+class TipoDependencia(str, Enum):
+    """Qué extremo de cada tarea se vincula.
+
+    FS es lo normal (una empieza cuando termina la otra). SS existe para el trabajo
+    que corre *en paralelo* a otro —supervisar mientras se ejecuta, por ejemplo—, que
+    sin este tipo hay que declararlo mal como FS y empuja el cronograma. FF es para lo
+    que tiene que terminar junto con otra cosa.
+    """
+
+    FS = "FS"  # Fin → Inicio: arranca cuando termina la predecesora
+    SS = "SS"  # Inicio → Inicio: arrancan juntas
+    FF = "FF"  # Fin → Fin: terminan juntas
+
+    @property
+    def etiqueta(self) -> str:
+        return {
+            TipoDependencia.FS: "cuando termina",
+            TipoDependencia.SS: "cuando arranca",
+            TipoDependencia.FF: "para terminar con",
+        }[self]
+
+
 @dataclass(frozen=True)
 class DependencyEdge:
-    """Dependencia Fin→Inicio con lag en días hábiles (negativo = solape)."""
+    """Dependencia con lag en días hábiles (negativo = adelanta)."""
 
     predecessor_id: int
     successor_id: int
     lag: int = 0
+    tipo: TipoDependencia = TipoDependencia.FS
 
 
 @dataclass

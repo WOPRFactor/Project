@@ -40,9 +40,13 @@ Dirección de dependencias única: `routers → services → engine | models/db`
 - Tarea con hijas = *resumen*: sin duración propia, fechas por rollup (envolvente).
 - Duración 0 = **hito**: inicio y fin el mismo día, y no consume tiempo — lo que
   depende de un hito arranca el mismo día que el hito (`scheduler.salto_tras`).
-- Dependencias solo **Fin→Inicio con lag** (en días hábiles, puede ser negativo = solape)
-  y solo entre tareas hoja. Ciclos: detectados y rechazados al guardar, con error claro
-  — jamás un 500 ni un loop.
+- Dependencias **FS / SS / FF con lag** (días hábiles, negativo = adelanta), solo entre
+  tareas hoja. SS existe porque el trabajo que corre *en paralelo* a otro (supervisar
+  mientras se ejecuta) declarado como FS empuja el cronograma. Ciclos: detectados y
+  rechazados al guardar, con error claro — jamás un 500 ni un loop.
+- **El import no confía en las fechas de la planilla, pero tampoco las tira.** Las usa
+  para detectar dependencias mal declaradas (`services/importar_diagnostico.py`): compara
+  *relaciones*, no fechas absolutas, así un corrimiento global no genera ruido.
 - Duración en **días hábiles** (L-V, sin feriados en v1). Restricción opcional por
   tarea: "no arrancar antes de X" (SNET).
 - Recálculo total del cronograma en cada cambio — no optimizar lo que no duele.

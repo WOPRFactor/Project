@@ -11,7 +11,13 @@ from datetime import date
 
 from . import graph
 from .calendar import fin_desde_inicio, siguiente_habil, sumar_habiles
-from .types import DependencyEdge, Schedule, ScheduledTask, TaskNode
+from .types import (
+    DependencyEdge,
+    Schedule,
+    ScheduledTask,
+    TaskNode,
+    TipoDependencia,
+)
 
 
 def salto_tras(predecesora: TaskNode) -> int:
@@ -21,6 +27,22 @@ def salto_tras(predecesora: TaskNode) -> int:
     Un hito no consume tiempo: lo que dependa de él arranca el mismo día.
     """
     return 0 if predecesora.es_hito else 1
+
+
+def inicio_exigido(
+    arista: DependencyEdge,
+    previa: ScheduledTask,
+    nodo_previo: TaskNode,
+    nodo: TaskNode,
+) -> date:
+    """Primer día en que la sucesora puede arrancar según esta dependencia."""
+    if arista.tipo is TipoDependencia.SS:
+        return sumar_habiles(previa.inicio, arista.lag)
+    if arista.tipo is TipoDependencia.FF:
+        # Tiene que terminar con la otra: se despeja el inicio desde ese fin.
+        fin_minimo = sumar_habiles(previa.fin, arista.lag)
+        return sumar_habiles(fin_minimo, -(max(nodo.duracion, 1) - 1))
+    return sumar_habiles(previa.fin, salto_tras(nodo_previo) + arista.lag)
 
 
 def calcular(
@@ -67,9 +89,11 @@ def _forward_pass(
         nodo = por_id[task_id]
         inicio = arranque
         for arista in entrantes.get(task_id, []):
-            fin_previo = schedule.tareas[arista.predecessor_id].fin
-            salto = salto_tras(por_id[arista.predecessor_id])
-            inicio = max(inicio, sumar_habiles(fin_previo, salto + arista.lag))
+            previa = schedule.tareas[arista.predecessor_id]
+            inicio = max(
+                inicio,
+                inicio_exigido(arista, previa, por_id[arista.predecessor_id], nodo),
+            )
         if nodo.snet is not None:
             inicio = max(inicio, siguiente_habil(nodo.snet))
         inicio = siguiente_habil(max(inicio, arranque))

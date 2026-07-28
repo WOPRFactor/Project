@@ -26,6 +26,10 @@ class FilaImportada:
     critica: bool = False
     predecesoras: list[str] = field(default_factory=list)
     nivel: int = 0
+    # Fechas que trae la planilla. No se importan (las calcula el motor), pero
+    # sirven para detectar cuándo contradicen a las dependencias declaradas.
+    inicio_declarado: date | None = None
+    fin_declarado: date | None = None
 
     @property
     def es_hito(self) -> bool:
@@ -56,7 +60,14 @@ MAX_PREDECESORAS = 50
 
 def a_json(importacion: Importacion) -> str:
     """Serializa la previsualización para que viaje en un campo oculto del formulario."""
-    return json.dumps([asdict(f) for f in importacion.filas], ensure_ascii=False)
+    crudas = []
+    for fila in importacion.filas:
+        datos = asdict(fila)
+        for campo in ("inicio_declarado", "fin_declarado"):
+            valor = datos.get(campo)
+            datos[campo] = valor.isoformat() if valor else None
+        crudas.append(datos)
+    return json.dumps(crudas, ensure_ascii=False)
 
 
 def desde_json(carga: str) -> Importacion | None:
@@ -95,9 +106,18 @@ def desde_json(carga: str) -> Importacion | None:
                     for p in (predecesoras if isinstance(predecesoras, list) else [])
                 ][:MAX_PREDECESORAS],
                 nivel=_entero(cruda.get("nivel"), 0, 0, 20),
+                inicio_declarado=_fecha(cruda.get("inicio_declarado")),
+                fin_declarado=_fecha(cruda.get("fin_declarado")),
             )
         )
     return importacion
+
+
+def _fecha(valor) -> date | None:
+    try:
+        return date.fromisoformat(valor) if isinstance(valor, str) else None
+    except ValueError:
+        return None
 
 
 def _entero(valor, default: int, minimo: int, maximo: int) -> int:

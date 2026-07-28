@@ -7,6 +7,7 @@ from sqlmodel import Session
 
 from app.schemas import TareaIn
 from app.services import arbol as arbol_service
+from app.services import dependencies as dependencies_service
 from app.services import predecesoras as predecesoras_service
 from app.services import schedule as schedule_service
 from app.services import tasks as tasks_service
@@ -163,3 +164,51 @@ def test_cambiar_el_lag_no_duplica_la_dependencia(session: Session, proyecto):
     predecesoras_service.guardar(session, proyecto.id, b.id, a.codigo)
     predecesoras_service.guardar(session, proyecto.id, b.id, f"{a.codigo}+4")
     assert predecesoras_service.texto_de(session, proyecto.id, b.id) == "1+4"
+
+
+# --- notación de tipos de dependencia en la celda ---
+
+def test_ss_se_escribe_pegado_al_codigo(session: Session, proyecto):
+    a = agregar(session, proyecto, "Ejecución", duracion=30)
+    b = agregar(session, proyecto, "Supervisión", duracion=30)
+    avisos = predecesoras_service.guardar(session, proyecto.id, b.id, f"{a.codigo}SS")
+    assert avisos == []
+    plan = schedule_service.calcular(session, proyecto.id)
+    assert plan.get(a.id).inicio == plan.get(b.id).inicio
+
+
+def test_ff_se_escribe_pegado_al_codigo(session: Session, proyecto):
+    a = agregar(session, proyecto, "Larga", duracion=10)
+    b = agregar(session, proyecto, "Cierra con la larga", duracion=3)
+    predecesoras_service.guardar(session, proyecto.id, b.id, f"{a.codigo}FF")
+    plan = schedule_service.calcular(session, proyecto.id)
+    assert plan.get(a.id).fin == plan.get(b.id).fin
+
+
+def test_el_tipo_y_el_lag_conviven(session: Session, proyecto):
+    a = agregar(session, proyecto, "A", duracion=10)
+    b = agregar(session, proyecto, "B", duracion=3)
+    predecesoras_service.guardar(session, proyecto.id, b.id, f"{a.codigo}SS+2")
+    assert predecesoras_service.texto_de(session, proyecto.id, b.id) == "1SS+2"
+
+
+def test_la_celda_muestra_el_tipo_que_guardaste(session: Session, proyecto):
+    a = agregar(session, proyecto, "A", duracion=5)
+    b = agregar(session, proyecto, "B", duracion=5)
+    for escrito, esperado in [("1SS", "1SS"), ("1FF-1", "1FF-1"), ("1", "1"), ("1+3", "1+3")]:
+        predecesoras_service.guardar(session, proyecto.id, b.id, escrito)
+        assert predecesoras_service.texto_de(session, proyecto.id, b.id) == esperado
+
+
+def test_cambiar_de_tipo_no_duplica_la_dependencia(session: Session, proyecto):
+    a = agregar(session, proyecto, "A", duracion=5)
+    b = agregar(session, proyecto, "B", duracion=5)
+    predecesoras_service.guardar(session, proyecto.id, b.id, a.codigo)
+    predecesoras_service.guardar(session, proyecto.id, b.id, f"{a.codigo}SS")
+    assert len(dependencies_service.listar(session, proyecto.id)) == 1
+
+
+def test_un_tipo_inventado_avisa(session: Session, proyecto):
+    a = agregar(session, proyecto, "A")
+    avisos = predecesoras_service.guardar(session, proyecto.id, a.id, "1XY")
+    assert "no se entiende" in avisos[0]

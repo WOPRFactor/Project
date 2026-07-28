@@ -15,6 +15,7 @@ from ..engine.calendar import contar_habiles
 from ..engine.timeline import Grilla, ancho_columna, barra, construir_grilla
 from ..models import Dependency, Task
 from . import dependencies as dependencies_service
+from . import predecesoras as predecesoras_service
 from . import schedule as schedule_service
 from . import tasks as tasks_service
 
@@ -69,15 +70,13 @@ class VistaProyecto:
 
 
 def _texto_predecesoras(deps: list[Dependency], codigos: dict[int, str]) -> str:
-    """Lo que se ve en la celda: `1.3, 2.1+2`."""
-    partes = []
-    for dep in deps:
-        codigo = codigos.get(dep.predecessor_id) or str(dep.predecessor_id)
-        if dep.lag > 0:
-            codigo += f"+{dep.lag}"
-        elif dep.lag < 0:
-            codigo += str(dep.lag)
-        partes.append(codigo)
+    """Lo que se ve en la celda: `1.3, 2.1SS+2`."""
+    partes = [
+        predecesoras_service.escribir(
+            codigos.get(d.predecessor_id) or str(d.predecessor_id), d.lag, d.tipo
+        )
+        for d in deps
+    ]
     return ", ".join(sorted(partes))
 
 

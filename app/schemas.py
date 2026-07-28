@@ -10,7 +10,7 @@ from datetime import date
 
 from pydantic import BaseModel, Field, field_validator
 
-from .models import EstadoProyecto, EstadoTarea
+from .models import EstadoProyecto, EstadoTarea, TipoDependencia
 
 
 def _texto_obligatorio(valor: str) -> str:
@@ -63,6 +63,7 @@ class DependenciaIn(BaseModel):
     predecessor_id: int = Field(gt=0)
     successor_id: int = Field(gt=0)
     lag: int = Field(default=0, ge=-365, le=365)
+    tipo: TipoDependencia = TipoDependencia.FS
 
     @field_validator("successor_id")
     @classmethod

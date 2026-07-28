@@ -62,9 +62,18 @@ class Task(SQLModel, table=True):
     orden: int = Field(default=0)
 
 
+class TipoDependencia(str, Enum):
+    """Ver `engine.types.TipoDependencia`: acá solo se persiste."""
+
+    FS = "FS"
+    SS = "SS"
+    FF = "FF"
+
+
 class Dependency(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     project_id: int = Field(foreign_key="project.id", index=True)
     predecessor_id: int = Field(foreign_key="task.id", index=True)
     successor_id: int = Field(foreign_key="task.id", index=True)
     lag: int = Field(default=0, ge=-365, le=365)
+    tipo: TipoDependencia = Field(default=TipoDependencia.FS)

@@ -15,6 +15,7 @@ from sqlmodel import Session
 from ..db import get_session
 from ..services import importar as importar_service
 from ..services import importar_aplicar
+from ..services import importar_diagnostico as diagnostico_service
 from ..services import importar_excel, importar_texto
 from ..services import plantilla as plantilla_service
 from ..templating import templates
@@ -77,11 +78,16 @@ def confirmar(
     nombre: str = Form(...),
     fecha_inicio: date = Form(...),
     carga: str = Form(...),
+    corregir: str = Form(""),
     session: Session = Depends(get_session),
 ) -> Response:
     importacion = importar_service.desde_json(carga)
     if importacion is None or not importacion.filas:
         return _error(request, "Se perdió la previsualización. Volvé a cargar la fuente.")
+
+    if corregir.strip():
+        diagnostico = diagnostico_service.analizar(importacion)
+        diagnostico_service.aplicar_sugerencias(importacion, diagnostico)
 
     proyecto, avisos = importar_aplicar.aplicar(session, nombre, fecha_inicio, importacion)
     destino = f"/proyectos/{proyecto.id}"
@@ -102,6 +108,7 @@ def _preview(
         {
             "hoy": date.today(),
             "importacion": importacion,
+            "diagnostico": diagnostico_service.analizar(importacion),
             "carga": importar_service.a_json(importacion),
             "hojas": hojas or [],
             "hoja_elegida": hoja_elegida,

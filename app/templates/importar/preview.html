@@ -15,6 +15,27 @@
       </details>
     {% endif %}
 
+    {% if diagnostico and diagnostico.hay_algo %}
+      <details class="contradicciones" open>
+        <summary>
+          Las fechas de la planilla no coinciden con sus dependencias —
+          {{ diagnostico.resumen }}
+        </summary>
+        <p class="tenue pie">
+          Las fechas de la planilla no se importan (las calcula el motor), pero sirven
+          para detectar dependencias mal declaradas. Esto es lo que encontré:
+        </p>
+        <ul>
+          {% for d in diagnostico.discrepancias %}
+            <li>
+              <strong>{{ d.wbs }}</strong> {{ d.titulo[:60] }} — {{ d.motivo }}.
+              <code>{{ d.sugerencia }}</code>
+            </li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+
     <div class="tabla-preview">
       <div class="fila-preview cabecera">
         <span class="p-wbs">WBS</span>
@@ -45,6 +66,13 @@
       <label>Fecha de inicio
         <input type="date" name="fecha_inicio" required value="{{ hoy.isoformat() }}">
       </label>
+      {% if diagnostico and diagnostico.hay_algo %}
+        <label class="en-linea-check">
+          <input type="checkbox" name="corregir" value="1" checked>
+          Corregir las {{ diagnostico.discrepancias | length }} dependencias según lo
+          que muestran las fechas de la planilla
+        </label>
+      {% endif %}
       <button class="boton primario" type="submit">Crear el proyecto</button>
     </form>
   {% endif %}

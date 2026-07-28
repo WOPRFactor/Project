@@ -230,3 +230,12 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .avisos ul { margin: 10px 0 0; padding-left: 18px; color: var(--tenue); font-size: .84rem; }
 .avisos li { margin-bottom: 4px; }
 .confirmar { border-top: 1px solid var(--borde); padding-top: 16px; }
+
+/* Contradicciones detectadas al importar: fechas que no siguen a las dependencias. */
+.contradicciones { border: 1px solid var(--acento); border-radius: 8px; padding: 10px 14px; margin: 14px 0; }
+.contradicciones summary { cursor: pointer; color: var(--acento); font-size: .9rem; font-weight: 600; }
+.contradicciones ul { margin: 8px 0 0; padding-left: 18px; color: var(--tenue); font-size: .84rem; }
+.contradicciones li { margin-bottom: 6px; }
+.contradicciones code { background: var(--fondo); border: 1px solid var(--borde); border-radius: 4px; padding: 1px 5px; color: var(--texto); }
+.en-linea-check { display: flex; align-items: flex-start; gap: 8px; font-size: .86rem; color: var(--texto); }
+.en-linea-check input { width: auto; margin-top: 3px; }

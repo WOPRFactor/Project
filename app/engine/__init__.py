@@ -14,6 +14,7 @@ from .types import (
     ScheduleError,
     SummaryDependencyError,
     TaskNode,
+    TipoDependencia,
     TreeError,
 )
 
@@ -28,5 +29,6 @@ __all__ = [
     "CycleError",
     "DanglingReferenceError",
     "SummaryDependencyError",
+    "TipoDependencia",
     "TreeError",
 ]
