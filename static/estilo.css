@@ -250,3 +250,16 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .resumen .dato.editable input[type=date]:hover { border-color: var(--borde); }
 .resumen .dato.editable input[type=date]:focus { border-color: var(--acento); background: var(--fondo); outline: none; }
 .resumen .dato.editable input[type=date]::-webkit-calendar-picker-indicator { filter: invert(.6); }
+
+/* Flechas entre barras: el SVG se superpone a la pista sin capturar el mouse,
+   salvo en las líneas mismas, que muestran su tooltip. */
+.conexiones { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+.conexion {
+  fill: none; stroke: var(--tenue); stroke-width: 1.3;
+  opacity: .55; pointer-events: stroke;
+}
+.conexion:hover { opacity: 1; stroke: var(--acento); stroke-width: 2; }
+.conexion.critica { stroke: var(--critico); opacity: .8; }
+.conexion.tipo-SS, .conexion.tipo-FF { stroke-dasharray: 4 3; }
+.punta-flecha { fill: var(--tenue); }
+.punta-flecha.critica { fill: var(--critico); }

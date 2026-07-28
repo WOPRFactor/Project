@@ -102,6 +102,29 @@
             {% endfor %}
           </div>
         </div>
+        {% if flechas %}
+          <svg class="conexiones" width="{{ grilla.columnas * ancho_dia }}"
+               height="{{ alto_pista }}" aria-hidden="true">
+            <defs>
+              <marker id="punta" viewBox="0 0 8 8" refX="7" refY="4"
+                      markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0,0 L8,4 L0,8 z" class="punta-flecha"></path>
+              </marker>
+              <marker id="punta-critica" viewBox="0 0 8 8" refX="7" refY="4"
+                      markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M0,0 L8,4 L0,8 z" class="punta-flecha critica"></path>
+              </marker>
+            </defs>
+            {% for f in flechas %}
+              <polyline points="{{ f.puntos }}"
+                        class="conexion tipo-{{ f.tipo }} {{ 'critica' if f.critica }}"
+                        marker-end="url(#{{ 'punta-critica' if f.critica else 'punta' }})">
+                <title>{{ f.titulo }}</title>
+              </polyline>
+            {% endfor %}
+          </svg>
+        {% endif %}
+
         {% for fila in filas %}
           <div class="fila-barra">
             {% if fila.columnas %}

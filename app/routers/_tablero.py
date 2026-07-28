@@ -25,6 +25,8 @@ def contexto(session: Session, project_id: int) -> dict:
         "grilla": datos.grilla,
         "columna_hoy": datos.columna_hoy,
         "resumen": datos.resumen,
+        "flechas": datos.flechas,
+        "alto_pista": datos.alto_pista,
         "ancho_dia": datos.ancho_dia,
         "error_motor": datos.error,
         "hojas": [f.tarea for f in datos.filas if not f.es_resumen],

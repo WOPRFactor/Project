@@ -122,6 +122,58 @@ def ancho_columna(columnas: int) -> int:
     return 6
 
 
+@dataclass(frozen=True)
+class Extremo:
+    """Dónde está una barra: sus columnas (1-based, fin exclusivo) y su fila."""
+
+    columna_inicio: int
+    columna_fin: int
+    fila: int
+
+
+# Cuánto se separa la línea del borde de la barra antes de doblar.
+_CODO = 7
+
+
+def flecha(
+    tipo: str,
+    desde: Extremo,
+    hasta: Extremo,
+    ancho_dia: int,
+    alto_fila: int,
+    cabecera: int,
+) -> str:
+    """Puntos de la polilínea que une dos barras, en coordenadas del SVG.
+
+    El tipo decide de qué extremos sale y entra, así la relación se *ve*: FS va del
+    fin de una al inicio de la otra, SS une los dos arranques, FF los dos finales.
+    """
+    y1 = cabecera + desde.fila * alto_fila + alto_fila // 2
+    y2 = cabecera + hasta.fila * alto_fila + alto_fila // 2
+    izq = lambda e: (e.columna_inicio - 1) * ancho_dia  # noqa: E731
+    der = lambda e: (e.columna_fin - 1) * ancho_dia  # noqa: E731
+
+    if tipo == "SS":
+        x1, x2 = izq(desde), izq(hasta)
+        puntos = [(x1, y1), (x1 - _CODO, y1), (x1 - _CODO, y2), (x2, y2)]
+    elif tipo == "FF":
+        x1, x2 = der(desde), der(hasta)
+        puntos = [(x1, y1), (x1 + _CODO, y1), (x1 + _CODO, y2), (x2, y2)]
+    else:
+        x1, x2 = der(desde), izq(hasta)
+        if x2 >= x1 + _CODO:
+            puntos = [(x1, y1), (x1 + _CODO, y1), (x1 + _CODO, y2), (x2, y2)]
+        else:
+            # La sucesora arranca antes de que la otra termine (solape): la línea
+            # rodea por el carril de abajo en vez de cruzar las barras.
+            carril = y1 + (alto_fila // 2) * (1 if y2 > y1 else -1)
+            puntos = [
+                (x1, y1), (x1 + _CODO, y1), (x1 + _CODO, carril),
+                (x2 - _CODO, carril), (x2 - _CODO, y2), (x2, y2),
+            ]
+    return " ".join(f"{x},{y}" for x, y in puntos)
+
+
 def barra(grilla: Grilla, inicio: date, fin: date) -> tuple[int, int] | None:
     """Columnas `grid-column: inicio / fin` (fin exclusivo) para una tarea."""
     desde = grilla.columna_de(inicio)

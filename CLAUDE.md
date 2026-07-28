@@ -33,7 +33,9 @@ Dirección de dependencias única: `routers → services → engine | models/db`
 - `app/models.py` — `Project`, `Task` (árbol vía `parent_id`), `Dependency`, enums.
 - `app/migraciones.py` — agrega al arranque las columnas nuevas a una base ya
   existente. Campo nuevo en un modelo = anda solo; renombrar o borrar necesita más.
-- `app/templates/` — Jinja2 con parciales para HTMX; el Gantt es HTML/CSS generado.
+- `app/templates/` — Jinja2 con parciales para HTMX; el Gantt es HTML/CSS generado, y
+  las flechas entre barras un SVG superpuesto cuya geometría calcula `engine/timeline.py`
+  (es geometría pura, se testea sin navegador).
 
 ## Reglas del motor (v1 — no ampliar sin tocar el plan)
 

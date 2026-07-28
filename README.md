@@ -39,6 +39,10 @@ Lo que ves en el timeline:
 - **Barras grises finas** — tareas resumen (las que tienen subtareas): su fecha es la
   envolvente de sus hijas, no se cargan a mano.
 - **Rombos ◆** — hitos: marcan un momento, no ocupan días.
+- **Flechas** — conectan cada tarea con las que dependen de ella. Salen y entran por
+  el extremo que corresponde al tipo, así la relación se ve: Fin→Inicio va del final de
+  una al arranque de la otra; Inicio→Inicio une los dos arranques y Fin→Fin los dos
+  finales (esas dos, punteadas). Rojas si unen tareas sin margen.
 - **Línea amarilla** — hoy, si cae dentro del rango del proyecto.
 - **⚑** — la tarea tiene una restricción "no arrancar antes de".
 

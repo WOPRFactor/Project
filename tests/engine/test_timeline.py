@@ -54,3 +54,46 @@ def test_los_meses_cubren_todas_las_columnas():
     grilla = construir_grilla(date(2026, 1, 26), date(2026, 2, 6))
     assert sum(m.dias for m in grilla.meses) == grilla.columnas
     assert [m.etiqueta for m in grilla.meses] == ["ene 2026", "feb 2026"]
+
+
+# --- flechas entre barras ---
+
+from app.engine.timeline import Extremo, flecha  # noqa: E402
+
+
+def puntos(texto):
+    return [tuple(int(v) for v in p.split(",")) for p in texto.split()]
+
+
+def test_fs_sale_del_fin_y_entra_por_el_inicio():
+    # barra A columnas 1..3 (fin exclusivo 4) fila 0; barra B columnas 5..6 fila 1
+    p = puntos(flecha("FS", Extremo(1, 4, 0), Extremo(5, 7, 1), 10, 30, 40))
+    assert p[0] == (30, 55)      # fin de A: columna 4 → x=30
+    assert p[-1] == (40, 85)     # inicio de B: columna 5 → x=40
+    assert p[0][1] != p[-1][1]   # baja de fila
+
+
+def test_ss_conecta_los_dos_arranques():
+    p = puntos(flecha("SS", Extremo(3, 8, 0), Extremo(3, 6, 1), 10, 30, 40))
+    assert p[0] == (20, 55)      # inicio de A
+    assert p[-1] == (20, 85)     # inicio de B
+    assert p[1][0] < p[0][0]     # sale hacia la izquierda
+
+
+def test_ff_conecta_los_dos_finales():
+    p = puntos(flecha("FF", Extremo(1, 9, 0), Extremo(5, 9, 1), 10, 30, 40))
+    assert p[0] == (80, 55)
+    assert p[-1] == (80, 85)
+
+
+def test_un_solape_rodea_por_abajo_en_vez_de_cruzar():
+    """Si la sucesora arranca antes de que termine la otra, la línea no cruza barras."""
+    directa = puntos(flecha("FS", Extremo(1, 10, 0), Extremo(12, 14, 1), 10, 30, 40))
+    rodeando = puntos(flecha("FS", Extremo(1, 10, 0), Extremo(3, 6, 1), 10, 30, 40))
+    assert len(directa) == 4
+    assert len(rodeando) == 6    # dos codos más
+
+
+def test_la_flecha_baja_a_la_fila_correcta():
+    p = puntos(flecha("FS", Extremo(1, 3, 0), Extremo(4, 6, 5), 10, 30, 40))
+    assert p[-1][1] == 40 + 5 * 30 + 15

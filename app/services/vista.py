@@ -12,7 +12,7 @@ from datetime import date
 from sqlmodel import Session
 
 from ..engine.calendar import contar_habiles
-from ..engine.timeline import Grilla, ancho_columna, barra, construir_grilla
+from ..engine.timeline import Extremo, Grilla, ancho_columna, barra, construir_grilla, flecha
 from ..models import Dependency, Task
 from . import dependencies as dependencies_service
 from . import predecesoras as predecesoras_service
@@ -36,6 +36,16 @@ class Fila:
     predecesoras: list[Dependency] | None = None
     predecesoras_texto: str = ""
     tiene_predecesoras: bool = False
+
+
+@dataclass(frozen=True)
+class Flecha:
+    """Una conexión dibujable entre dos barras del timeline."""
+
+    puntos: str
+    tipo: str
+    critica: bool
+    titulo: str
 
 
 @dataclass
@@ -66,7 +76,14 @@ class VistaProyecto:
     columna_hoy: int | None
     error: str | None
     resumen: Resumen = field(default_factory=Resumen)
+    flechas: list[Flecha] = field(default_factory=list)
     ancho_dia: int = 22
+    alto_fila: int = 32
+    alto_cabecera: int = 44
+
+    @property
+    def alto_pista(self) -> int:
+        return self.alto_cabecera + len(self.filas) * self.alto_fila
 
 
 def _texto_predecesoras(deps: list[Dependency], codigos: dict[int, str]) -> str:
@@ -89,6 +106,7 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
     if cronograma.inicio is not None and cronograma.fin is not None:
         grilla = construir_grilla(cronograma.inicio, cronograma.fin)
 
+    ancho = ancho_columna(grilla.columnas) if grilla else 22
     codigos = {t.id: t.codigo for t, _ in nodos}
     filas: list[Fila] = []
     for tarea, nivel in nodos:
@@ -118,8 +136,41 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
         columna_hoy=grilla.columna_de(hoy or date.today()) if grilla else None,
         error=error,
         resumen=_resumir(filas, cronograma.inicio, cronograma.fin),
-        ancho_dia=ancho_columna(grilla.columnas) if grilla else 22,
+        flechas=_flechas(filas, dependencies_service.listar(session, project_id), ancho),
+        ancho_dia=ancho,
     )
+
+
+_ALTO_FILA = 32
+_ALTO_CABECERA = 44
+
+
+def _flechas(filas: list[Fila], dependencias, ancho_dia: int) -> list[Flecha]:
+    """Une cada barra con las que dependen de ella. Sin barra pintada, no hay flecha."""
+    ubicacion = {
+        f.tarea.id: (i, f)
+        for i, f in enumerate(filas)
+        if f.columnas is not None
+    }
+    salida: list[Flecha] = []
+    for dep in dependencias:
+        origen = ubicacion.get(dep.predecessor_id)
+        destino = ubicacion.get(dep.successor_id)
+        if origen is None or destino is None:
+            continue
+        (i_previa, previa), (i_sucesora, sucesora) = origen, destino
+        salida.append(Flecha(
+            puntos=flecha(
+                dep.tipo.value,
+                Extremo(previa.columnas[0], previa.columnas[1], i_previa),
+                Extremo(sucesora.columnas[0], sucesora.columnas[1], i_sucesora),
+                ancho_dia, _ALTO_FILA, _ALTO_CABECERA,
+            ),
+            tipo=dep.tipo.value,
+            critica=previa.sin_holgura and sucesora.sin_holgura,
+            titulo=f"{previa.tarea.titulo} → {sucesora.tarea.titulo}",
+        ))
+    return salida
 
 
 def _resumir(filas: list[Fila], inicio: date | None, fin: date | None) -> Resumen:
