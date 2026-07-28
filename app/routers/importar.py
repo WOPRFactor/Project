@@ -112,6 +112,8 @@ def _preview(
             "carga": importar_service.a_json(importacion),
             "hojas": hojas or [],
             "hoja_elegida": hoja_elegida,
+            "modo": "nuevo",
+            "accion": "/importar/confirmar",
         },
     )
 

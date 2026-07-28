@@ -72,15 +72,24 @@
       {% endfor %}
     </div>
 
-    <form method="post" action="/importar/confirmar" class="form-compacto confirmar">
+    {# Dos usos, un solo formulario: crear un proyecto nuevo, o sumar las filas a uno
+       que ya existe. Lo único que cambia es a dónde va y qué campos pide; el
+       diagnóstico y la casilla de corrección son los mismos en los dos casos —esa es
+       justamente la razón de haber unificado esto. #}
+    {% set sumando = modo == 'sumar' %}
+    <form {{ 'hx-post' if sumando else 'method="post" action' }}="{{ accion }}"
+          class="form-compacto confirmar"
+          {% if sumando %}hx-target="#tablero" hx-swap="innerHTML"{% endif %}>
       <input type="hidden" name="carga" value="{{ carga }}">
-      <label>Nombre del proyecto
-        <input type="text" name="nombre" maxlength="120" required
-               value="{{ importacion.filas[0].titulo[:60] }}">
-      </label>
-      <label>Fecha de inicio
-        <input type="date" name="fecha_inicio" required value="{{ hoy.isoformat() }}">
-      </label>
+      {% if not sumando %}
+        <label>Nombre del proyecto
+          <input type="text" name="nombre" maxlength="120" required
+                 value="{{ importacion.filas[0].titulo[:60] }}">
+        </label>
+        <label>Fecha de inicio
+          <input type="date" name="fecha_inicio" required value="{{ hoy.isoformat() }}">
+        </label>
+      {% endif %}
       {% if diagnostico and diagnostico.estructurales %}
         <label class="en-linea-check">
           <input type="checkbox" name="corregir" value="1" checked>
@@ -88,7 +97,14 @@
           declaradas (Inicio→Inicio y Fin→Fin)
         </label>
       {% endif %}
-      <button class="boton primario" type="submit">Crear el proyecto</button>
+      <button class="boton primario" type="submit">
+        {{ 'Sumar al proyecto' if sumando else 'Crear el proyecto' }}
+      </button>
+      {% if sumando %}
+        <button class="boton" type="button"
+                hx-get="/proyectos/{{ proyecto.id }}/tablero"
+                hx-target="#tablero" hx-swap="innerHTML">Cancelar</button>
+      {% endif %}
     </form>
   {% endif %}
 </section>

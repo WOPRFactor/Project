@@ -126,19 +126,68 @@ def test_indentar_la_primera_fila_avisa_sin_romper(cliente):
     assert "No hay una tarea arriba" in respuesta.text
 
 
-def test_importar_una_planilla_al_proyecto_abierto(cliente):
+def subir_planilla(cliente, project_id=1):
+    """Sube la planilla real y devuelve la previsualización (todavía no escribe nada)."""
     from pathlib import Path
 
-    crear_proyecto(cliente, "Obra", inicio="2026-08-03")
     planilla = (Path(__file__).parent / "fixtures" / "gantt-traspaso.xlsx").read_bytes()
-    respuesta = cliente.post(
-        "/proyectos/1/importar",
+    return cliente.post(
+        f"/proyectos/{project_id}/importar",
         files={"archivo": ("plan.xlsx", planilla, "application/vnd.ms-excel")},
     )
+
+
+def confirmar_planilla(cliente, previsualizacion, project_id=1, corregir=""):
+    import re
+
+    carga = re.search(r'name="carga" value="(.*?)">', previsualizacion.text, re.S).group(1)
+    from html import unescape
+
+    return cliente.post(
+        f"/proyectos/{project_id}/importar/confirmar",
+        data={"carga": unescape(carga), "corregir": corregir},
+    )
+
+
+def test_importar_al_proyecto_previsualiza_antes_de_escribir(cliente):
+    """El mismo archivo por los dos caminos tiene que dar el mismo resultado: este
+    camino también diagnostica en vez de importar en crudo."""
+    crear_proyecto(cliente, "Obra", inicio="2026-08-03")
+    previa = subir_planilla(cliente)
+
+    assert previa.status_code == 200
+    assert "Previsualización" in previa.text
+    assert "no coinciden con sus dependencias" in previa.text
+    # todavía no se creó nada
+    assert "Etapa 1 — Conformación del Equipo" not in cliente.get("/proyectos/1").text
+
+
+def test_confirmar_la_previsualizacion_crea_las_tareas(cliente):
+    crear_proyecto(cliente, "Obra", inicio="2026-08-03")
+    respuesta = confirmar_planilla(cliente, subir_planilla(cliente))
+
     assert respuesta.status_code == 200
     assert "Etapa 1 — Conformación del Equipo" in respuesta.text
     # las dependencias de la planilla llegaron: 1.3 depende de 1.2
     assert 'value="1.2"' in respuesta.text
+
+
+def test_el_camino_de_adentro_tambien_corrige_las_relaciones(cliente):
+    crear_proyecto(cliente, "Obra", inicio="2026-08-03")
+    respuesta = confirmar_planilla(cliente, subir_planilla(cliente), corregir="1")
+
+    assert "dependencias corregidas" in respuesta.text
+    # las tres tareas en paralelo entraron como Inicio→Inicio, no Fin→Inicio
+    assert "SS" in respuesta.text
+
+
+def test_cancelar_la_previsualizacion_no_crea_nada(cliente):
+    crear_proyecto(cliente, "Obra", inicio="2026-08-03")
+    subir_planilla(cliente)
+    respuesta = cliente.get("/proyectos/1/tablero")
+
+    assert respuesta.status_code == 200
+    assert "Etapa 1 — Conformación del Equipo" not in respuesta.text
 
 
 def test_importar_al_proyecto_rechaza_lo_que_no_es_planilla(cliente):
@@ -153,13 +202,10 @@ def test_importar_al_proyecto_rechaza_lo_que_no_es_planilla(cliente):
 
 
 def test_importar_dos_veces_avisa_de_los_codigos_repetidos(cliente):
-    from pathlib import Path
-
     crear_proyecto(cliente, "Obra", inicio="2026-08-03")
-    planilla = (Path(__file__).parent / "fixtures" / "gantt-traspaso.xlsx").read_bytes()
-    archivo = {"archivo": ("plan.xlsx", planilla, "application/vnd.ms-excel")}
-    cliente.post("/proyectos/1/importar", files=archivo)
-    respuesta = cliente.post("/proyectos/1/importar", files=archivo)
+    confirmar_planilla(cliente, subir_planilla(cliente))
+    respuesta = confirmar_planilla(cliente, subir_planilla(cliente))
+
     assert respuesta.status_code == 200
     assert "ya estaba usado" in respuesta.text
 
