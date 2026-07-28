@@ -86,6 +86,8 @@
           title="Reasigna los códigos WBS según el orden del árbol">Renumerar WBS</button>
   <a class="boton" href="/proyectos/{{ proyecto.id }}/estados"
      title="Definir los estados de tarea de este proyecto">Estados</a>
+  <a class="boton" href="/proyectos/{{ proyecto.id }}/riesgos"
+     title="Registro de riesgos y cuadrante">Riesgos</a>
   <button class="boton" hx-post="/proyectos/{{ proyecto.id }}/pesos/repartir"
           hx-vals='{"criterio": "duracion"}' hx-target="#tablero" hx-swap="innerHTML"
           hx-confirm="Reescribe TODOS los pesos según la duración de cada tarea y pisa lo que hayas cargado. Es un punto de partida: el valor de negocio no es proporcional al tiempo. ¿Sigo?"

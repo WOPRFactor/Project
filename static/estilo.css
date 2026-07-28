@@ -100,7 +100,7 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .gantt { display: flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--panel); margin-bottom: 18px; }
 /* Ancho fijo. Tiene que alcanzar para todas las columnas fijas (~615px) más la
    de Tarea; si se achica, el título se aplasta a cero. */
-.panel-izq { flex: 0 0 1270px; max-width: 1270px; border-right: 2px solid var(--borde); }
+.panel-izq { flex: 0 0 1330px; max-width: 1330px; border-right: 2px solid var(--borde); }
 .panel-der { flex: 1 1 auto; overflow-x: auto; }
 
 .panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
@@ -113,7 +113,7 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
    min-width: 0 es obligatorio: sin eso, el ancho intrínseco de un <input type=date>
    estira su columna y desalinea el encabezado de las filas. */
 .c-cod, .c-resp, .c-pred, .c-dias, .c-fecha, .c-crit, .c-ops, .c-ambito, .c-rango,
-.c-estado, .c-peso { min-width: 0; }
+.c-estado, .c-peso, .c-riesgo { min-width: 0; }
 .c-cod   { flex: 0 0 52px; }
 .c-tarea { flex: 1 1 auto; min-width: 240px; display: flex; align-items: center; gap: 2px; }
 .c-resp  { flex: 0 0 88px; }
@@ -340,3 +340,73 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .resumen.por-ambito .dato strong { font-size: .92rem; }
 .resumen.por-ambito .dato .tenue b { color: var(--texto); font-weight: 600; }
 .nota-ventanas { margin: -6px 0 14px; font-size: .76rem; max-width: 900px; }
+
+
+/* --- Riesgos --- */
+.c-riesgo { flex: 0 0 54px; display: flex; justify-content: center; }
+.tilde-riesgo {
+  width: 26px; height: 22px; padding: 0; cursor: pointer;
+  background: transparent; border: 1px solid var(--borde); border-radius: 4px;
+  color: var(--tenue); font-size: .8rem; line-height: 1;
+}
+.tilde-riesgo:hover { border-color: var(--acento); }
+.tilde-riesgo.marcado { border-color: var(--c-ambar); color: var(--c-ambar); font-weight: 700; }
+
+.riesgos-arriba { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; }
+.cuadrante-caja { flex: 0 0 auto; }
+.zonas { flex: 1 1 200px; min-width: 180px; }
+.zonas .dato { border-left: 4px solid var(--borde); padding-left: 8px; margin-bottom: 6px; }
+
+/* 5×5 en CSS Grid, igual que el Gantt: no entra una librería para 25 celdas. */
+.cuadrante {
+  display: grid;
+  grid-template-columns: 26px repeat(5, 52px);
+  grid-auto-rows: 46px;
+  gap: 3px; align-items: stretch;
+}
+.cuadrante .eje-y {
+  grid-column: 1 / -1; color: var(--tenue); font-size: .7rem;
+  text-transform: uppercase; letter-spacing: .04em; align-self: center;
+}
+.cuadrante .rotulo-y, .cuadrante .rotulo-x, .cuadrante .esquina {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--tenue); font-size: .75rem;
+}
+.cuadrante .rotulo-x, .cuadrante .esquina { height: 20px; }
+.cuadrante .eje-x {
+  grid-column: 2 / -1; color: var(--tenue); font-size: .7rem;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.celda-riesgo {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  border-radius: 4px; border: 1px solid transparent;
+}
+/* El color va con opacidad baja y el número SIEMPRE visible: impreso en blanco y
+   negro la severidad se sigue leyendo. El color solo no puede ser la única señal. */
+.celda-riesgo .severidad { font-size: .75rem; opacity: .55; font-variant-numeric: tabular-nums; }
+.celda-riesgo .cuantos {
+  font-style: normal; font-weight: 700; font-size: .8rem;
+  min-width: 20px; height: 20px; line-height: 20px; text-align: center;
+  border-radius: 50%; background: rgba(0, 0, 0, .35);
+}
+.celda-riesgo.con-riesgos { border-color: rgba(255, 255, 255, .35); }
+.zona-bajo    { background: rgba(62, 207, 142, .18); color: var(--c-verde); }
+.zona-medio   { background: rgba(245, 181, 68, .18); color: var(--c-ambar); }
+.zona-alto    { background: rgba(255, 140, 80, .22); color: #ff9d63; }
+.zona-critico { background: rgba(255, 107, 94, .26); color: var(--c-rojo); }
+.zonas .dato.zona-bajo    { border-left-color: var(--c-verde); }
+.zonas .dato.zona-medio   { border-left-color: var(--c-ambar); }
+.zonas .dato.zona-alto    { border-left-color: #ff9d63; }
+.zonas .dato.zona-critico { border-left-color: var(--c-rojo); }
+
+.lista-riesgos { display: flex; flex-direction: column; gap: 2px; }
+.fila-riesgo {
+  border: 1px solid var(--borde); border-radius: 6px; padding: 6px 8px;
+  display: flex; flex-direction: column; gap: 4px; margin: 0;
+}
+.fila-riesgo.borrador { border-style: dashed; }
+.r-arriba, .r-abajo { display: flex; gap: 6px; align-items: center; }
+.r-arriba input[name=descripcion] { flex: 1 1 auto; }
+.r-abajo input[name=mitigacion] { flex: 1 1 auto; }
+.r-tarea { flex: 0 0 auto; font-size: .75rem; }
+.borrar-riesgo { margin: 0 0 8px; align-self: flex-end; }

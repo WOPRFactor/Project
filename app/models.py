@@ -135,6 +135,41 @@ class Task(SQLModel, table=True):
     orden: int = Field(default=0)
 
 
+class EstadoRiesgo(str, Enum):
+    abierto = "abierto"
+    mitigado = "mitigado"
+    cerrado = "cerrado"
+    materializado = "materializado"
+
+
+ETIQUETA_ESTADO_RIESGO = {
+    EstadoRiesgo.abierto: "Abierto",
+    EstadoRiesgo.mitigado: "Mitigado",
+    EstadoRiesgo.cerrado: "Cerrado",
+    EstadoRiesgo.materializado: "Se materializó",
+}
+
+
+class Riesgo(SQLModel, table=True):
+    """Un riesgo del proyecto, colgado o no de una tarea.
+
+    `task_id` es nullable a propósito: los riesgos más caros de un proyecto no cuelgan
+    de ninguna tarea ("el cliente no libera el ambiente"), y una tarea puede tener
+    más de uno. El tilde de la grilla es un atajo sobre esta tabla, no su reemplazo:
+    un booleano no alcanzaría para ubicar nada en el cuadrante.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    project_id: int = Field(foreign_key="project.id", index=True)
+    task_id: int | None = Field(default=None, foreign_key="task.id", index=True)
+    descripcion: str = Field(default="", max_length=500)
+    probabilidad: int = Field(default=3, ge=1, le=5)
+    impacto: int = Field(default=3, ge=1, le=5)
+    mitigacion: str = Field(default="", max_length=1000)
+    responsable: str = Field(default="", max_length=120)
+    estado: EstadoRiesgo = Field(default=EstadoRiesgo.abierto)
+
+
 class TipoDependencia(str, Enum):
     """Ver `engine.types.TipoDependencia`: acá solo se persiste."""
 

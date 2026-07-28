@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 from ..models import Dependency, Estado, EstadoProyecto, Project, Task
 from ..schemas import ProyectoIn
 from . import estados as estados_service
+from . import riesgos as riesgos_service
 
 
 def listar(session: Session, incluir_archivados: bool = False) -> list[Project]:
@@ -67,6 +68,7 @@ def eliminar(session: Session, project_id: int) -> bool:
         session.delete(tarea)
     for estado in session.exec(select(Estado).where(Estado.project_id == project_id)):
         session.delete(estado)
+    riesgos_service.eliminar_del_proyecto(session, project_id)
     session.delete(proyecto)
     session.commit()
     return True

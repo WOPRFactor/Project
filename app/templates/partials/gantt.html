@@ -12,6 +12,7 @@
       <span class="c-fecha">Fin</span>
       <span class="c-crit">Crít.</span>
       <span class="c-peso" title="% del padre. Vacío = se reparte solo">Peso</span>
+      <span class="c-riesgo" title="¿Esta tarea tiene riesgos?">Riesgo</span>
       <span class="c-estado">Estado</span>
       <span class="c-ambito">Ámbito</span>
       <span class="c-ops"></span>
@@ -88,6 +89,18 @@
                  class="celda mono chico"
                  title="Peso dentro de su nivel, en %. Vacío = se reparte lo que sobre. Sobre el proyecto entero vale {{ '%.1f' % fila.peso_absoluto }}%.">
           <span class="peso-abs" aria-hidden="true">{{ '%.1f' % fila.peso_absoluto }}</span>
+        </span>
+        <span class="c-riesgo">
+          {# Fuera del form de la fila a propósito: tildar no guarda la fila, crea o
+             saca un riesgo, y destildar con contenido cargado se rechaza. #}
+          <button type="button" class="tilde-riesgo {{ 'marcado' if fila.tiene_riesgo }}"
+                  hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ t.id }}/riesgo"
+                  hx-vals='{"tildado": "{{ 0 if fila.tiene_riesgo else 1 }}"}'
+                  hx-target="#tablero" hx-swap="innerHTML"
+                  title="{{ 'Tiene riesgos: se editan en «Riesgos»' if fila.tiene_riesgo else 'Marcar que esta tarea tiene riesgos' }}"
+                  aria-pressed="{{ 'true' if fila.tiene_riesgo else 'false' }}">
+            {{ '⚠' if fila.tiene_riesgo else '·' }}
+          </button>
         </span>
         <span class="c-estado">
           <select id="est-{{ t.id }}" name="estado_id"

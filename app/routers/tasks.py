@@ -19,7 +19,9 @@ from ..services import importar_texto
 from ..services import pesos_aplicar
 from ..services import predecesoras as predecesoras_service
 from ..services import projects as projects_service
+from ..services import riesgos as riesgos_service
 from ..services import tasks as tasks_service
+from ..services.riesgos import RiesgoInvalido
 from ..services.tasks import TareaInvalida
 from ._tablero import render
 
@@ -163,6 +165,24 @@ def cambiar_inicio(
         f"Arranque movido {corrimiento:+d} días: el cronograma se recalculó entero"
     )
     return render(request, session, project_id, aviso=aviso)
+
+
+@router.post("/tareas/{task_id}/riesgo", response_class=HTMLResponse)
+def marcar_riesgo(
+    project_id: int,
+    task_id: int,
+    request: Request,
+    tildado: str = Form("1"),
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    """Tilde de la grilla: crea un borrador de riesgo o saca el que sigue vacío."""
+    try:
+        aviso = riesgos_service.marcar_tarea(
+            session, project_id, task_id, tildado.strip() == "1"
+        )
+    except RiesgoInvalido as error:
+        return render(request, session, project_id, aviso=str(error))
+    return render(request, session, project_id, aviso=aviso or None)
 
 
 @router.post("/pesos/repartir", response_class=HTMLResponse)

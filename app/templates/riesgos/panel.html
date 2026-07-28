@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block titulo %}Riesgos — {{ proyecto.nombre }}{% endblock %}
+
+{% block contenido %}
+  <p class="pie"><a href="/proyectos/{{ proyecto.id }}">← {{ proyecto.nombre }}</a></p>
+  <h1>Riesgos</h1>
+
+  {% if aviso %}<p class="aviso">{{ aviso }}</p>{% endif %}
+
+  <div class="riesgos-arriba">
+    <div class="cuadrante-caja">
+      <h2>Cuadrante</h2>
+      <div class="cuadrante">
+        <span class="eje-y">Probabilidad →</span>
+        {% for fila in panel.cuadrante %}
+          <span class="rotulo-y" title="{{ etiqueta_probabilidad[fila[0].probabilidad] }}">{{ fila[0].probabilidad }}</span>
+          {% for celda in fila %}
+            <span class="celda-riesgo zona-{{ celda.zona.value }} {{ 'con-riesgos' if celda.cuantos }}"
+                  title="{{ etiqueta_probabilidad[celda.probabilidad] }} × {{ etiqueta_impacto[celda.impacto] }} = {{ celda.severidad }} ({{ etiqueta_zona[celda.zona] }}){% if celda.cuantos %} · {{ celda.cuantos }} riesgo(s){% endif %}">
+              {# El número va SIEMPRE: impreso en blanco y negro el color no dice nada. #}
+              <b class="severidad">{{ celda.severidad }}</b>
+              {% if celda.cuantos %}<i class="cuantos">{{ celda.cuantos }}</i>{% endif %}
+            </span>
+          {% endfor %}
+        {% endfor %}
+        <span class="esquina"></span>
+        {% for i in range(1, 6) %}
+          <span class="rotulo-x" title="{{ etiqueta_impacto[i] }}">{{ i }}</span>
+        {% endfor %}
+        <span class="eje-x">Impacto →</span>
+      </div>
+      <p class="pie tenue">
+        Severidad = probabilidad × impacto. El número de cada casilla es la severidad y
+        el círculo, cuántos riesgos caen ahí. Los cerrados no se dibujan.
+      </p>
+    </div>
+
+    <div class="zonas">
+      <h2>Por zona</h2>
+      {% for zona, cuantos in panel.por_zona.items() %}
+        <div class="dato zona-{{ zona.value }}">
+          <span class="etiqueta">{{ etiqueta_zona[zona] }}</span>
+          <strong>{{ cuantos }}</strong>
+        </div>
+      {% endfor %}
+      <p class="pie tenue">{{ panel.abiertos }} abiertos de {{ panel.riesgos | length }}.</p>
+    </div>
+  </div>
+
+  <h2>Registro</h2>
+  {% if not panel.riesgos %}
+    <p class="vacio">
+      Todavía no hay riesgos. Cargá el primero acá abajo, o tildá la columna
+      <strong>Riesgo</strong> de una tarea en la grilla para que aparezca un borrador.
+    </p>
+  {% endif %}
+
+  <div class="lista-riesgos">
+    {% for riesgo in panel.riesgos %}
+      <form method="post" action="/proyectos/{{ proyecto.id }}/riesgos/{{ riesgo.id }}"
+            class="fila-riesgo {{ 'borrador' if not riesgo.descripcion }}">
+        <div class="r-arriba">
+          <input name="descripcion" value="{{ riesgo.descripcion }}" maxlength="500"
+                 class="celda" placeholder="Qué puede pasar (borrador sin completar)">
+          <select name="probabilidad" class="celda chico" title="Probabilidad">
+            {% for i in range(1, 6) %}
+              <option value="{{ i }}" {{ 'selected' if riesgo.probabilidad == i }}>P{{ i }} · {{ etiqueta_probabilidad[i] }}</option>
+            {% endfor %}
+          </select>
+          <select name="impacto" class="celda chico" title="Impacto">
+            {% for i in range(1, 6) %}
+              <option value="{{ i }}" {{ 'selected' if riesgo.impacto == i }}>I{{ i }} · {{ etiqueta_impacto[i] }}</option>
+            {% endfor %}
+          </select>
+          <select name="estado" class="celda chico">
+            {% for valor, etiqueta in estados_riesgo.items() %}
+              <option value="{{ valor.value }}" {{ 'selected' if riesgo.estado == valor }}>{{ etiqueta }}</option>
+            {% endfor %}
+          </select>
+          <button class="boton" type="submit">Guardar</button>
+        </div>
+        <div class="r-abajo">
+          <input name="mitigacion" value="{{ riesgo.mitigacion }}" maxlength="1000"
+                 class="celda" placeholder="Mitigación">
+          <input name="responsable" value="{{ riesgo.responsable }}" maxlength="120"
+                 class="celda chico" placeholder="Responsable">
+          <span class="tenue r-tarea">
+            {%- if riesgo.task_id and riesgo.task_id in panel.titulos -%}
+              ⤷ {{ panel.titulos[riesgo.task_id] }}
+            {%- else -%}
+              ⤷ del proyecto
+            {%- endif -%}
+          </span>
+        </div>
+      </form>
+      <form method="post" class="borrar-riesgo"
+            action="/proyectos/{{ proyecto.id }}/riesgos/{{ riesgo.id }}/eliminar">
+        <button class="boton peligro" type="submit">Borrar</button>
+      </form>
+    {% endfor %}
+  </div>
+
+  <h2>Agregar riesgo</h2>
+  <form method="post" action="/proyectos/{{ proyecto.id }}/riesgos" class="tarjeta en-fila">
+    <input name="descripcion" placeholder="Qué puede pasar" maxlength="500" class="celda" required>
+    <select name="probabilidad" class="celda chico">
+      {% for i in range(1, 6) %}
+        <option value="{{ i }}" {{ 'selected' if i == 3 }}>P{{ i }}</option>
+      {% endfor %}
+    </select>
+    <select name="impacto" class="celda chico">
+      {% for i in range(1, 6) %}
+        <option value="{{ i }}" {{ 'selected' if i == 3 }}>I{{ i }}</option>
+      {% endfor %}
+    </select>
+    <input name="mitigacion" placeholder="Mitigación" maxlength="1000" class="celda">
+    <button class="boton primario" type="submit">Agregar</button>
+  </form>
+{% endblock %}

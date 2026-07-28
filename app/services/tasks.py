@@ -11,6 +11,7 @@ from sqlmodel import Session, select
 from ..models import Dependency, Task
 from ..schemas import TareaIn
 from . import estados as estados_service
+from . import riesgos as riesgos_service
 
 
 class TareaInvalida(Exception):
@@ -162,6 +163,7 @@ def eliminar(session: Session, task_id: int, promover_hijas: bool = False) -> bo
     for dep in session.exec(select(Dependency).where(Dependency.project_id == tarea.project_id)):
         if dep.predecessor_id in a_borrar or dep.successor_id in a_borrar:
             session.delete(dep)
+    riesgos_service.desvincular(session, a_borrar)
     for identificador in a_borrar:
         objetivo = session.get(Task, identificador)
         if objetivo is not None:

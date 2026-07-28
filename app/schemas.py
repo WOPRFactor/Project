@@ -10,7 +10,7 @@ from datetime import date
 
 from pydantic import BaseModel, Field, field_validator
 
-from .models import Ambito, ColorEstado, EstadoProyecto, TipoDependencia
+from .models import Ambito, ColorEstado, EstadoProyecto, EstadoRiesgo, TipoDependencia
 
 
 def _texto_obligatorio(valor: str) -> str:
@@ -76,6 +76,20 @@ class EstadoIn(BaseModel):
     @classmethod
     def nombre_con_contenido(cls, valor: str) -> str:
         return _texto_obligatorio(valor)
+
+
+class RiesgoIn(BaseModel):
+    descripcion: str = Field(default="", max_length=500)
+    probabilidad: int = Field(default=3, ge=1, le=5)
+    impacto: int = Field(default=3, ge=1, le=5)
+    mitigacion: str = Field(default="", max_length=1000)
+    responsable: str = Field(default="", max_length=120)
+    estado: EstadoRiesgo = EstadoRiesgo.abierto
+
+    @field_validator("descripcion", "mitigacion", "responsable")
+    @classmethod
+    def sin_bordes(cls, valor: str) -> str:
+        return valor.strip()
 
 
 class DependenciaIn(BaseModel):

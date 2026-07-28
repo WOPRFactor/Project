@@ -18,6 +18,7 @@ from . import estados as estados_service
 from . import pesos as pesos_service
 from . import predecesoras as predecesoras_service
 from . import resumen as resumen_service
+from . import riesgos as riesgos_service
 from . import schedule as schedule_service
 from . import tasks as tasks_service
 from .resumen import NivelAbierto, Resumen, esta_hecha  # noqa: F401 — API de la vista
@@ -43,6 +44,7 @@ class Fila:
     predecesoras_texto: str = ""
     tiene_predecesoras: bool = False
     es_estimada: bool = False
+    tiene_riesgo: bool = False
     # Lo que la tarea vale sobre el proyecto entero. Derivado: se multiplica desde
     # la raíz, nunca se guarda. Lo que el usuario escribe es el % del padre.
     peso_absoluto: float = 0.0
@@ -111,6 +113,7 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
         for t, _ in nodos
     ]
     peso_absoluto = pesos_service.absolutos(nodos_peso)
+    con_riesgo = riesgos_service.ids_con_riesgo(session, project_id)
     filas: list[Fila] = []
     for tarea, nivel in nodos:
         calculada = cronograma.get(tarea.id or 0)
@@ -126,6 +129,7 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
             predecesoras=propias,
             predecesoras_texto=_texto_predecesoras(propias, codigos),
             tiene_predecesoras=bool(propias),
+            tiene_riesgo=(tarea.id or 0) in con_riesgo,
             peso_absoluto=peso_absoluto.get(tarea.id or 0, 0.0),
         )
         if calculada is not None:
