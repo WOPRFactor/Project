@@ -308,7 +308,7 @@ de 100, con hitos y con árbol de 3 niveles; agregar una tarea a un nivel ya cer
 vez de romper; los pesos absolutos de todas las hojas suman 100 cuando todos los niveles
 cierran.
 
-**Fase 17 — Línea base.** `LineaBase` y `LineaBaseTarea` (inicio, fin, duración, ámbito,
+**Fase 17 — Línea base. ✔** `LineaBase` y `LineaBaseTarea` (inicio, fin, duración, ámbito,
 **peso** congelados). `engine/comparar.py` puro: desvío en días hábiles con signo por tarea y
 por ámbito. Congelar exige que los pesos cierren. Columna **Desvío** en la grilla y barra base
 en gris debajo de la actual.
@@ -316,7 +316,7 @@ en gris debajo de la actual.
 adelantada, sin cambios, nueva y borrada; congelar no altera ninguna fecha del cronograma
 vivo; un proyecto sin línea base sigue funcionando y no muestra desvíos vacíos.
 
-**Fase 18 — Avance real y ponderado.** `Task` gana `avance` (0-100), `inicio_real` y
+**Fase 18 — Avance real y ponderado. ✔** `Task` gana `avance` (0-100), `inicio_real` y
 `fin_real`. El avance del proyecto pasa a ser **Σ (peso absoluto × avance)** sobre las hojas,
 que es la razón de ser de la Fase 16: hoy "0 de 31 hechas" trata igual una firma de acta que
 120 días de acompañamiento. El resumen distingue **avance planificado a la fecha de corte**
@@ -380,7 +380,7 @@ abandonada y Excel abre `.xlsx` desde 2007 sin chistar.
 pesos y ámbitos, lo reimporta y compara el resultado tarea por tarea; el archivo abre en
 Excel real sin advertencias.
 
-**Fase 24 — El informe.** `/proyectos/{id}/informe?corte=YYYY-MM-DD`, accesible desde rol
+**Fase 24 — El informe. ✔** `/proyectos/{id}/informe?corte=YYYY-MM-DD`, accesible desde rol
 lector. `services/informe.py` arma el DTO —datos, no HTML—: portada, resumen ejecutivo
 (ventana por ámbito, avance real vs planificado, desvío contra la base, próximo hito), tareas
 atrasadas y en riesgo, hitos con fecha base y proyectada, **cuadrante de riesgos**,
@@ -407,7 +407,8 @@ usuarios y no exponen nada:
 Las que **sí** necesitan el bloque A cerrado, porque sin autor no significan nada: 14
 (responsables como personas), 20 (comentarios), 21 (adjuntos), y todo el informe.
 
-**Estado: el camino corto está hecho** (fases 15, 16, 19, 22 y 23, marcadas con ✔ arriba).
+**Estado: hecho el camino corto más el bloque de informes** (fases 15, 16, 17, 18, 19,
+22, 23 y 24, marcadas con ✔ arriba).
 Ariel decidió seguir monousuario por ahora, así que el bloque A sigue pendiente y la app
 no salió de `127.0.0.1`. Cuando entre el equipo, se retoma por la Fase 10 y el orden del
 plan vuelve a mandar.
