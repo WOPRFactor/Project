@@ -100,7 +100,7 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .gantt { display: flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--panel); margin-bottom: 18px; }
 /* Ancho fijo. Tiene que alcanzar para todas las columnas fijas (~615px) más la
    de Tarea; si se achica, el título se aplasta a cero. */
-.panel-izq { flex: 0 0 1180px; max-width: 1180px; border-right: 2px solid var(--borde); }
+.panel-izq { flex: 0 0 1270px; max-width: 1270px; border-right: 2px solid var(--borde); }
 .panel-der { flex: 1 1 auto; overflow-x: auto; }
 
 .panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
@@ -113,7 +113,7 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
    min-width: 0 es obligatorio: sin eso, el ancho intrínseco de un <input type=date>
    estira su columna y desalinea el encabezado de las filas. */
 .c-cod, .c-resp, .c-pred, .c-dias, .c-fecha, .c-crit, .c-ops, .c-ambito, .c-rango,
-.c-estado { min-width: 0; }
+.c-estado, .c-peso { min-width: 0; }
 .c-cod   { flex: 0 0 52px; }
 .c-tarea { flex: 1 1 auto; min-width: 240px; display: flex; align-items: center; gap: 2px; }
 .c-resp  { flex: 0 0 88px; }
@@ -276,6 +276,13 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 /* Estados definibles: el color lo elige el usuario dentro de una paleta cerrada,
    así que acá solo hay seis clases y ningún estilo inline (la CSP no los permitiría). */
 .c-estado { flex: 0 0 104px; }
+
+/* Peso: lo editable es el % del padre; al lado, en tenue, lo que vale sobre el
+   proyecto entero. Dos números distintos, y por eso uno es input y el otro no. */
+.c-peso { flex: 0 0 84px; display: flex; align-items: center; gap: 3px; }
+.c-peso input.celda { flex: 1 1 auto; }
+.peso-abs { flex: 0 0 auto; color: var(--tenue); font-size: .68rem; font-variant-numeric: tabular-nums; }
+.aviso.pesos-abiertos { margin-top: 8px; }
 .c-estado select.celda { font-size: .74rem; padding: 2px; }
 .color-gris    { color: var(--c-gris); }
 .color-azul    { color: var(--c-azul); }

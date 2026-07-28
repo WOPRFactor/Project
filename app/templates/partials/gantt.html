@@ -11,6 +11,7 @@
       <span class="c-fecha">Inicio</span>
       <span class="c-fecha">Fin</span>
       <span class="c-crit">Crít.</span>
+      <span class="c-peso" title="% del padre. Vacío = se reparte solo">Peso</span>
       <span class="c-estado">Estado</span>
       <span class="c-ambito">Ámbito</span>
       <span class="c-ops"></span>
@@ -80,6 +81,13 @@
             <option value="0" {{ 'selected' if not t.critica }}>No</option>
             <option value="1" {{ 'selected' if t.critica }}>Sí</option>
           </select>
+        </span>
+        <span class="c-peso">
+          <input id="pso-{{ t.id }}" name="peso" type="number" min="0" max="100"
+                 value="{{ t.peso if t.peso is not none }}" placeholder="auto"
+                 class="celda mono chico"
+                 title="Peso dentro de su nivel, en %. Vacío = se reparte lo que sobre. Sobre el proyecto entero vale {{ '%.1f' % fila.peso_absoluto }}%.">
+          <span class="peso-abs" aria-hidden="true">{{ '%.1f' % fila.peso_absoluto }}</span>
         </span>
         <span class="c-estado">
           <select id="est-{{ t.id }}" name="estado_id"

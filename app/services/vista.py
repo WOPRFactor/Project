@@ -11,14 +11,16 @@ from datetime import date
 
 from sqlmodel import Session
 
-from ..engine.calendar import contar_habiles
 from ..engine.timeline import Extremo, Grilla, ancho_columna, barra, construir_grilla, flecha
-from ..models import ETIQUETA_AMBITO, Ambito, Dependency, Estado, Task
+from ..models import Dependency, Estado, Task
 from . import dependencies as dependencies_service
 from . import estados as estados_service
+from . import pesos as pesos_service
 from . import predecesoras as predecesoras_service
+from . import resumen as resumen_service
 from . import schedule as schedule_service
 from . import tasks as tasks_service
+from .resumen import NivelAbierto, Resumen, esta_hecha  # noqa: F401 — API de la vista
 
 
 @dataclass
@@ -41,6 +43,9 @@ class Fila:
     predecesoras_texto: str = ""
     tiene_predecesoras: bool = False
     es_estimada: bool = False
+    # Lo que la tarea vale sobre el proyecto entero. Derivado: se multiplica desde
+    # la raíz, nunca se guarda. Lo que el usuario escribe es el % del padre.
+    peso_absoluto: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -54,40 +59,6 @@ class Flecha:
 
 
 @dataclass
-class Resumen:
-    """Cuánto dura un bloque de tareas según el cronograma de este momento.
-
-    Hay uno por ámbito más el total: el acompañamiento posterior no tiene por qué
-    inflar la duración del alcance comprometido, pero tampoco desaparecer.
-    """
-
-    etiqueta: str = "Total"
-    inicio: date | None = None
-    fin: date | None = None
-    dias_habiles: int = 0
-    dias_corridos: int = 0
-    tareas: int = 0
-    hitos: int = 0
-    hechas: int = 0
-    # Suma de las duraciones de las tareas del bloque. Es *trabajo*, no calendario:
-    # tareas en paralelo suman acá pero no estiran la ventana.
-    esfuerzo: int = 0
-
-    @property
-    def semanas(self) -> int:
-        return -(-self.dias_habiles // 5)  # redondeo hacia arriba
-
-    @property
-    def avance(self) -> int:
-        return round(100 * self.hechas / self.tareas) if self.tareas else 0
-
-
-def esta_hecha(fila: "Fila") -> bool:
-    """Único lugar donde se decide si una tarea está terminada."""
-    return fila.estado is not None and fila.estado.es_final
-
-
-@dataclass
 class VistaProyecto:
     filas: list[Fila]
     grilla: Grilla | None
@@ -98,6 +69,8 @@ class VistaProyecto:
     por_ambito: list[Resumen] = field(default_factory=list)
     ventana: dict = field(default_factory=dict)
     estimadas: int = 0
+    avance_ponderado: int = 0
+    niveles_abiertos: list[NivelAbierto] = field(default_factory=list)
     proximo_hito: Fila | None = None
     flechas: list[Flecha] = field(default_factory=list)
     ancho_dia: int = 22
@@ -133,6 +106,11 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
     codigos = {t.id: t.codigo for t, _ in nodos}
     estados = estados_service.listar(session, project_id)
     por_estado = {e.id: e for e in estados}
+    nodos_peso = [
+        pesos_service.NodoPeso(t.id or 0, t.parent_id, t.peso, t.duracion)
+        for t, _ in nodos
+    ]
+    peso_absoluto = pesos_service.absolutos(nodos_peso)
     filas: list[Fila] = []
     for tarea, nivel in nodos:
         calculada = cronograma.get(tarea.id or 0)
@@ -148,6 +126,7 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
             predecesoras=propias,
             predecesoras_texto=_texto_predecesoras(propias, codigos),
             tiene_predecesoras=bool(propias),
+            peso_absoluto=peso_absoluto.get(tarea.id or 0, 0.0),
         )
         if calculada is not None:
             fila.inicio = calculada.inicio
@@ -164,11 +143,16 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
         columna_hoy=grilla.columna_de(hoy or date.today()) if grilla else None,
         error=error,
         estados=estados,
-        resumen=_resumir(filas, "Total", cronograma.inicio, cronograma.fin),
-        por_ambito=_por_ambito(filas),
+        resumen=resumen_service.armar(filas, "Total", cronograma.inicio, cronograma.fin),
+        por_ambito=resumen_service.por_ambito(filas),
         ventana=schedule_service.ventana(session, project_id),
         estimadas=len([f for f in filas if f.es_estimada and not f.es_resumen]),
-        proximo_hito=_proximo_hito(filas, hoy or date.today()),
+        avance_ponderado=pesos_service.avance_ponderado(
+            nodos_peso,
+            {f.tarea.id or 0: f.estado.avance_sugerido if f.estado else 0 for f in filas},
+        ),
+        niveles_abiertos=resumen_service.niveles_abiertos(nodos_peso, filas),
+        proximo_hito=resumen_service.proximo_hito(filas, hoy or date.today()),
         flechas=_flechas(filas, dependencies_service.listar(session, project_id), ancho),
         ancho_dia=ancho,
     )
@@ -204,52 +188,3 @@ def _flechas(filas: list[Fila], dependencias, ancho_dia: int) -> list[Flecha]:
             titulo=f"{previa.tarea.titulo} → {sucesora.tarea.titulo}",
         ))
     return salida
-
-
-def _proximo_hito(filas: list[Fila], hoy: date) -> Fila | None:
-    """El primer hito que todavía no pasó. Es lo que se mira un martes a la mañana."""
-    pendientes = [
-        f for f in filas
-        if f.es_hito and f.fin and f.fin >= hoy and not esta_hecha(f)
-    ]
-    if pendientes:
-        return min(pendientes, key=lambda f: f.fin)
-    futuros = [f for f in filas if f.es_hito and f.fin]
-    return max(futuros, key=lambda f: f.fin) if futuros else None
-
-
-def _por_ambito(filas: list[Fila]) -> list[Resumen]:
-    """Un contador por ámbito que tenga tareas, en el orden del enum."""
-    salida = []
-    for ambito in Ambito:
-        del_ambito = [f for f in filas if not f.es_resumen and f.tarea.ambito == ambito]
-        if not del_ambito:
-            continue
-        fechas = [(f.inicio, f.fin) for f in del_ambito if f.inicio and f.fin]
-        if not fechas:
-            continue
-        salida.append(_resumir(
-            del_ambito,
-            ETIQUETA_AMBITO[ambito],
-            min(i for i, _ in fechas),
-            max(f for _, f in fechas),
-        ))
-    return salida
-
-
-def _resumir(
-    filas: list[Fila], etiqueta: str, inicio: date | None, fin: date | None
-) -> Resumen:
-    """Duración de un bloque: se recalcula sola al agregar o quitar tareas."""
-    hojas = [f for f in filas if not f.es_resumen]
-    return Resumen(
-        etiqueta=etiqueta,
-        inicio=inicio,
-        fin=fin,
-        dias_habiles=contar_habiles(inicio, fin) if inicio and fin else 0,
-        dias_corridos=(fin - inicio).days + 1 if inicio and fin else 0,
-        tareas=len([f for f in hojas if not f.es_hito]),
-        hitos=len([f for f in hojas if f.es_hito]),
-        hechas=len([f for f in hojas if esta_hecha(f)]),
-        esfuerzo=sum(f.tarea.duracion for f in hojas),
-    )

@@ -16,6 +16,7 @@ from ..services import arbol as arbol_service
 from ..services import importar_aplicar
 from ..services import importar_excel
 from ..services import importar_texto
+from ..services import pesos_aplicar
 from ..services import predecesoras as predecesoras_service
 from ..services import projects as projects_service
 from ..services import tasks as tasks_service
@@ -47,6 +48,7 @@ def guardar_celda(
     critica: str = Form("0"),
     ambito: str = Form("proyecto"),
     estado_id: str = Form(""),
+    peso: str = Form(""),
     duracion_optimista: str = Form(""),
     duracion_pesimista: str = Form(""),
     session: Session = Depends(get_session),
@@ -63,6 +65,9 @@ def guardar_celda(
             responsable=responsable,
             critica=critica.strip() in {"1", "true", "on", "sí", "si"},
             ambito=Ambito(ambito) if ambito in Ambito.__members__ else Ambito.proyecto,
+            # Celda vacía = sin peso declarado, que no es lo mismo que peso cero:
+            # significa "repartime lo que sobre".
+            peso=int(peso) if peso.strip() else None,
             duracion=int(duracion) if duracion.strip() else tarea.duracion,
             duracion_optimista=int(duracion_optimista) if duracion_optimista.strip() else None,
             duracion_pesimista=int(duracion_pesimista) if duracion_pesimista.strip() else None,
@@ -158,6 +163,28 @@ def cambiar_inicio(
         f"Arranque movido {corrimiento:+d} días: el cronograma se recalculó entero"
     )
     return render(request, session, project_id, aviso=aviso)
+
+
+@router.post("/pesos/repartir", response_class=HTMLResponse)
+def repartir_pesos(
+    project_id: int,
+    request: Request,
+    criterio: str = Form("parejo"),
+    session: Session = Depends(get_session),
+) -> HTMLResponse:
+    """Punto de partida para los pesos. Pisa lo cargado: la confirmación lo avisa."""
+    if criterio == "limpiar":
+        cambiadas = pesos_aplicar.limpiar(session, project_id)
+        return render(
+            request, session, project_id,
+            aviso=f"{cambiadas} pesos borrados: vuelven al reparto automático parejo.",
+        )
+    cambiadas = pesos_aplicar.repartir(session, project_id, criterio)
+    como = "por duración" if criterio == pesos_aplicar.POR_DURACION else "en partes iguales"
+    return render(
+        request, session, project_id,
+        aviso=f"{cambiadas} pesos repartidos {como}. Ajustá lo que no represente el valor real.",
+    )
 
 
 @router.post("/renumerar", response_class=HTMLResponse)

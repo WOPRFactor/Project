@@ -53,6 +53,17 @@ Dirección de dependencias única: `routers → services → engine | models/db`
   tarea: "no arrancar antes de X" (SNET).
 - **Ámbito** por tarea (proyecto / seguimiento / control): afecta el *reporte*, nunca
   el cálculo. Separa el alcance comprometido del acompañamiento posterior.
+- **Peso** por tarea: se declara como **% del padre**, nunca del proyecto. Así cada
+  nivel cierra por su cuenta y agregar una tarea no rompe la suma del árbol entero.
+  El peso absoluto es derivado (se multiplica desde la raíz) y no se guarda. `None` =
+  "repartir en partes iguales lo que sobre". Que un nivel no dé 100 **se avisa, no se
+  bloquea**: frenar la carga a mitad de camino sería infumable. El avance del proyecto
+  es **ponderado** — Σ (peso absoluto × avance de la tarea) —, porque contar cabezas
+  hace pesar lo mismo una firma de acta de un día que 120 días de acompañamiento.
+- **Estados definibles por proyecto.** El nombre y el color los elige el usuario; lo
+  único que el motor necesita saber de un estado es `es_final`. Nunca comparar contra
+  el string "hecha". `avance_sugerido` es lo que la tarea aporta al avance ponderado
+  mientras no exista avance real por tarea.
 - **Duración optimista / probable / pesimista**: el motor calcula los tres escenarios
   (`Escenario`) y la app muestra la ventana de fin. Sin rango declarado, los tres
   coinciden.
@@ -88,8 +99,9 @@ Dirección de dependencias única: `routers → services → engine | models/db`
 La grilla **es** la aplicación, como en MS Project o Smartsheet: cada celda se edita
 en el lugar y cada cambio recalcula el cronograma entero. No hay formularios aparte.
 
-- Columnas editables: WBS, Tarea, Resp., Predec., Días, Inicio, **Crít.**
-  Calculada (nunca editable): Fin.
+- Columnas editables: WBS, Tarea, Resp., Predec., Días, Opt·Pes, Inicio, **Crít.**,
+  **Peso**, **Estado**, Ámbito. Calculadas (nunca editables): Fin y el % del proyecto
+  que se muestra al lado del peso.
 - **Criticidad ≠ ruta crítica.** `Task.critica` es criticidad *de negocio*: la marca
   el usuario por KPI o impacto, y es la que pinta la barra en rojo. La ruta crítica
   del motor (holgura cero) es otra cosa y se expone como `Fila.sin_holgura` y como

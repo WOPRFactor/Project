@@ -35,13 +35,23 @@
 
     <div class="dato">
       <span class="etiqueta">Avance</span>
-      <strong>{{ resumen.avance }}%</strong>
+      <strong title="Ponderado: cada tarea pesa lo que vale, no una cabeza">{{ avance_ponderado }}%</strong>
       <span class="tenue">
-        {{ resumen.hechas }} de {{ resumen.tareas }} hechas
+        ponderado · {{ resumen.hechas }} de {{ resumen.tareas }} hechas
         {%- if estimadas %} · {{ estimadas }} estimadas{% endif %}
       </span>
     </div>
   </div>
+
+  {% if niveles_abiertos %}
+    <p class="aviso pesos-abiertos">
+      <strong>Los pesos no cierran</strong> en {{ niveles_abiertos | length }}
+      {{ 'nivel' if niveles_abiertos | length == 1 else 'niveles' }}:
+      {{ niveles_abiertos | map(attribute='mensaje') | join(' · ') }}.
+      El avance se calcula igual normalizando, pero no vas a poder congelar una línea
+      base ni emitir un informe hasta que la cuenta dé 100 en cada nivel.
+    </p>
+  {% endif %}
 
   {% if por_ambito %}
     <div class="resumen por-ambito">
@@ -76,6 +86,14 @@
           title="Reasigna los códigos WBS según el orden del árbol">Renumerar WBS</button>
   <a class="boton" href="/proyectos/{{ proyecto.id }}/estados"
      title="Definir los estados de tarea de este proyecto">Estados</a>
+  <button class="boton" hx-post="/proyectos/{{ proyecto.id }}/pesos/repartir"
+          hx-vals='{"criterio": "duracion"}' hx-target="#tablero" hx-swap="innerHTML"
+          hx-confirm="Reescribe TODOS los pesos según la duración de cada tarea y pisa lo que hayas cargado. Es un punto de partida: el valor de negocio no es proporcional al tiempo. ¿Sigo?"
+          title="Punto de partida: lo que más tarda, más pesa">Pesos por duración</button>
+  <button class="boton" hx-post="/proyectos/{{ proyecto.id }}/pesos/repartir"
+          hx-vals='{"criterio": "limpiar"}' hx-target="#tablero" hx-swap="innerHTML"
+          hx-confirm="Borra todos los pesos declarados y vuelve al reparto automático parejo. ¿Sigo?"
+          title="Volver al reparto automático">Limpiar pesos</button>
   <button class="boton" type="button"
           onclick="document.getElementById('importar-bloque').classList.toggle('oculto')">
     Importar planilla

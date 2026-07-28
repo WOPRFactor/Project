@@ -121,6 +121,10 @@ class Task(SQLModel, table=True):
     # con la ruta crítica, que el motor deduce del grafo y expone como holgura.
     critica: bool = Field(default=False)
     ambito: Ambito = Field(default=Ambito.proyecto)
+    # Peso **como % del padre**, no del proyecto: así cada nivel cierra por su cuenta
+    # y agregar una tarea no rompe la suma del árbol entero. `None` = repartir en
+    # partes iguales lo que sobre. Ver `services/pesos.py`.
+    peso: int | None = Field(default=None, ge=0, le=100)
     # duración 0 = hito: marca un momento, no consume días del cronograma
     duracion: int = Field(default=1, ge=0, le=3650)
     # Rango opcional: cuando la duración es una estimación y no un dato.

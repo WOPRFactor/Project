@@ -44,6 +44,8 @@ class TareaIn(BaseModel):
     responsable: str = Field(default="", max_length=120)
     critica: bool = False
     ambito: Ambito = Ambito.proyecto
+    # % del padre; None = lo que sobre, repartido en partes iguales.
+    peso: int | None = Field(default=None, ge=0, le=100)
     duracion: int = Field(default=1, ge=0, le=3650)
     duracion_optimista: int | None = Field(default=None, ge=0, le=3650)
     duracion_pesimista: int | None = Field(default=None, ge=0, le=3650)
