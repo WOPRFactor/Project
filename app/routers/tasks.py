@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 from pydantic import ValidationError
 from sqlmodel import Session
@@ -13,9 +13,6 @@ from ..db import get_session
 from ..models import Ambito
 from ..schemas import ProyectoIn, TareaIn
 from ..services import arbol as arbol_service
-from ..services import importar_aplicar
-from ..services import importar_excel
-from ..services import importar_texto
 from ..services import pesos_aplicar
 from ..services import predecesoras as predecesoras_service
 from ..services import projects as projects_service
@@ -213,54 +210,6 @@ def renumerar(
 ) -> HTMLResponse:
     cambiados = arbol_service.renumerar(session, project_id)
     return render(request, session, project_id, aviso=f"{cambiados} códigos reasignados")
-
-
-@router.post("/importar", response_class=HTMLResponse)
-async def importar_planilla(
-    project_id: int,
-    request: Request,
-    archivo: UploadFile = File(...),
-    session: Session = Depends(get_session),
-) -> HTMLResponse:
-    """Suma las tareas de una planilla al proyecto abierto."""
-    if not (archivo.filename or "").lower().endswith((".xlsx", ".xlsm")):
-        return render(request, session, project_id, aviso="Tiene que ser un .xlsx o .xlsm")
-
-    contenido = await archivo.read()
-    if len(contenido) > 5 * 1024 * 1024:
-        return render(request, session, project_id, aviso="La planilla supera los 5 MB")
-
-    try:
-        importacion = importar_excel.leer(contenido)
-    except Exception:  # openpyxl levanta de todo con archivos corruptos
-        return render(
-            request, session, project_id,
-            aviso="No pude leer la planilla: ¿está corrupta o protegida?",
-        )
-    if not importacion.filas:
-        return render(
-            request, session, project_id,
-            aviso="No encontré tareas: la planilla necesita columnas «WBS» y «Tarea»",
-        )
-
-    avisos = importar_aplicar.agregar_a_proyecto(session, project_id, importacion)
-    return render(request, session, project_id, aviso="; ".join(avisos) or None)
-
-
-@router.post("/pegar", response_class=HTMLResponse)
-def pegar(
-    project_id: int,
-    request: Request,
-    texto: str = Form(""),
-    session: Session = Depends(get_session),
-) -> HTMLResponse:
-    if len(texto) > 200_000:
-        return render(request, session, project_id, aviso="El texto pegado es demasiado grande")
-    importacion = importar_texto.leer(texto)
-    if not importacion.filas:
-        return render(request, session, project_id, aviso="No encontré tareas en lo que pegaste")
-    avisos = importar_aplicar.agregar_a_proyecto(session, project_id, importacion)
-    return render(request, session, project_id, aviso="; ".join(avisos) or None)
 
 
 def _mover(request: Request, session: Session, project_id: int, operacion, task_id: int):
