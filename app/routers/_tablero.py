@@ -58,6 +58,7 @@ def contexto(session: Session, project_id: int, mirada: Mirada | None = None) ->
         "proyecto": proyecto,
         "linea_base": linea_base_service.vigente(session, project_id),
         "desvio_ambito": linea_base_service.desvio_por_ambito(session, project_id, datos),
+        "avance_planificado": linea_base_service.avance_planificado(session, project_id),
         "filas": datos.filas,
         "todas_las_filas": datos.todas_las_filas,
         "etapas": gantt_vista.etapas(datos.todas_las_filas),

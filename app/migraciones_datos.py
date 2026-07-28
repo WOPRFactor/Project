@@ -25,12 +25,38 @@ log = logging.getLogger("wopr.migraciones")
 _ESTADOS_V1 = ["pendiente", "en_curso", "hecha"]
 
 
-def poner_al_dia(engine: Engine) -> list[str]:
+def poner_al_dia(engine: Engine, agregadas: list[str] | None = None) -> list[str]:
+    """`agregadas` son las columnas que acaba de crear `migraciones.poner_al_dia`.
+
+    Se usa para correr una migración de datos **exactamente una vez**: cuando la
+    columna nació recién. Adivinarlo mirando los datos sería frágil.
+    """
     aplicadas: list[str] = []
     with Session(engine) as session:
         aplicadas += _sembrar_estados(session)
     aplicadas += _migrar_estado_a_tabla(engine)
+    if "task.avance" in (agregadas or []):
+        with Session(engine) as session:
+            aplicadas += _avance_desde_estado(session)
     return aplicadas
+
+
+def _avance_desde_estado(session: Session) -> list[str]:
+    """El avance nace del estado que ya tenía cada tarea.
+
+    Sin esto, una tarea marcada «Hecha» en la versión anterior aparecería al 0% y el
+    proyecto entero mostraría un retroceso que nunca pasó.
+    """
+    estados = {e.id: e for e in session.exec(select(Estado))}
+    tocadas = 0
+    for tarea in session.exec(select(Task)):
+        estado = estados.get(tarea.estado_id or 0)
+        if estado is not None and tarea.avance != estado.avance_sugerido:
+            tarea.avance = estado.avance_sugerido
+            session.add(tarea)
+            tocadas += 1
+    session.commit()
+    return [f"avance sembrado desde el estado en {tocadas} tareas"] if tocadas else []
 
 
 def _sembrar_estados(session: Session) -> list[str]:

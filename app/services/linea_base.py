@@ -148,11 +148,22 @@ def desvio_por_ambito(session: Session, project_id: int, datos) -> dict[str, int
     )
 
 
+def avance_planificado(session: Session, project_id: int, corte: date | None = None) -> int | None:
+    """Cuánto debería estar hecho hoy según la base vigente. Sin base, `None`."""
+    linea = vigente(session, project_id)
+    if linea is None:
+        return None
+    return comparar_engine.avance_planificado(
+        _congeladas(tareas_de(session, linea.id or 0)), corte or date.today(),
+    )
+
+
 def _congeladas(tareas: list[LineaBaseTarea]) -> list[comparar_engine.Congelada]:
     return [
         comparar_engine.Congelada(
             task_id=t.task_id, titulo=t.titulo, inicio=t.inicio,
             fin=t.fin, duracion=t.duracion, ambito=t.ambito,
+            peso_absoluto=t.peso_absoluto,
         )
         for t in tareas
     ]

@@ -46,7 +46,12 @@
       <span class="etiqueta">Avance</span>
       <strong title="Ponderado: cada tarea pesa lo que vale, no una cabeza">{{ avance_ponderado }}%</strong>
       <span class="tenue">
-        ponderado · {{ resumen.hechas }} de {{ resumen.tareas }} hechas
+        {%- if avance_planificado is not none %}
+          planificado {{ avance_planificado }}% ·
+          <b class="{{ 'atrasado' if avance_ponderado < avance_planificado }}{{ 'adelantado' if avance_ponderado > avance_planificado }}">
+            {{ '%+d' % (avance_ponderado - avance_planificado) }} pts</b> ·
+        {%- else %} ponderado · {% endif %}
+        {{ resumen.hechas }} de {{ resumen.tareas }} hechas
         {%- if estimadas %} · {{ estimadas }} estimadas{% endif %}
       </span>
     </div>

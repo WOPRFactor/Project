@@ -176,8 +176,7 @@ def armar(
         ventana=schedule_service.ventana(session, project_id),
         estimadas=len([f for f in filas if f.es_estimada and not f.es_resumen]),
         avance_ponderado=pesos_service.avance_ponderado(
-            nodos_peso,
-            {f.tarea.id or 0: f.estado.avance_sugerido if f.estado else 0 for f in filas},
+            nodos_peso, {f.tarea.id or 0: f.tarea.avance for f in filas},
         ),
         niveles_abiertos=resumen_service.niveles_abiertos(nodos_peso, filas),
         proximo_hito=resumen_service.proximo_hito(filas, hoy or date.today()),

@@ -25,10 +25,10 @@ def estado(nombre="Pendiente", color=ColorEstado.gris, final=False, sugerido=0):
 
 
 def fila(id_, nivel=0, parent=None, resumen=False, hito=False, critica=False,
-         ambito=Ambito.proyecto, est=None):
+         ambito=Ambito.proyecto, est=None, avance_real=0):
     tarea = Task(
         id=id_, project_id=1, parent_id=parent, titulo=f"T{id_}",
-        critica=critica, ambito=ambito,
+        critica=critica, ambito=ambito, avance=avance_real,
     )
     return Fila(tarea=tarea, nivel=nivel, es_resumen=resumen, es_hito=hito, estado=est)
 
@@ -125,8 +125,8 @@ def test_por_ambito_distingue_los_tres():
 
 
 def test_por_avance_recorre_los_cuatro_tramos():
-    def color(sugerido):
-        return clase_color(fila(1, est=estado(sugerido=sugerido)), POR_AVANCE)
+    def color(real):
+        return clase_color(fila(1, avance_real=real), POR_AVANCE)
 
     assert color(0) == "color-gris"
     assert color(30) == "color-ambar"
@@ -134,6 +134,7 @@ def test_por_avance_recorre_los_cuatro_tramos():
     assert color(100) == "color-verde"
 
 
-def test_el_avance_sale_del_estado_y_se_acota():
-    assert avance(fila(1, est=estado(sugerido=50))) == 50
+def test_el_avance_pintado_es_el_real_de_la_tarea():
+    """No el sugerido por el estado: el estado sugiere, la tarea manda."""
+    assert avance(fila(1, est=estado(sugerido=100), avance_real=40)) == 40
     assert avance(fila(1)) == 0

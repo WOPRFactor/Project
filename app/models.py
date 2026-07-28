@@ -131,6 +131,11 @@ class Task(SQLModel, table=True):
     duracion_optimista: int | None = Field(default=None, ge=0, le=3650)
     duracion_pesimista: int | None = Field(default=None, ge=0, le=3650)
     snet: date | None = Field(default=None)
+    # Avance real, 0-100. Es la fuente de verdad del progreso; el estado es una
+    # etiqueta que elige el usuario y solo lo *sugiere* (ver `Estado.avance_sugerido`).
+    avance: int = Field(default=0, ge=0, le=100)
+    inicio_real: date | None = Field(default=None)
+    fin_real: date | None = Field(default=None)
     estado_id: int | None = Field(default=None, foreign_key="estado.id", index=True)
     orden: int = Field(default=0)
 

@@ -104,10 +104,8 @@ def etapas(filas: list["Fila"]) -> list["Fila"]:
 
 
 def avance(fila: "Fila") -> int:
-    """Cuánto de la barra va pintado. Hoy sale del estado; en la Fase 18, de la tarea."""
-    if fila.estado is None:
-        return 0
-    return max(0, min(100, fila.estado.avance_sugerido))
+    """Cuánto de la barra va pintado: el avance real que cargó el usuario."""
+    return max(0, min(100, fila.tarea.avance))
 
 
 def clase_color(fila: "Fila", modo: str) -> str:

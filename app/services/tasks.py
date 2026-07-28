@@ -6,6 +6,8 @@ colgar de sí misma ni de una descendiente suya.
 
 from __future__ import annotations
 
+from datetime import date
+
 from sqlmodel import Session, select
 
 from ..models import Dependency, Task
@@ -89,12 +91,15 @@ def actualizar(session: Session, task_id: int, datos: TareaIn) -> Task | None:
     tarea = session.get(Task, task_id)
     if tarea is None:
         return None
-    valores = datos.model_dump(exclude={"parent_id", "estado_id"})
+    anterior = tarea.estado_id
+    valores = datos.model_dump(exclude={"parent_id", "estado_id", "avance"})
     for campo, valor in valores.items():
         setattr(tarea, campo, valor)
     tarea.estado_id = _estado_valido(
         session, tarea.project_id, datos.estado_id or tarea.estado_id
     )
+    tarea.avance = _avance(session, tarea, anterior, datos.avance)
+    _sellar_fechas_reales(tarea)
     session.add(tarea)
     session.commit()
     session.refresh(tarea)
@@ -126,11 +131,44 @@ def cambiar_estado(session: Session, task_id: int, estado_id: int | None) -> Tas
     tarea = session.get(Task, task_id)
     if tarea is None:
         return None
+    anterior = tarea.estado_id
     tarea.estado_id = _estado_valido(session, tarea.project_id, estado_id)
+    tarea.avance = _avance(session, tarea, anterior, tarea.avance)
+    _sellar_fechas_reales(tarea)
     session.add(tarea)
     session.commit()
     session.refresh(tarea)
     return tarea
+
+
+def _avance(session: Session, tarea: Task, estado_anterior: int | None, entrante: int) -> int:
+    """Elegir un estado **sugiere** un avance; no lo impone.
+
+    Si el avance que venía coincidía con lo que sugería el estado anterior, quiere
+    decir que el usuario nunca lo tocó a mano: entonces se mueve solo al del estado
+    nuevo. Si lo había escrito él, se respeta — que es la diferencia entre una ayuda
+    y una imposición.
+    """
+    entrante = max(0, min(100, entrante))
+    if tarea.estado_id == estado_anterior:
+        return entrante
+
+    previo = estados_service.obtener(session, estado_anterior) if estado_anterior else None
+    nuevo = estados_service.obtener(session, tarea.estado_id) if tarea.estado_id else None
+    if nuevo is None:
+        return entrante
+    sin_tocar = previo is None or entrante == previo.avance_sugerido
+    return nuevo.avance_sugerido if sin_tocar else entrante
+
+
+def _sellar_fechas_reales(tarea: Task) -> None:
+    """Las fechas reales se ponen solas la primera vez y después no se pisan."""
+    if tarea.avance > 0 and tarea.inicio_real is None:
+        tarea.inicio_real = date.today()
+    if tarea.avance >= 100 and tarea.fin_real is None:
+        tarea.fin_real = date.today()
+    if tarea.avance < 100:
+        tarea.fin_real = None
 
 
 def _estado_valido(session: Session, project_id: int, estado_id: int | None) -> int | None:

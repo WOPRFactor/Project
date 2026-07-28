@@ -49,6 +49,9 @@ class TareaIn(BaseModel):
     duracion: int = Field(default=1, ge=0, le=3650)
     duracion_optimista: int | None = Field(default=None, ge=0, le=3650)
     duracion_pesimista: int | None = Field(default=None, ge=0, le=3650)
+    avance: int = Field(default=0, ge=0, le=100)
+    inicio_real: date | None = None
+    fin_real: date | None = None
     snet: date | None = None
     # None = la tarea toma el estado inicial del proyecto. Los estados son filas, no
     # un enum, así que acá viaja un id y el service valida que sea de este proyecto.

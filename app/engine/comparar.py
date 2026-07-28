@@ -27,6 +27,9 @@ class Congelada:
     fin: date | None = None
     duracion: int = 0
     ambito: str = "proyecto"
+    # Peso congelado: si se recalculara con los pesos de hoy, un informe
+    # viejo dejaría de ser comparable consigo mismo.
+    peso_absoluto: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -122,3 +125,31 @@ def por_ambito(base: list[Congelada], actual: list[Congelada]) -> dict[str, int]
 def _ultimo(tareas: list[Congelada], ambito: str) -> date | None:
     fines = [t.fin for t in tareas if t.ambito == ambito and t.fin]
     return max(fines) if fines else None
+
+
+def avance_planificado(base: list[Congelada], corte: date) -> int:
+    """Cuánto *debería* estar hecho a la fecha de corte, según la línea base.
+
+    Es la otra mitad del avance: un 45% real no dice nada hasta que se sabe si a esa
+    altura tocaba ir 30 o 60. Cada tarea aporta su peso multiplicado por la fracción
+    de su ventana que ya transcurrió; una tarea a medio camino aporta la mitad.
+    """
+    total = sum(c.peso_absoluto for c in base)
+    if total <= 0:
+        return 0
+    logrado = sum(c.peso_absoluto * _fraccion(c, corte) for c in base)
+    return round(100 * logrado / total)
+
+
+def _fraccion(tarea: Congelada, corte: date) -> float:
+    if tarea.inicio is None or tarea.fin is None:
+        return 0.0
+    if corte >= tarea.fin:
+        return 1.0
+    if corte < tarea.inicio:
+        return 0.0
+    # Un hito no tiene ventana que repartir: o pasó o no pasó.
+    ventana = contar_habiles(tarea.inicio, tarea.fin)
+    if ventana <= 1:
+        return 1.0 if corte >= tarea.fin else 0.0
+    return (contar_habiles(tarea.inicio, corte) - 1) / (ventana - 1)

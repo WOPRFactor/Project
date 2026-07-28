@@ -13,6 +13,7 @@
       {% if linea_base %}<span class="c-desvio" title="Contra «{{ linea_base.nombre }}». Positivo = tarde">Desvío</span>{% endif %}
       <span class="c-crit">Crít.</span>
       <span class="c-peso" title="% del padre. Vacío = se reparte solo">Peso</span>
+      <span class="c-avance" title="Avance real. El estado lo sugiere, vos lo confirmás">Avance</span>
       <span class="c-riesgo" title="¿Esta tarea tiene riesgos?">Riesgo</span>
       <span class="c-estado">Estado</span>
       <span class="c-ambito">Ámbito</span>
@@ -102,6 +103,15 @@
                  class="celda mono chico"
                  title="Peso dentro de su nivel, en %. Vacío = se reparte lo que sobre. Sobre el proyecto entero vale {{ '%.1f' % fila.peso_absoluto }}%.">
           <span class="peso-abs" aria-hidden="true">{{ '%.1f' % fila.peso_absoluto }}</span>
+        </span>
+        <span class="c-avance">
+          {% if fila.es_resumen %}
+            <span class="celda calculada">—</span>
+          {% else %}
+            <input id="avc-{{ t.id }}" name="avance" type="number" min="0" max="100"
+                   value="{{ t.avance }}" class="celda mono chico"
+                   title="Avance real en %. Cambiar el estado lo sugiere; si lo escribís vos, manda lo tuyo.{% if t.fin_real %} Terminada el {{ t.fin_real | fecha }}.{% endif %}">
+          {% endif %}
         </span>
         <span class="c-riesgo">
           {# Fuera del form de la fila a propósito: tildar no guarda la fila, crea o

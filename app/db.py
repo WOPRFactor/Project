@@ -22,8 +22,8 @@ engine = create_engine(
 def init_db() -> None:
     """Crea lo que falte y pone al día una base de una versión anterior."""
     SQLModel.metadata.create_all(engine)
-    poner_al_dia(engine)
-    poner_al_dia_datos(engine)
+    agregadas = poner_al_dia(engine)
+    poner_al_dia_datos(engine, agregadas)
 
 
 def get_session() -> Iterator[Session]:

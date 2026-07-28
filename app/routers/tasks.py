@@ -51,6 +51,7 @@ def guardar_celda(
     ambito: str = Form("proyecto"),
     estado_id: str = Form(""),
     peso: str = Form(""),
+    avance: str = Form(""),
     duracion_optimista: str = Form(""),
     duracion_pesimista: str = Form(""),
     mirada: Mirada = Depends(mirada_form),
@@ -71,6 +72,7 @@ def guardar_celda(
             # Celda vacía = sin peso declarado, que no es lo mismo que peso cero:
             # significa "repartime lo que sobre".
             peso=int(peso) if peso.strip() else None,
+            avance=int(avance) if avance.strip() else tarea.avance,
             duracion=int(duracion) if duracion.strip() else tarea.duracion,
             duracion_optimista=int(duracion_optimista) if duracion_optimista.strip() else None,
             duracion_pesimista=int(duracion_pesimista) if duracion_pesimista.strip() else None,
