@@ -10,6 +10,7 @@
       <span class="c-rango" title="Optimista y pesimista: opcionales">Opt · Pes</span>
       <span class="c-fecha">Inicio</span>
       <span class="c-fecha">Fin</span>
+      {% if linea_base %}<span class="c-desvio" title="Contra «{{ linea_base.nombre }}». Positivo = tarde">Desvío</span>{% endif %}
       <span class="c-crit">Crít.</span>
       <span class="c-peso" title="% del padre. Vacío = se reparte solo">Peso</span>
       <span class="c-riesgo" title="¿Esta tarea tiene riesgos?">Riesgo</span>
@@ -75,6 +76,18 @@
           {% endif %}
         </span>
         <span class="c-fecha"><span class="celda calculada">{{ fila.fin | fecha }}</span></span>
+        {% if linea_base %}
+          <span class="c-desvio">
+            {% if fila.es_nueva %}
+              <span class="celda calculada nueva" title="No estaba en la línea base: es alcance nuevo, no un atraso">nueva</span>
+            {% elif fila.desvio is none %}
+              <span class="celda calculada">—</span>
+            {% else %}
+              <span class="celda calculada {{ 'atrasado' if fila.desvio > 0 }}{{ 'adelantado' if fila.desvio < 0 }}"
+                    title="Base: {{ fila.fin | fecha }} vs congelado">{{ '%+d' % fila.desvio }}</span>
+            {% endif %}
+          </span>
+        {% endif %}
         <span class="c-crit">
           <select id="cri-{{ t.id }}" name="critica"
                   class="celda {{ 'es-critica' if t.critica }}"
@@ -184,6 +197,11 @@
         {% for fila in filas %}
           <div class="fila-barra">
             {% if fila.columnas %}
+              {% if fila.columnas_base and not fila.es_resumen %}
+                <div class="barra-base"
+                     style="grid-column: {{ fila.columnas_base[0] }} / {{ fila.columnas_base[1] }}"
+                     title="Lo aprobado en «{{ linea_base.nombre }}»"></div>
+              {% endif %}
               {% set pintado = clase_color(fila, mirada.color) %}
               <div class="barra-tarea {{ 'hito' if fila.es_hito }} {{ 'estimada' if fila.es_estimada }} {{ pintado }}"
                    style="grid-column: {{ fila.columnas[0] }} / {{ fila.columnas[1] }}"

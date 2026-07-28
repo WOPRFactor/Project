@@ -100,7 +100,7 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .gantt { display: flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--panel); margin-bottom: 18px; }
 /* Ancho fijo. Tiene que alcanzar para todas las columnas fijas (~615px) más la
    de Tarea; si se achica, el título se aplasta a cero. */
-.panel-izq { flex: 0 0 1330px; max-width: 1330px; border-right: 2px solid var(--borde); }
+.panel-izq { flex: 0 0 1400px; max-width: 1400px; border-right: 2px solid var(--borde); }
 .panel-der { flex: 1 1 auto; overflow-x: auto; }
 
 .panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
@@ -113,7 +113,7 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
    min-width: 0 es obligatorio: sin eso, el ancho intrínseco de un <input type=date>
    estira su columna y desalinea el encabezado de las filas. */
 .c-cod, .c-resp, .c-pred, .c-dias, .c-fecha, .c-crit, .c-ops, .c-ambito, .c-rango,
-.c-estado, .c-peso, .c-riesgo { min-width: 0; }
+.c-estado, .c-peso, .c-riesgo, .c-desvio { min-width: 0; }
 .c-cod   { flex: 0 0 52px; }
 .c-tarea { flex: 1 1 auto; min-width: 240px; display: flex; align-items: center; gap: 2px; }
 .c-resp  { flex: 0 0 88px; }
@@ -431,3 +431,21 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .barra-tarea.ambito-barra-proyecto    { background: var(--c-azul);  color: #08101f; }
 .barra-tarea.ambito-barra-seguimiento { background: var(--c-ambar); color: #241a05; }
 .barra-tarea.ambito-barra-control     { background: var(--c-verde); color: #062017; }
+
+
+/* --- Línea base y desvío (Fase 17) --- */
+.c-desvio { flex: 0 0 62px; }
+.c-desvio .celda { text-align: right; font-variant-numeric: tabular-nums; }
+.atrasado   { color: var(--critico); font-weight: 600; }
+.adelantado { color: var(--hecho); }
+.c-desvio .nueva { color: var(--tenue); font-style: italic; font-size: .74rem; }
+
+/* La barra de la base va detrás y en gris: es la referencia, no el dato de hoy. */
+.barra-base {
+  grid-row: 1; align-self: end; height: 5px; margin-bottom: 1px;
+  background: repeating-linear-gradient(
+    90deg, var(--tenue) 0 6px, transparent 6px 10px
+  );
+  opacity: .55; border-radius: 2px; pointer-events: none;
+}
+.chip.vigente { border-color: var(--hecho); color: var(--hecho); }

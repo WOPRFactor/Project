@@ -11,6 +11,7 @@ from datetime import date
 
 from sqlmodel import Session
 
+from ..engine.comparar import dias_habiles_con_signo
 from ..engine.timeline import Extremo, Grilla, ancho_columna, barra, construir_grilla, flecha
 from ..models import Dependency, Estado, Task
 from . import dependencies as dependencies_service
@@ -46,6 +47,10 @@ class Fila:
     tiene_predecesoras: bool = False
     es_estimada: bool = False
     tiene_riesgo: bool = False
+    # Contra la línea base vigente. Positivo = atrasada; None = sin base o sin fechas.
+    desvio: int | None = None
+    es_nueva: bool = False
+    columnas_base: tuple[int, int] | None = None
     # Lo que la tarea vale sobre el proyecto entero. Derivado: se multiplica desde
     # la raíz, nunca se guarda. Lo que el usuario escribe es el % del padre.
     peso_absoluto: float = 0.0
@@ -105,7 +110,10 @@ def armar(
     project_id: int,
     hoy: date | None = None,
     mirada: gantt_vista.Mirada | None = None,
+    base: dict[int, tuple] | None = None,
 ) -> VistaProyecto:
+    """`base` son las fechas congeladas (`{task_id: (inicio, fin)}`), como dato plano:
+    así el desvío se calcula acá sin que este módulo conozca la línea base."""
     cronograma, error = schedule_service.calcular_seguro(session, project_id)
     nodos = tasks_service.arbol(session, project_id)
     entrantes = dependencies_service.por_sucesora(session, project_id)
@@ -124,6 +132,7 @@ def armar(
     ]
     peso_absoluto = pesos_service.absolutos(nodos_peso)
     con_riesgo = riesgos_service.ids_con_riesgo(session, project_id)
+    base = base or {}
     filas: list[Fila] = []
     for tarea, nivel in nodos:
         calculada = cronograma.get(tarea.id or 0)
@@ -149,6 +158,7 @@ def armar(
             fila.sin_holgura = calculada.critica
             if grilla is not None:
                 fila.columnas = barra(grilla, calculada.inicio, calculada.fin)
+            _medir_desvio(fila, base, grilla)
         filas.append(fila)
 
     mirada = mirada or gantt_vista.Mirada()
@@ -174,6 +184,22 @@ def armar(
         flechas=_flechas(visibles, dependencies_service.listar(session, project_id), ancho),
         ancho_dia=ancho,
     )
+
+
+def _medir_desvio(fila: Fila, base: dict[int, tuple], grilla: Grilla | None) -> None:
+    """Cuánto se movió esta fila desde que se congeló, y dónde iba la barra original."""
+    if not base:
+        return
+    congelada = base.get(fila.tarea.id or 0)
+    if congelada is None:
+        # No estaba en la base: es alcance nuevo, no un atraso.
+        fila.es_nueva = True
+        return
+    inicio_base, fin_base = congelada
+    if fin_base is not None and fila.fin is not None:
+        fila.desvio = dias_habiles_con_signo(fin_base, fila.fin)
+    if grilla is not None and inicio_base is not None and fin_base is not None:
+        fila.columnas_base = barra(grilla, inicio_base, fin_base)
 
 
 _ALTO_FILA = 32

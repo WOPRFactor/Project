@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block titulo %}Línea base — {{ proyecto.nombre }}{% endblock %}
+
+{% block contenido %}
+  <p class="pie"><a href="/proyectos/{{ proyecto.id }}">← {{ proyecto.nombre }}</a></p>
+  <h1>Línea base</h1>
+  <p class="pie tenue">
+    Una línea base es la <strong>foto del cronograma en el momento en que se aprobó</strong>.
+    Es el único término de comparación que convierte «termina el 25/10» en «vamos 12 días
+    tarde». Podés tener varias —la aprobada, la replanificada—; una sola es la
+    <strong>vigente</strong>, y es contra esa que se mide el desvío en la grilla.
+  </p>
+
+  {% if aviso %}<p class="aviso">{{ aviso }}</p>{% endif %}
+
+  {% if niveles_abiertos %}
+    <p class="aviso">
+      No se puede congelar con los pesos abiertos: prometer con una cuenta que no cierra
+      convierte todo avance posterior en un número inventado.
+      {{ niveles_abiertos | map(attribute='mensaje') | join(' · ') }}.
+    </p>
+  {% endif %}
+
+  {% if desvio_ambito %}
+    <div class="resumen">
+      {% for ambito, dias in desvio_ambito.items() %}
+        <div class="dato">
+          <span class="etiqueta">Desvío · {{ etiqueta_ambito_texto(ambito) }}</span>
+          <strong class="{{ 'atrasado' if dias > 0 else ('adelantado' if dias < 0 else '') }}">
+            {{ '%+d' % dias }} d
+          </strong>
+          <span class="tenue">
+            {% if dias > 0 %}días hábiles más tarde que lo aprobado
+            {%- elif dias < 0 %}días hábiles antes que lo aprobado
+            {%- else %}en fecha{% endif %}
+          </span>
+        </div>
+      {% endfor %}
+    </div>
+    <p class="pie tenue">
+      El desvío de un bloque es el de <strong>su fin</strong>, no la suma de sus tareas:
+      cinco tareas atrasadas cinco días que corren en paralelo mueven el bloque cinco
+      días, no veinticinco.
+    </p>
+  {% endif %}
+
+  <h2>Congelar el cronograma de hoy</h2>
+  <form method="post" action="/proyectos/{{ proyecto.id }}/base/congelar"
+        class="tarjeta en-fila">
+    <input name="nombre" placeholder="Plan aprobado por dirección" maxlength="80"
+           class="celda" required>
+    <input name="nota" placeholder="Nota (opcional)" maxlength="500" class="celda">
+    <button class="boton primario" type="submit"
+            {{ 'disabled' if niveles_abiertos }}>Congelar</button>
+  </form>
+
+  <h2>Fotos guardadas</h2>
+  {% if not lineas %}
+    <p class="vacio">Todavía no congelaste ninguna. Sin línea base no hay desvío que medir.</p>
+  {% endif %}
+  <div class="lista-estados">
+    {% for linea in lineas %}
+      <div class="fila-estado">
+        <span class="e-nombre">
+          <strong>{{ linea.nombre }}</strong>
+          {% if linea.vigente %}<i class="chip vigente">vigente</i>{% endif %}
+          {% if linea.nota %}<br><span class="tenue">{{ linea.nota }}</span>{% endif %}
+        </span>
+        <span class="e-color tenue">{{ linea.congelada_el | fecha }}</span>
+        <span class="e-ops">
+          {% if not linea.vigente %}
+            <form method="post" class="en-linea"
+                  action="/proyectos/{{ proyecto.id }}/base/{{ linea.id }}/vigente">
+              <button class="boton" type="submit">Usar esta</button>
+            </form>
+          {% endif %}
+        </span>
+        <span class="e-ops">
+          <form method="post" class="en-linea"
+                action="/proyectos/{{ proyecto.id }}/base/{{ linea.id }}/eliminar"
+                onsubmit="return confirm('Borrar «{{ linea.nombre }}»? La foto se pierde y no se puede reconstruir.')">
+            <button class="boton peligro" type="submit">Borrar</button>
+          </form>
+        </span>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

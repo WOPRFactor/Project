@@ -15,6 +15,7 @@ from fastapi.responses import HTMLResponse
 from sqlmodel import Session
 
 from ..services import gantt_vista
+from ..services import linea_base as linea_base_service
 from ..services import projects as projects_service
 from ..services import tasks as tasks_service
 from ..services import vista as vista_service
@@ -51,9 +52,12 @@ def mirada_query(
 def contexto(session: Session, project_id: int, mirada: Mirada | None = None) -> dict:
     mirada = mirada or Mirada()
     proyecto = projects_service.obtener(session, project_id)
-    datos = vista_service.armar(session, project_id, mirada=mirada)
+    base = linea_base_service.fechas_base(session, project_id)
+    datos = vista_service.armar(session, project_id, mirada=mirada, base=base)
     return {
         "proyecto": proyecto,
+        "linea_base": linea_base_service.vigente(session, project_id),
+        "desvio_ambito": linea_base_service.desvio_por_ambito(session, project_id, datos),
         "filas": datos.filas,
         "todas_las_filas": datos.todas_las_filas,
         "etapas": gantt_vista.etapas(datos.todas_las_filas),

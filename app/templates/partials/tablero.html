@@ -33,6 +33,15 @@
       </div>
     {% endif %}
 
+    {% if linea_base %}
+      <div class="dato">
+        <span class="etiqueta">Desvío</span>
+        {% set d = desvio_ambito.get('proyecto', 0) %}
+        <strong class="{{ 'atrasado' if d > 0 }}{{ 'adelantado' if d < 0 }}">{{ '%+d' % d }} d</strong>
+        <span class="tenue">contra «{{ linea_base.nombre }}» · {{ linea_base.congelada_el | fecha }}</span>
+      </div>
+    {% endif %}
+
     <div class="dato">
       <span class="etiqueta">Avance</span>
       <strong title="Ponderado: cada tarea pesa lo que vale, no una cabeza">{{ avance_ponderado }}%</strong>
@@ -124,6 +133,8 @@
      title="Definir los estados de tarea de este proyecto">Estados</a>
   <a class="boton" href="/proyectos/{{ proyecto.id }}/riesgos"
      title="Registro de riesgos y cuadrante">Riesgos</a>
+  <a class="boton" href="/proyectos/{{ proyecto.id }}/base"
+     title="Congelar el cronograma aprobado y medir el desvío contra él">Línea base</a>
   <button class="boton" hx-post="/proyectos/{{ proyecto.id }}/pesos/repartir"
           hx-vals='{"criterio": "duracion"}' hx-target="#tablero" hx-swap="innerHTML"
           hx-confirm="Reescribe TODOS los pesos según la duración de cada tarea y pisa lo que hayas cargado. Es un punto de partida: el valor de negocio no es proporcional al tiempo. ¿Sigo?"

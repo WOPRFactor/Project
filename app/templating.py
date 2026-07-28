@@ -24,3 +24,11 @@ templates.env.globals["etiqueta_color"] = ETIQUETA_COLOR
 templates.env.globals["clase_color"] = clase_color
 templates.env.globals["avance_de"] = avance
 templates.env.globals["etiqueta_ambito"] = ETIQUETA_AMBITO
+
+
+def etiqueta_ambito_texto(valor: str) -> str:
+    """El ámbito congelado en una línea base se guarda como texto, no como enum."""
+    return next((e for a, e in ETIQUETA_AMBITO.items() if a.value == valor), valor)
+
+
+templates.env.globals["etiqueta_ambito_texto"] = etiqueta_ambito_texto

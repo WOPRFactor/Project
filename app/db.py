@@ -7,6 +7,7 @@ from collections.abc import Iterator
 from sqlmodel import Session, SQLModel, create_engine
 
 from . import models  # noqa: F401  — registra las tablas en el metadata
+from . import models_base  # noqa: F401  — línea base
 from .config import settings
 from .migraciones import poner_al_dia
 from .migraciones_datos import poner_al_dia as poner_al_dia_datos
