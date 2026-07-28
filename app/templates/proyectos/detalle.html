@@ -3,6 +3,8 @@
 
 {% block acciones %}
 <div class="acciones-barra">
+  <a class="enlace-tenue" href="/proyectos/{{ proyecto.id }}/export/excel"
+     title="La grilla completa. Reimportar este archivo reproduce el proyecto">Exportar .xlsx</a>
   <a class="enlace-tenue" href="/proyectos/{{ proyecto.id }}/export/markdown">Exportar .md</a>
   <a class="enlace-tenue" href="/proyectos/{{ proyecto.id }}/export/json">Exportar .json</a>
   <a class="enlace-tenue" href="/proyectos/{{ proyecto.id }}/editar">Editar proyecto</a>

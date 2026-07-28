@@ -10,7 +10,7 @@ from datetime import date
 
 from sqlmodel import Session
 
-from ..models import Project
+from ..models import Ambito, Project
 from ..schemas import DependenciaIn, ProyectoIn, TareaIn
 from . import dependencies as dependencies_service
 from . import projects as projects_service
@@ -43,7 +43,11 @@ def aplicar(
                 titulo=fila.titulo[:200],
                 responsable=fila.responsable[:120],
                 critica=fila.critica,
+                ambito=Ambito(fila.ambito),
+                peso=fila.peso,
                 duracion=0 if fila.es_hito else max(fila.duracion, 1),
+                duracion_optimista=fila.duracion_optimista,
+                duracion_pesimista=fila.duracion_pesimista,
                 parent_id=padre_id,
             ),
         )
@@ -88,7 +92,11 @@ def agregar_a_proyecto(
                 titulo=fila.titulo[:200],
                 responsable=fila.responsable[:120],
                 critica=fila.critica,
+                ambito=Ambito(fila.ambito),
+                peso=fila.peso,
                 duracion=0 if fila.es_hito else max(fila.duracion, 1),
+                duracion_optimista=fila.duracion_optimista,
+                duracion_pesimista=fila.duracion_pesimista,
                 parent_id=padre_id,
             ),
         )

@@ -15,7 +15,7 @@ from io import BytesIO
 
 from openpyxl import load_workbook
 
-from .importar import TIPOS, FilaImportada, Importacion
+from .importar import AMBITOS, TIPOS, FilaImportada, Importacion
 
 _COLUMNAS = {
     "wbs": "wbs",
@@ -35,6 +35,13 @@ _COLUMNAS = {
     "critica": "critica",
     "crítica": "critica",
     "criticidad": "critica",
+    "ambito": "ambito",
+    "ámbito": "ambito",
+    "peso": "peso",
+    "opt": "optimista",
+    "optimista": "optimista",
+    "pes": "pesimista",
+    "pesimista": "pesimista",
     "_tipo": "tipo",
     "tipo": "tipo",
     "inicio": "inicio",
@@ -152,11 +159,21 @@ def _armar_fila(
         duracion=0 if tipo == "hito" else max(int(duracion or 1), 1),
         responsable=_texto(celdas.get("responsable")),
         critica=_texto(celdas.get("critica")).lower() in _AFIRMATIVOS,
+        ambito=_ambito(_texto(celdas.get("ambito"))),
+        peso=_numero(celdas.get("peso")),
+        duracion_optimista=_numero(celdas.get("optimista")),
+        duracion_pesimista=_numero(celdas.get("pesimista")),
         predecesoras=predecesoras,
         inicio_declarado=_fecha(celdas.get("inicio")),
         fin_declarado=_fecha(celdas.get("fin")),
         nivel=wbs.count(".") if wbs else 0,
     )
+
+
+def _ambito(texto: str) -> str:
+    """La planilla puede traer la etiqueta con mayúscula; el enum es cerrado igual."""
+    limpio = texto.strip().lower()
+    return limpio if limpio in AMBITOS else "proyecto"
 
 
 def _predecesoras(valor, numero: int, avisos: list[str]) -> list[str]:

@@ -24,6 +24,11 @@ class FilaImportada:
     duracion: int = 1
     responsable: str = ""
     critica: bool = False
+    ambito: str = "proyecto"
+    # % del padre; None = se reparte solo. Ver `services/pesos.py`.
+    peso: int | None = None
+    duracion_optimista: int | None = None
+    duracion_pesimista: int | None = None
     predecesoras: list[str] = field(default_factory=list)
     nivel: int = 0
     # Fechas que trae la planilla. No se importan (las calcula el motor), pero
@@ -101,6 +106,10 @@ def desde_json(carga: str) -> Importacion | None:
                 duracion=_entero(cruda.get("duracion"), 1, 0, 3650),
                 responsable=str(cruda.get("responsable", ""))[:120],
                 critica=cruda.get("critica") is True,
+                ambito=_ambito(cruda.get("ambito")),
+                peso=_opcional(cruda.get("peso"), 0, 100),
+                duracion_optimista=_opcional(cruda.get("duracion_optimista"), 0, 3650),
+                duracion_pesimista=_opcional(cruda.get("duracion_pesimista"), 0, 3650),
                 predecesoras=[
                     str(p)[:40]
                     for p in (predecesoras if isinstance(predecesoras, list) else [])
@@ -111,6 +120,25 @@ def desde_json(carga: str) -> Importacion | None:
             )
         )
     return importacion
+
+
+AMBITOS = {"proyecto", "seguimiento", "control"}
+
+
+def _ambito(valor) -> str:
+    """Enum cerrado: lo que no esté en la lista cae en el ámbito por defecto."""
+    texto = str(valor).strip().lower() if valor is not None else ""
+    return texto if texto in AMBITOS else "proyecto"
+
+
+def _opcional(valor, minimo: int, maximo: int) -> int | None:
+    """Un entero acotado, o None si no vino: None y cero significan cosas distintas."""
+    if valor is None or valor == "":
+        return None
+    try:
+        return max(minimo, min(int(valor), maximo))
+    except (TypeError, ValueError):
+        return None
 
 
 def _fecha(valor) -> date | None:

@@ -10,6 +10,7 @@ from sqlmodel import Session
 
 from ..db import get_session
 from ..services import export as export_service
+from ..services import exportar_excel
 from ..services import projects as projects_service
 from ..templating import templates
 
@@ -37,8 +38,22 @@ def markdown(
     return _descarga(session, project_id, cuerpo, "text/markdown; charset=utf-8", "md")
 
 
+@router.get("/excel")
+def excel(
+    project_id: int, request: Request, session: Session = Depends(get_session)
+) -> Response:
+    """La grilla completa. Reimportar este archivo reproduce el proyecto."""
+    cuerpo = exportar_excel.a_excel(session, project_id)
+    if cuerpo is None:
+        return _no_existe(request)
+    return _descarga(
+        session, project_id, cuerpo,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx",
+    )
+
+
 def _descarga(
-    session: Session, project_id: int, cuerpo: str, tipo: str, extension: str
+    session: Session, project_id: int, cuerpo: str | bytes, tipo: str, extension: str
 ) -> Response:
     proyecto = projects_service.obtener(session, project_id)
     archivo = export_service.nombre_de_archivo(proyecto, extension)
