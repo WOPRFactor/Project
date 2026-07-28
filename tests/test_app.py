@@ -126,6 +126,44 @@ def test_indentar_la_primera_fila_avisa_sin_romper(cliente):
     assert "No hay una tarea arriba" in respuesta.text
 
 
+def test_importar_una_planilla_al_proyecto_abierto(cliente):
+    from pathlib import Path
+
+    crear_proyecto(cliente, "Obra", inicio="2026-08-03")
+    planilla = (Path(__file__).parent / "fixtures" / "gantt-traspaso.xlsx").read_bytes()
+    respuesta = cliente.post(
+        "/proyectos/1/importar",
+        files={"archivo": ("plan.xlsx", planilla, "application/vnd.ms-excel")},
+    )
+    assert respuesta.status_code == 200
+    assert "Etapa 1 — Conformación del Equipo" in respuesta.text
+    # las dependencias de la planilla llegaron: 1.3 depende de 1.2
+    assert 'value="1.2"' in respuesta.text
+
+
+def test_importar_al_proyecto_rechaza_lo_que_no_es_planilla(cliente):
+    crear_proyecto(cliente, "Obra")
+    respuesta = cliente.post(
+        "/proyectos/1/importar",
+        files={"archivo": ("nota.txt", b"hola", "text/plain")},
+    )
+    assert respuesta.status_code == 200
+    assert ".xlsx" in respuesta.text
+    assert "Traceback" not in respuesta.text
+
+
+def test_importar_dos_veces_avisa_de_los_codigos_repetidos(cliente):
+    from pathlib import Path
+
+    crear_proyecto(cliente, "Obra", inicio="2026-08-03")
+    planilla = (Path(__file__).parent / "fixtures" / "gantt-traspaso.xlsx").read_bytes()
+    archivo = {"archivo": ("plan.xlsx", planilla, "application/vnd.ms-excel")}
+    cliente.post("/proyectos/1/importar", files=archivo)
+    respuesta = cliente.post("/proyectos/1/importar", files=archivo)
+    assert respuesta.status_code == 200
+    assert "ya estaba usado" in respuesta.text
+
+
 def test_pegar_una_lista_en_un_proyecto_existente(cliente):
     crear_proyecto(cliente, "Obra")
     respuesta = cliente.post(

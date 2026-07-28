@@ -55,8 +55,13 @@ la pantalla sin scrollear kilómetros.
 
 ## Importar
 
-Desde **Importar**, en la home. Nada se crea hasta que confirmás la previsualización,
-que muestra qué va a entrar y qué hubo que arreglar o saltear.
+Dos caminos, según lo que quieras:
+
+- **Proyecto nuevo** — desde *Importar desde planilla*, en la home. Muestra una
+  previsualización con los avisos y no crea nada hasta que confirmás.
+- **Sumar a un proyecto abierto** — desde el botón *Importar planilla* dentro del
+  proyecto. Las tareas se agregan al final con su jerarquía y sus dependencias. Si un
+  código WBS ya estaba usado, la fila entra con uno libre y queda avisado.
 
 **Desde una planilla `.xlsx`.** Hay una **plantilla modelo descargable** desde la misma
 pantalla: trae el formato armado y las columnas de códigos ya en modo texto, para que

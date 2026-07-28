@@ -41,9 +41,27 @@
           hx-confirm="Renumera todos los WBS según la posición actual. Las dependencias se reescriben solas, pero si tenías códigos a mano se pierden. ¿Sigo?"
           title="Reasigna los códigos WBS según el orden del árbol">Renumerar WBS</button>
   <button class="boton" type="button"
+          onclick="document.getElementById('importar-bloque').classList.toggle('oculto')">
+    Importar planilla
+  </button>
+  <button class="boton" type="button"
           onclick="document.getElementById('pegar-bloque').classList.toggle('oculto')">
     Pegar lista de tareas
   </button>
+</div>
+
+<div id="importar-bloque" class="oculto">
+  <form class="tarjeta" hx-post="/proyectos/{{ proyecto.id }}/importar"
+        hx-encoding="multipart/form-data" hx-target="#tablero" hx-swap="innerHTML">
+    <p class="tenue pie">
+      Las tareas de la planilla se suman a este proyecto, con su jerarquía y sus
+      dependencias. Necesita las columnas <strong>WBS</strong> y <strong>Tarea</strong>;
+      también lee <em>Predec.</em>, <em>Días</em>, <em>Resp.</em>, <em>Crít.</em> y
+      <em>_tipo</em>. <a href="/importar/plantilla">Descargar la planilla modelo</a>.
+    </p>
+    <input type="file" name="archivo" accept=".xlsx,.xlsm" required>
+    <button class="boton primario" type="submit">Importar al proyecto</button>
+  </form>
 </div>
 
 <div id="pegar-bloque" class="oculto">
@@ -62,7 +80,7 @@
 {% if not filas %}
   <p class="vacio">
     Este proyecto no tiene tareas. Agregá la primera con <strong>+ Tarea</strong>,
-    o pegá una lista entera.
+    importá una planilla, o pegá una lista entera.
   </p>
 {% else %}
   {% include "partials/gantt.html" %}

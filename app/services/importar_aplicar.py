@@ -66,14 +66,21 @@ def aplicar(
 def agregar_a_proyecto(
     session: Session, project_id: int, importacion: Importacion
 ) -> list[str]:
-    """Suma las filas importadas al final de un proyecto que ya existe."""
+    """Suma las filas importadas al final de un proyecto que ya existe.
+
+    A diferencia de crear uno nuevo, acá los códigos pueden chocar con los que ya
+    hay: en ese caso la fila entra con un código libre y queda avisado, porque un
+    código repetido haría que una dependencia apunte a la tarea equivocada.
+    """
     from . import arbol as arbol_service
 
     avisos: list[str] = []
+    ocupados = {t.codigo for t in tasks_service.listar(session, project_id) if t.codigo}
+    por_wbs: dict[str, int] = {}
     ultimo_por_nivel: dict[int, int] = {}
 
     for fila in importacion.filas:
-        padre_id = ultimo_por_nivel.get(fila.nivel - 1) if fila.nivel else None
+        padre_id = _padre_al_agregar(fila, por_wbs, ultimo_por_nivel)
         tarea = arbol_service.agregar_al_final(
             session,
             project_id,
@@ -85,11 +92,37 @@ def agregar_a_proyecto(
                 parent_id=padre_id,
             ),
         )
+        if fila.wbs:
+            if fila.wbs in ocupados:
+                avisos.append(
+                    f"El código {fila.wbs} ya estaba usado en este proyecto: "
+                    f"«{fila.titulo[:40]}» entró como {tarea.codigo}"
+                )
+            else:
+                tarea.codigo = fila.wbs[:40]
+                session.add(tarea)
+                session.commit()
+                session.refresh(tarea)
+            ocupados.add(tarea.codigo)
+            por_wbs[fila.wbs] = tarea.id
+
         ultimo_por_nivel[fila.nivel] = tarea.id
         for mas_hondo in [n for n in ultimo_por_nivel if n > fila.nivel]:
             del ultimo_por_nivel[mas_hondo]
 
+    avisos += _vincular(session, project_id, importacion.filas, por_wbs)
     return avisos + importacion.avisos
+
+
+def _padre_al_agregar(
+    fila: FilaImportada, por_wbs: dict[str, int], ultimo_por_nivel: dict[int, int]
+) -> int | None:
+    """El WBS manda si está; si no, la indentación del nivel."""
+    if fila.wbs and "." in fila.wbs:
+        padre = por_wbs.get(fila.wbs.rsplit(".", 1)[0])
+        if padre is not None:
+            return padre
+    return ultimo_por_nivel.get(fila.nivel - 1) if fila.nivel else None
 
 
 def _padre_de(
