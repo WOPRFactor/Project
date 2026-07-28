@@ -5,7 +5,7 @@
   <p class="aviso">El cronograma no se pudo calcular: {{ error_motor }}</p>
 {% endif %}
 
-{% if filas %}
+{% if todas_las_filas %}
   <div class="resumen">
     <form class="dato editable" hx-post="/proyectos/{{ proyecto.id }}/inicio"
           hx-trigger="change" hx-target="#tablero" hx-swap="innerHTML">
@@ -77,6 +77,42 @@
   {% endif %}
 {% endif %}
 
+{# La mirada viaja en cada request: hx-vals se hereda a todos los hijos, así una
+   edición no te devuelve a la vista por defecto perdiendo el filtro elegido. #}
+<div id="mirada-actual" hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}"}'>
+
+<form class="barra-vista" hx-get="/proyectos/{{ proyecto.id }}" hx-trigger="change"
+      hx-target="#tablero" hx-select="#tablero" hx-swap="outerHTML">
+  <label>Detalle
+    <select name="detalle" class="celda">
+      {% for valor, etiqueta in detalles.items() %}
+        <option value="{{ valor }}" {{ 'selected' if mirada.detalle == valor }}>{{ etiqueta }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Etapa
+    <select name="etapa" class="celda">
+      <option value="0">Todas</option>
+      {% for fila in etapas %}
+        <option value="{{ fila.tarea.id }}" {{ 'selected' if mirada.etapa == fila.tarea.id }}>{{ fila.tarea.titulo }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Color
+    <select name="color" class="celda">
+      {% for valor, etiqueta in modos_color.items() %}
+        <option value="{{ valor }}" {{ 'selected' if mirada.color == valor }}>{{ etiqueta }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  {% if mirada.filtrada %}
+    <span class="tenue filtrando">
+      Mostrando {{ filas | length }} de {{ todas_las_filas | length }} filas.
+      <strong>Los totales de arriba siguen siendo del proyecto entero.</strong>
+    </span>
+  {% endif %}
+</form>
+
 <div class="barra-grilla">
   <button class="boton primario" hx-post="/proyectos/{{ proyecto.id }}/tareas/agregar"
           hx-target="#tablero" hx-swap="innerHTML">+ Tarea</button>
@@ -133,11 +169,17 @@
   </form>
 </div>
 
-{% if not filas %}
+{% if not todas_las_filas %}
   <p class="vacio">
     Este proyecto no tiene tareas. Agregá la primera con <strong>+ Tarea</strong>,
     importá una planilla, o pegá una lista entera.
   </p>
+{% elif not filas %}
+  <p class="vacio">
+    El filtro de arriba no deja ninguna fila a la vista. Las tareas siguen ahí:
+    poné <strong>Detalle: todo el árbol</strong> y <strong>Etapa: todas</strong>.
+  </p>
 {% else %}
   {% include "partials/gantt.html" %}
 {% endif %}
+</div>

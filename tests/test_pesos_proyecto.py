@@ -159,3 +159,40 @@ def test_repartir_toca_cada_nivel_por_separado(session: Session, proyecto):
     assert vista["Etapa"].tarea.peso == 100
     assert vista["Sub 1"].tarea.peso == 50 and vista["Sub 2"].tarea.peso == 50
     assert round(vista["Sub 1"].peso_absoluto) == 50
+
+
+# --- el filtro de la vista no toca los números de arriba ---
+
+def test_filtrar_la_vista_no_cambia_los_totales(session: Session, proyecto):
+    """Un Gantt filtrado que además cambiara los totales es una captura engañosa."""
+    from app.services.gantt_vista import ETAPAS, Mirada
+
+    etapa = agregar(session, proyecto, "Etapa", duracion=1)
+    hija = agregar(session, proyecto, "Sub", duracion=10)
+    arbol_service.indentar(session, hija.id)
+    tasks_service.mover(session, hija.id, etapa.id)
+
+    completa = vista_service.armar(session, proyecto.id)
+    filtrada = vista_service.armar(session, proyecto.id, mirada=Mirada(detalle=ETAPAS))
+
+    assert len(filtrada.filas) < len(completa.filas)
+    assert filtrada.resumen.dias_habiles == completa.resumen.dias_habiles
+    assert filtrada.resumen.fin == completa.resumen.fin
+    assert filtrada.avance_ponderado == completa.avance_ponderado
+    assert len(filtrada.todas_las_filas) == len(completa.filas)
+
+
+def test_el_cronograma_se_calcula_entero_aunque_se_filtre(session: Session, proyecto):
+    """Si el filtro sacara tareas del cálculo, las dependencias darían otras fechas."""
+    from app.services import predecesoras as predecesoras_service
+    from app.services.gantt_vista import ETAPAS, Mirada
+
+    a = agregar(session, proyecto, "A", duracion=5)
+    b = agregar(session, proyecto, "B", duracion=5)
+    predecesoras_service.guardar(session, proyecto.id, b.id, a.codigo)
+
+    sin_filtro = vista_service.armar(session, proyecto.id).resumen.fin
+    con_filtro = vista_service.armar(
+        session, proyecto.id, mirada=Mirada(detalle=ETAPAS)
+    ).resumen.fin
+    assert sin_filtro == con_filtro

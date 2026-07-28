@@ -15,6 +15,7 @@ from ..engine.timeline import Extremo, Grilla, ancho_columna, barra, construir_g
 from ..models import Dependency, Estado, Task
 from . import dependencies as dependencies_service
 from . import estados as estados_service
+from . import gantt_vista
 from . import pesos as pesos_service
 from . import predecesoras as predecesoras_service
 from . import resumen as resumen_service
@@ -62,10 +63,14 @@ class Flecha:
 
 @dataclass
 class VistaProyecto:
+    # `filas` es lo que se dibuja (puede venir filtrado); `todas_las_filas` es el
+    # proyecto entero, y de ahí salen los totales. Filtrar la vista no puede cambiar
+    # los números de arriba.
     filas: list[Fila]
     grilla: Grilla | None
     columna_hoy: int | None
     error: str | None
+    todas_las_filas: list[Fila] = field(default_factory=list)
     estados: list[Estado] = field(default_factory=list)
     resumen: Resumen = field(default_factory=Resumen)
     por_ambito: list[Resumen] = field(default_factory=list)
@@ -95,7 +100,12 @@ def _texto_predecesoras(deps: list[Dependency], codigos: dict[int, str]) -> str:
     return ", ".join(sorted(partes))
 
 
-def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaProyecto:
+def armar(
+    session: Session,
+    project_id: int,
+    hoy: date | None = None,
+    mirada: gantt_vista.Mirada | None = None,
+) -> VistaProyecto:
     cronograma, error = schedule_service.calcular_seguro(session, project_id)
     nodos = tasks_service.arbol(session, project_id)
     entrantes = dependencies_service.por_sucesora(session, project_id)
@@ -141,8 +151,12 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
                 fila.columnas = barra(grilla, calculada.inicio, calculada.fin)
         filas.append(fila)
 
+    mirada = mirada or gantt_vista.Mirada()
+    visibles = gantt_vista.filtrar(filas, mirada)
+
     return VistaProyecto(
-        filas=filas,
+        filas=visibles,
+        todas_las_filas=filas,
         grilla=grilla,
         columna_hoy=grilla.columna_de(hoy or date.today()) if grilla else None,
         error=error,
@@ -157,7 +171,7 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
         ),
         niveles_abiertos=resumen_service.niveles_abiertos(nodos_peso, filas),
         proximo_hito=resumen_service.proximo_hito(filas, hoy or date.today()),
-        flechas=_flechas(filas, dependencies_service.listar(session, project_id), ancho),
+        flechas=_flechas(visibles, dependencies_service.listar(session, project_id), ancho),
         ancho_dia=ancho,
     )
 

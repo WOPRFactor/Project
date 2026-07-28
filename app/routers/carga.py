@@ -16,7 +16,7 @@ from ..db import get_session
 from ..services import importar_aplicar
 from ..services import importar_excel
 from ..services import importar_texto
-from ._tablero import render
+from ._tablero import Mirada, mirada_form, render
 
 router = APIRouter(prefix="/proyectos/{project_id}")
 
@@ -29,15 +29,16 @@ async def importar_planilla(
     project_id: int,
     request: Request,
     archivo: UploadFile = File(...),
+    mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     """Suma las tareas de una planilla al proyecto abierto."""
     if not (archivo.filename or "").lower().endswith((".xlsx", ".xlsm")):
-        return render(request, session, project_id, aviso="Tiene que ser un .xlsx o .xlsm")
+        return render(request, session, project_id, aviso="Tiene que ser un .xlsx o .xlsm", mirada=mirada)
 
     contenido = await archivo.read()
     if len(contenido) > _MAXIMO_PLANILLA:
-        return render(request, session, project_id, aviso="La planilla supera los 5 MB")
+        return render(request, session, project_id, aviso="La planilla supera los 5 MB", mirada=mirada)
 
     try:
         importacion = importar_excel.leer(contenido)
@@ -53,7 +54,7 @@ async def importar_planilla(
         )
 
     avisos = importar_aplicar.agregar_a_proyecto(session, project_id, importacion)
-    return render(request, session, project_id, aviso="; ".join(avisos) or None)
+    return render(request, session, project_id, aviso="; ".join(avisos) or None, mirada=mirada)
 
 
 @router.post("/pegar", response_class=HTMLResponse)
@@ -61,12 +62,13 @@ def pegar(
     project_id: int,
     request: Request,
     texto: str = Form(""),
+    mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     if len(texto) > _MAXIMO_PEGADO:
-        return render(request, session, project_id, aviso="El texto pegado es demasiado grande")
+        return render(request, session, project_id, aviso="El texto pegado es demasiado grande", mirada=mirada)
     importacion = importar_texto.leer(texto)
     if not importacion.filas:
-        return render(request, session, project_id, aviso="No encontré tareas en lo que pegaste")
+        return render(request, session, project_id, aviso="No encontré tareas en lo que pegaste", mirada=mirada)
     avisos = importar_aplicar.agregar_a_proyecto(session, project_id, importacion)
-    return render(request, session, project_id, aviso="; ".join(avisos) or None)
+    return render(request, session, project_id, aviso="; ".join(avisos) or None, mirada=mirada)

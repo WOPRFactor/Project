@@ -184,10 +184,16 @@
         {% for fila in filas %}
           <div class="fila-barra">
             {% if fila.columnas %}
-              <div class="barra-tarea {{ 'resumen' if fila.es_resumen }} {{ 'hito' if fila.es_hito }} {{ 'estimada' if fila.es_estimada }} {{ 'critica' if fila.tarea.critica and not fila.es_resumen }} color-{{ fila.estado.color.value if fila.estado else 'gris' }}"
+              {% set pintado = clase_color(fila, mirada.color) %}
+              <div class="barra-tarea {{ 'hito' if fila.es_hito }} {{ 'estimada' if fila.es_estimada }} {{ pintado }}"
                    style="grid-column: {{ fila.columnas[0] }} / {{ fila.columnas[1] }}"
-                   title="{{ fila.tarea.titulo }}: {{ fila.inicio | fecha }} → {{ fila.fin | fecha }}{% if not fila.es_resumen %} · holgura {{ fila.holgura }}d{% if fila.sin_holgura %} (sin margen){% endif %}{% endif %}">
-                <span>{{ fila.tarea.titulo }}</span>
+                   title="{{ fila.tarea.titulo }}: {{ fila.inicio | fecha }} → {{ fila.fin | fecha }}{% if not fila.es_resumen %} · {{ fila.estado.nombre if fila.estado }} {{ avance_de(fila) }}% · holgura {{ fila.holgura }}d{% if fila.sin_holgura %} (sin margen){% endif %}{% endif %}">
+                {# Relleno = avance. Va aparte del tono para que siempre veas progreso
+                   MÁS la dimensión elegida, sin que un criterio tape al otro. #}
+                {% if not fila.es_resumen and not fila.es_hito and avance_de(fila) %}
+                  <span class="relleno" style="width: {{ avance_de(fila) }}%"></span>
+                {% endif %}
+                <span class="rotulo">{{ fila.tarea.titulo }}</span>
               </div>
             {% endif %}
           </div>

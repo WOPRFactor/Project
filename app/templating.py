@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 
 from .config import RAIZ
 from .models import ETIQUETA_AMBITO, ETIQUETA_COLOR, ETIQUETA_ESTADO_PROYECTO
+from .services.gantt_vista import avance, clase_color
 
 templates = Jinja2Templates(directory=RAIZ / "app" / "templates")
 
@@ -19,4 +20,7 @@ def formato_fecha(valor: date | None) -> str:
 templates.env.filters["fecha"] = formato_fecha
 templates.env.globals["etiqueta_estado_proyecto"] = ETIQUETA_ESTADO_PROYECTO
 templates.env.globals["etiqueta_color"] = ETIQUETA_COLOR
+# Decisiones de presentación del Gantt: función pura, testeada aparte.
+templates.env.globals["clase_color"] = clase_color
+templates.env.globals["avance_de"] = avance
 templates.env.globals["etiqueta_ambito"] = ETIQUETA_AMBITO

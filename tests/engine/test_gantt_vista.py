@@ -1,0 +1,139 @@
+"""Qué se ve del Gantt y de qué color. Módulo puro: se arman Filas a mano, sin DB."""
+
+from app.models import Ambito, ColorEstado, Estado, Task
+from app.services.gantt_vista import (
+    ETAPAS,
+    POR_AMBITO,
+    POR_AVANCE,
+    POR_CRITICIDAD,
+    POR_ESTADO,
+    TODO,
+    Mirada,
+    avance,
+    clase_color,
+    etapas,
+    filtrar,
+)
+from app.services.vista import Fila
+
+
+def estado(nombre="Pendiente", color=ColorEstado.gris, final=False, sugerido=0):
+    return Estado(
+        id=1, project_id=1, nombre=nombre, color=color,
+        es_final=final, avance_sugerido=sugerido,
+    )
+
+
+def fila(id_, nivel=0, parent=None, resumen=False, hito=False, critica=False,
+         ambito=Ambito.proyecto, est=None):
+    tarea = Task(
+        id=id_, project_id=1, parent_id=parent, titulo=f"T{id_}",
+        critica=critica, ambito=ambito,
+    )
+    return Fila(tarea=tarea, nivel=nivel, es_resumen=resumen, es_hito=hito, estado=est)
+
+
+ARBOL = [
+    fila(1, nivel=0, resumen=True),
+    fila(2, nivel=1, parent=1),
+    fila(3, nivel=1, parent=1, hito=True),
+    fila(4, nivel=2, parent=2),
+    fila(5, nivel=0),
+]
+
+
+# --- filtros ---
+
+def test_por_defecto_se_ve_todo():
+    assert len(filtrar(ARBOL, Mirada())) == 5
+
+
+def test_solo_etapas_deja_el_nivel_cero_y_los_hitos():
+    """Los hitos son lo que se reporta: esconderlos dejaría la vista sin marcas."""
+    visibles = filtrar(ARBOL, Mirada(detalle=ETAPAS))
+    assert {f.tarea.id for f in visibles} == {1, 3, 5}
+
+
+def test_hasta_nivel_recorta_la_profundidad():
+    visibles = filtrar(ARBOL, Mirada(detalle="n1"))
+    assert {f.tarea.id for f in visibles} == {1, 2, 3, 5}
+
+
+def test_filtrar_por_etapa_trae_la_rama_entera():
+    visibles = filtrar(ARBOL, Mirada(etapa=1))
+    assert {f.tarea.id for f in visibles} == {1, 2, 3, 4}
+
+
+def test_una_etapa_sin_hijas_se_muestra_sola():
+    assert {f.tarea.id for f in filtrar(ARBOL, Mirada(etapa=5))} == {5}
+
+
+def test_etapa_y_detalle_se_combinan():
+    visibles = filtrar(ARBOL, Mirada(detalle=ETAPAS, etapa=1))
+    assert {f.tarea.id for f in visibles} == {1, 3}
+
+
+def test_una_etapa_inexistente_no_rompe():
+    assert filtrar(ARBOL, Mirada(etapa=999)) == []
+
+
+def test_saber_si_esta_filtrada():
+    assert not Mirada().filtrada
+    assert Mirada(detalle=ETAPAS).filtrada
+    assert Mirada(etapa=1).filtrada
+    assert not Mirada(color=POR_ESTADO).filtrada  # el color no filtra nada
+
+
+def test_las_etapas_del_selector_son_las_de_la_raiz():
+    assert {f.tarea.id for f in etapas(ARBOL)} == {1, 5}
+
+
+# --- lo que llega del formulario no se toma como viene ---
+
+def test_un_detalle_invalido_cae_en_todo():
+    assert Mirada(detalle="'; DROP TABLE").normalizada().detalle == TODO
+
+
+def test_un_color_invalido_cae_en_criticidad():
+    assert Mirada(color="rgb(0,0,0)").normalizada().color == POR_CRITICIDAD
+
+
+# --- colores ---
+
+def test_el_resumen_no_se_pinta():
+    """Una barra de resumen es una envolvente, no trabajo: no tiene estado propio."""
+    assert clase_color(fila(1, resumen=True, est=estado()), POR_ESTADO) == "resumen"
+
+
+def test_por_criticidad_solo_grita_la_que_marcó_el_usuario():
+    assert clase_color(fila(1, critica=True), POR_CRITICIDAD) == "critica"
+    assert clase_color(fila(2), POR_CRITICIDAD) == "color-azul"
+
+
+def test_por_estado_toma_el_color_del_estado():
+    verde = estado(color=ColorEstado.verde)
+    assert clase_color(fila(1, est=verde), POR_ESTADO) == "color-verde"
+
+
+def test_por_estado_sin_estado_no_rompe():
+    assert clase_color(fila(1), POR_ESTADO) == "color-gris"
+
+
+def test_por_ambito_distingue_los_tres():
+    assert clase_color(fila(1, ambito=Ambito.seguimiento), POR_AMBITO) == "ambito-barra-seguimiento"
+    assert clase_color(fila(2, ambito=Ambito.control), POR_AMBITO) == "ambito-barra-control"
+
+
+def test_por_avance_recorre_los_cuatro_tramos():
+    def color(sugerido):
+        return clase_color(fila(1, est=estado(sugerido=sugerido)), POR_AVANCE)
+
+    assert color(0) == "color-gris"
+    assert color(30) == "color-ambar"
+    assert color(50) == "color-azul"
+    assert color(100) == "color-verde"
+
+
+def test_el_avance_sale_del_estado_y_se_acota():
+    assert avance(fila(1, est=estado(sugerido=50))) == 50
+    assert avance(fila(1)) == 0

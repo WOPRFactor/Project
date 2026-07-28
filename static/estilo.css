@@ -410,3 +410,24 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .r-abajo input[name=mitigacion] { flex: 1 1 auto; }
 .r-tarea { flex: 0 0 auto; font-size: .75rem; }
 .borrar-riesgo { margin: 0 0 8px; align-self: flex-end; }
+
+
+/* --- Vistas y colores del Gantt (Fase 22) --- */
+.barra-vista {
+  display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+  margin: 10px 0 4px; font-size: .8rem; color: var(--tenue);
+}
+.barra-vista label { display: flex; align-items: center; gap: 5px; }
+.barra-vista select.celda { width: auto; min-width: 120px; }
+.barra-vista .filtrando { font-size: .78rem; }
+
+/* El relleno es el avance; el tono, la dimensión elegida. Uno no tapa al otro. */
+.barra-tarea { position: relative; }
+.barra-tarea .relleno {
+  position: absolute; inset: 0 auto 0 0; border-radius: inherit;
+  background: rgba(0, 0, 0, .28); pointer-events: none;
+}
+.barra-tarea .rotulo { position: relative; }
+.barra-tarea.ambito-barra-proyecto    { background: var(--c-azul);  color: #08101f; }
+.barra-tarea.ambito-barra-seguimiento { background: var(--c-ambar); color: #241a05; }
+.barra-tarea.ambito-barra-control     { background: var(--c-verde); color: #062017; }

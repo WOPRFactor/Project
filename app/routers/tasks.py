@@ -20,17 +20,20 @@ from ..services import riesgos as riesgos_service
 from ..services import tasks as tasks_service
 from ..services.riesgos import RiesgoInvalido
 from ..services.tasks import TareaInvalida
-from ._tablero import render
+from ._tablero import Mirada, mirada_form, render
 
 router = APIRouter(prefix="/proyectos/{project_id}")
 
 
 @router.post("/tareas/agregar", response_class=HTMLResponse)
 def agregar(
-    project_id: int, request: Request, session: Session = Depends(get_session)
+    project_id: int,
+    request: Request,
+    mirada: Mirada = Depends(mirada_form),
+    session: Session = Depends(get_session),
 ) -> HTMLResponse:
     arbol_service.agregar_al_final(session, project_id, TareaIn(titulo="Tarea nueva"))
-    return render(request, session, project_id)
+    return render(request, session, project_id, mirada=mirada)
 
 
 @router.post("/tareas/{task_id}/celda", response_class=HTMLResponse)
@@ -50,12 +53,13 @@ def guardar_celda(
     peso: str = Form(""),
     duracion_optimista: str = Form(""),
     duracion_pesimista: str = Form(""),
+    mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     """Guarda la fila completa: el formulario manda todas sus celdas en cada cambio."""
     tarea = tasks_service.obtener(session, task_id)
     if tarea is None or tarea.project_id != project_id:
-        return render(request, session, project_id, aviso="Esa tarea ya no existe")
+        return render(request, session, project_id, aviso="Esa tarea ya no existe", mirada=mirada)
 
     try:
         datos = TareaIn(
@@ -74,7 +78,7 @@ def guardar_celda(
             estado_id=int(estado_id) if estado_id.strip().isdigit() else tarea.estado_id,
         )
     except (ValidationError, ValueError) as error:
-        return render(request, session, project_id, aviso=_mensaje(error))
+        return render(request, session, project_id, aviso=_mensaje(error), mirada=mirada)
 
     tasks_service.actualizar(session, task_id, datos)
     _guardar_codigo(session, task_id, codigo)
@@ -82,28 +86,40 @@ def guardar_celda(
     avisos: list[str] = []
     if not tasks_service.tiene_hijas(session, task_id):
         avisos = predecesoras_service.guardar(session, project_id, task_id, predecesoras)
-    return render(request, session, project_id, aviso="; ".join(avisos) or None)
+    return render(request, session, project_id, aviso="; ".join(avisos) or None, mirada=mirada)
 
 
 @router.post("/tareas/{task_id}/insertar", response_class=HTMLResponse)
 def insertar(
-    project_id: int, task_id: int, request: Request, session: Session = Depends(get_session)
+    project_id: int,
+    task_id: int,
+    request: Request,
+    mirada: Mirada = Depends(mirada_form),
+    session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    return _mover(request, session, project_id, arbol_service.insertar_debajo, task_id)
+    return _mover(request, session, project_id, arbol_service.insertar_debajo, task_id, mirada)
 
 
 @router.post("/tareas/{task_id}/indentar", response_class=HTMLResponse)
 def indentar(
-    project_id: int, task_id: int, request: Request, session: Session = Depends(get_session)
+    project_id: int,
+    task_id: int,
+    request: Request,
+    mirada: Mirada = Depends(mirada_form),
+    session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    return _mover(request, session, project_id, arbol_service.indentar, task_id)
+    return _mover(request, session, project_id, arbol_service.indentar, task_id, mirada)
 
 
 @router.post("/tareas/{task_id}/desindentar", response_class=HTMLResponse)
 def desindentar(
-    project_id: int, task_id: int, request: Request, session: Session = Depends(get_session)
+    project_id: int,
+    task_id: int,
+    request: Request,
+    mirada: Mirada = Depends(mirada_form),
+    session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    return _mover(request, session, project_id, arbol_service.desindentar, task_id)
+    return _mover(request, session, project_id, arbol_service.desindentar, task_id, mirada)
 
 
 @router.post("/tareas/{task_id}/estado", response_class=HTMLResponse)
@@ -112,10 +128,11 @@ def cambiar_estado(
     task_id: int,
     request: Request,
     estado_id: int = Form(...),
+    mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     tasks_service.cambiar_estado(session, task_id, estado_id)
-    return render(request, session, project_id)
+    return render(request, session, project_id, mirada=mirada)
 
 
 @router.post("/tareas/{task_id}/eliminar", response_class=HTMLResponse)
@@ -124,10 +141,11 @@ def eliminar(
     task_id: int,
     request: Request,
     promover: bool = Form(False),
+    mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     tasks_service.eliminar(session, task_id, promover_hijas=promover)
-    return render(request, session, project_id)
+    return render(request, session, project_id, mirada=mirada)
 
 
 @router.post("/inicio", response_class=HTMLResponse)
@@ -135,16 +153,17 @@ def cambiar_inicio(
     project_id: int,
     request: Request,
     fecha_inicio: str = Form(...),
+    mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     """Mueve el arranque del proyecto: todo el cronograma se recalcula detrás."""
     proyecto = projects_service.obtener(session, project_id)
     if proyecto is None:
-        return render(request, session, project_id, aviso="Ese proyecto ya no existe")
+        return render(request, session, project_id, aviso="Ese proyecto ya no existe", mirada=mirada)
     try:
         nueva = date.fromisoformat(fecha_inicio.strip())
     except ValueError:
-        return render(request, session, project_id, aviso="Esa fecha no es válida")
+        return render(request, session, project_id, aviso="Esa fecha no es válida", mirada=mirada)
 
     anterior = proyecto.fecha_inicio
     projects_service.actualizar(
@@ -161,7 +180,7 @@ def cambiar_inicio(
     aviso = None if not corrimiento else (
         f"Arranque movido {corrimiento:+d} días: el cronograma se recalculó entero"
     )
-    return render(request, session, project_id, aviso=aviso)
+    return render(request, session, project_id, aviso=aviso, mirada=mirada)
 
 
 @router.post("/tareas/{task_id}/riesgo", response_class=HTMLResponse)
@@ -170,6 +189,7 @@ def marcar_riesgo(
     task_id: int,
     request: Request,
     tildado: str = Form("1"),
+    mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     """Tilde de la grilla: crea un borrador de riesgo o saca el que sigue vacío."""
@@ -178,8 +198,8 @@ def marcar_riesgo(
             session, project_id, task_id, tildado.strip() == "1"
         )
     except RiesgoInvalido as error:
-        return render(request, session, project_id, aviso=str(error))
-    return render(request, session, project_id, aviso=aviso or None)
+        return render(request, session, project_id, aviso=str(error), mirada=mirada)
+    return render(request, session, project_id, aviso=aviso or None, mirada=mirada)
 
 
 @router.post("/pesos/repartir", response_class=HTMLResponse)
@@ -187,6 +207,7 @@ def repartir_pesos(
     project_id: int,
     request: Request,
     criterio: str = Form("parejo"),
+    mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     """Punto de partida para los pesos. Pisa lo cargado: la confirmación lo avisa."""
@@ -206,18 +227,21 @@ def repartir_pesos(
 
 @router.post("/renumerar", response_class=HTMLResponse)
 def renumerar(
-    project_id: int, request: Request, session: Session = Depends(get_session)
+    project_id: int,
+    request: Request,
+    mirada: Mirada = Depends(mirada_form),
+    session: Session = Depends(get_session),
 ) -> HTMLResponse:
     cambiados = arbol_service.renumerar(session, project_id)
-    return render(request, session, project_id, aviso=f"{cambiados} códigos reasignados")
+    return render(request, session, project_id, aviso=f"{cambiados} códigos reasignados", mirada=mirada)
 
 
-def _mover(request: Request, session: Session, project_id: int, operacion, task_id: int):
+def _mover(request: Request, session: Session, project_id: int, operacion, task_id: int, mirada):
     try:
         operacion(session, task_id)
     except TareaInvalida as error:
-        return render(request, session, project_id, aviso=str(error))
-    return render(request, session, project_id)
+        return render(request, session, project_id, aviso=str(error), mirada=mirada)
+    return render(request, session, project_id, mirada=mirada)
 
 
 def _guardar_codigo(session: Session, task_id: int, codigo: str) -> None:

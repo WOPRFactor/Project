@@ -13,7 +13,7 @@ from ..models import EstadoProyecto
 from ..schemas import ProyectoIn
 from ..services import projects as projects_service
 from ..templating import templates
-from ._tablero import contexto
+from ._tablero import Mirada, contexto, mirada_query
 
 router = APIRouter()
 
@@ -56,9 +56,12 @@ def crear(
 
 @router.get("/proyectos/{project_id}", response_class=HTMLResponse)
 def detalle(
-    project_id: int, request: Request, session: Session = Depends(get_session)
+    project_id: int,
+    request: Request,
+    mirada: Mirada = Depends(mirada_query),
+    session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    datos = contexto(session, project_id)
+    datos = contexto(session, project_id, mirada)
     if datos["proyecto"] is None:
         return templates.TemplateResponse(
             request, "error.html", {"mensaje": "Ese proyecto no existe"}, status_code=404
