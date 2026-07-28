@@ -10,7 +10,7 @@ from datetime import date
 
 from pydantic import BaseModel, Field, field_validator
 
-from .models import EstadoProyecto, EstadoTarea, TipoDependencia
+from .models import Ambito, EstadoProyecto, EstadoTarea, TipoDependencia
 
 
 def _texto_obligatorio(valor: str) -> str:
@@ -43,7 +43,10 @@ class TareaIn(BaseModel):
     notas: str = Field(default="", max_length=4000)
     responsable: str = Field(default="", max_length=120)
     critica: bool = False
+    ambito: Ambito = Ambito.proyecto
     duracion: int = Field(default=1, ge=0, le=3650)
+    duracion_optimista: int | None = Field(default=None, ge=0, le=3650)
+    duracion_pesimista: int | None = Field(default=None, ge=0, le=3650)
     snet: date | None = None
     estado: EstadoTarea = EstadoTarea.pendiente
     parent_id: int | None = None

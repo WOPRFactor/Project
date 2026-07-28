@@ -23,16 +23,31 @@
         </summary>
         <p class="tenue pie">
           Las fechas de la planilla no se importan (las calcula el motor), pero sirven
-          para detectar dependencias mal declaradas. Esto es lo que encontré:
+          para detectar dependencias mal declaradas.
         </p>
-        <ul>
-          {% for d in diagnostico.discrepancias %}
-            <li>
-              <strong>{{ d.wbs }}</strong> {{ d.titulo[:60] }} — {{ d.motivo }}.
-              <code>{{ d.sugerencia }}</code>
-            </li>
-          {% endfor %}
-        </ul>
+        {% if diagnostico.estructurales %}
+          <p class="sub">Relaciones mal declaradas — se corrigen si dejás la casilla marcada:</p>
+          <ul>
+            {% for d in diagnostico.estructurales %}
+              <li>
+                <strong>{{ d.wbs }}</strong> {{ d.titulo[:56] }} — {{ d.motivo }}.
+                <code>{{ d.sugerencia }}</code>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% if diagnostico.a_revisar %}
+          <p class="sub">
+            Fechas puestas a mano — <strong>no se tocan</strong>: fijarlas como lag
+            congelaría el cronograma y dejaría de reaccionar a cambios reales.
+            Miralas vos:
+          </p>
+          <ul class="a-revisar">
+            {% for d in diagnostico.a_revisar %}
+              <li><strong>{{ d.wbs }}</strong> {{ d.titulo[:56] }} — {{ d.motivo }}.</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
       </details>
     {% endif %}
 
@@ -66,11 +81,11 @@
       <label>Fecha de inicio
         <input type="date" name="fecha_inicio" required value="{{ hoy.isoformat() }}">
       </label>
-      {% if diagnostico and diagnostico.hay_algo %}
+      {% if diagnostico and diagnostico.estructurales %}
         <label class="en-linea-check">
           <input type="checkbox" name="corregir" value="1" checked>
-          Corregir las {{ diagnostico.discrepancias | length }} dependencias según lo
-          que muestran las fechas de la planilla
+          Corregir las {{ diagnostico.estructurales | length }} relaciones mal
+          declaradas (Inicio→Inicio y Fin→Fin)
         </label>
       {% endif %}
       <button class="boton primario" type="submit">Crear el proyecto</button>

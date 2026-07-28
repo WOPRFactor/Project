@@ -6,10 +6,12 @@
       <span class="c-tarea">Tarea</span>
       <span class="c-resp">Resp.</span>
       <span class="c-pred">Predec.</span>
-      <span class="c-dias">Días</span>
+      <span class="c-dias" title="Duración probable">Días</span>
+      <span class="c-rango" title="Optimista y pesimista: opcionales">Opt · Pes</span>
       <span class="c-fecha">Inicio</span>
       <span class="c-fecha">Fin</span>
       <span class="c-crit">Crít.</span>
+      <span class="c-ambito">Ámbito</span>
       <span class="c-ops"></span>
     </div>
 
@@ -45,6 +47,20 @@
                    min="0" max="3650" class="celda mono" title="0 = hito">
           {% endif %}
         </span>
+        <span class="c-rango">
+          {% if fila.es_resumen or fila.es_hito %}
+            <span class="celda calculada">—</span>
+          {% else %}
+            <input id="opt-{{ t.id }}" name="duracion_optimista" type="number" min="0"
+                   max="3650" class="celda mono chico" placeholder="—"
+                   value="{{ t.duracion_optimista if t.duracion_optimista is not none }}"
+                   title="Mejor caso, en días hábiles">
+            <input id="pes-{{ t.id }}" name="duracion_pesimista" type="number" min="0"
+                   max="3650" class="celda mono chico" placeholder="—"
+                   value="{{ t.duracion_pesimista if t.duracion_pesimista is not none }}"
+                   title="Peor caso, en días hábiles">
+          {% endif %}
+        </span>
         <span class="c-fecha">
           {% if fila.es_resumen or fila.tiene_predecesoras %}
             <span class="celda calculada"
@@ -62,6 +78,15 @@
                   title="Criticidad de negocio: la marcás vos.{% if not fila.es_resumen %} El motor calcula {{ fila.holgura }} días de holgura para esta tarea.{% endif %}">
             <option value="0" {{ 'selected' if not t.critica }}>No</option>
             <option value="1" {{ 'selected' if t.critica }}>Sí</option>
+          </select>
+        </span>
+        <span class="c-ambito">
+          <select id="amb-{{ t.id }}" name="ambito" class="celda ambito-{{ t.ambito.value }}"
+                  title="En qué contador suma. No cambia el cálculo, solo el reporte."
+                  {{ 'disabled' if fila.es_resumen }}>
+            {% for valor, etiqueta in etiqueta_ambito.items() %}
+              <option value="{{ valor.value }}" {{ 'selected' if t.ambito == valor }}>{{ etiqueta }}</option>
+            {% endfor %}
           </select>
         </span>
         <span class="c-ops">
@@ -128,7 +153,7 @@
         {% for fila in filas %}
           <div class="fila-barra">
             {% if fila.columnas %}
-              <div class="barra-tarea {{ 'resumen' if fila.es_resumen }} {{ 'hito' if fila.es_hito }} {{ 'critica' if fila.tarea.critica and not fila.es_resumen }} estado-{{ fila.tarea.estado.value }}"
+              <div class="barra-tarea {{ 'resumen' if fila.es_resumen }} {{ 'hito' if fila.es_hito }} {{ 'estimada' if fila.es_estimada }} {{ 'critica' if fila.tarea.critica and not fila.es_resumen }} estado-{{ fila.tarea.estado.value }}"
                    style="grid-column: {{ fila.columnas[0] }} / {{ fila.columnas[1] }}"
                    title="{{ fila.tarea.titulo }}: {{ fila.inicio | fecha }} → {{ fila.fin | fecha }}{% if not fila.es_resumen %} · holgura {{ fila.holgura }}d{% if fila.sin_holgura %} (sin margen){% endif %}{% endif %}">
                 <span>{{ fila.tarea.titulo }}</span>

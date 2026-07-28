@@ -6,12 +6,15 @@ motor. El motor nunca ve una Session.
 
 from __future__ import annotations
 
+from datetime import date
+
 from sqlmodel import Session, select
 
 from ..engine import (
     DependencyEdge,
     Schedule,
     ScheduleError,
+    Escenario,
     TaskNode,
     TipoDependencia,
     calcular as motor_calcular,
@@ -29,6 +32,8 @@ def _nodos(tareas: list[Task]) -> list[TaskNode]:
             duracion=t.duracion,
             snet=t.snet,
             orden=t.orden,
+            duracion_optimista=t.duracion_optimista,
+            duracion_pesimista=t.duracion_pesimista,
         )
         for t in tareas
     ]
@@ -50,6 +55,7 @@ def calcular(
     session: Session,
     project_id: int,
     extra: list[Dependency] | None = None,
+    escenario: Escenario = Escenario.PROBABLE,
 ) -> Schedule:
     """Cronograma del proyecto con holguras y ruta crítica marcadas.
 
@@ -68,7 +74,7 @@ def calcular(
 
     nodos = _nodos(tareas)
     aristas = _aristas(dependencias)
-    cronograma = motor_calcular(proyecto.fecha_inicio, nodos, aristas)
+    cronograma = motor_calcular(proyecto.fecha_inicio, nodos, aristas, escenario)
     return marcar(cronograma, nodos, aristas)
 
 
@@ -81,3 +87,19 @@ def calcular_seguro(session: Session, project_id: int) -> tuple[Schedule, str | 
         return calcular(session, project_id), None
     except ScheduleError as error:
         return Schedule(), str(error)
+
+
+def ventana(session: Session, project_id: int) -> dict[str, date | None]:
+    """Fin del proyecto en los tres escenarios.
+
+    Con tareas de duración estimada, un fin único es una precisión que no se tiene:
+    lo defendible es la ventana. Si nadie declaró rangos, los tres coinciden.
+    """
+    salida: dict[str, date | None] = {}
+    for escenario in Escenario:
+        try:
+            plan = calcular(session, project_id, escenario=escenario)
+        except ScheduleError:
+            return {e.value: None for e in Escenario}
+        salida[escenario.value] = plan.fin
+    return salida

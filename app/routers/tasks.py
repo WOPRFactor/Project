@@ -10,7 +10,7 @@ from pydantic import ValidationError
 from sqlmodel import Session
 
 from ..db import get_session
-from ..models import EstadoTarea
+from ..models import Ambito, EstadoTarea
 from ..schemas import ProyectoIn, TareaIn
 from ..services import arbol as arbol_service
 from ..services import importar_aplicar
@@ -45,6 +45,9 @@ def guardar_celda(
     duracion: str = Form(""),
     inicio: str = Form(""),
     critica: str = Form("0"),
+    ambito: str = Form("proyecto"),
+    duracion_optimista: str = Form(""),
+    duracion_pesimista: str = Form(""),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     """Guarda la fila completa: el formulario manda todas sus celdas en cada cambio."""
@@ -58,7 +61,10 @@ def guardar_celda(
             notas=tarea.notas,
             responsable=responsable,
             critica=critica.strip() in {"1", "true", "on", "sí", "si"},
+            ambito=Ambito(ambito) if ambito in Ambito.__members__ else Ambito.proyecto,
             duracion=int(duracion) if duracion.strip() else tarea.duracion,
+            duracion_optimista=int(duracion_optimista) if duracion_optimista.strip() else None,
+            duracion_pesimista=int(duracion_pesimista) if duracion_pesimista.strip() else None,
             snet=date.fromisoformat(inicio) if inicio.strip() else None,
             estado=tarea.estado,
         )

@@ -11,11 +11,26 @@ from datetime import date
 from enum import Enum
 
 
+class Escenario(str, Enum):
+    """Qué duración usar al calcular.
+
+    Hay tareas cuya duración es una estimación, no un dato: buscar y contratar
+    gente puede tardar dos meses o siete. Con un número único el cronograma miente
+    con precisión de un día; con tres se puede decir «termina entre X e Y».
+    """
+
+    OPTIMISTA = "optimista"
+    PROBABLE = "probable"
+    PESIMISTA = "pesimista"
+
+
 @dataclass(frozen=True)
 class TaskNode:
     """Una tarea tal como la ve el motor. `duracion` se ignora si tiene hijas.
 
     Duración 0 = hito: marca un momento, no consume tiempo del cronograma.
+    Las duraciones optimista y pesimista son opcionales: sin ellas, la tarea vale
+    lo mismo en los tres escenarios.
     """
 
     id: int
@@ -24,10 +39,26 @@ class TaskNode:
     duracion: int = 1
     snet: date | None = None
     orden: int = 0
+    duracion_optimista: int | None = None
+    duracion_pesimista: int | None = None
 
     @property
     def es_hito(self) -> bool:
         return self.duracion == 0
+
+    @property
+    def es_estimada(self) -> bool:
+        """Tiene rango declarado, así que su fecha no es un dato duro."""
+        return self.duracion_optimista is not None or self.duracion_pesimista is not None
+
+    def duracion_en(self, escenario: Escenario) -> int:
+        if self.es_hito:
+            return 0
+        if escenario is Escenario.OPTIMISTA and self.duracion_optimista is not None:
+            return self.duracion_optimista
+        if escenario is Escenario.PESIMISTA and self.duracion_pesimista is not None:
+            return self.duracion_pesimista
+        return self.duracion
 
 
 class TipoDependencia(str, Enum):

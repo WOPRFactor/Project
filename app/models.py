@@ -14,6 +14,27 @@ class EstadoProyecto(str, Enum):
     archivado = "archivado"
 
 
+class Ambito(str, Enum):
+    """En qué contador suma una tarea.
+
+    Separa el alcance comprometido del acompañamiento posterior: una tarea de
+    seguimiento que corre seis meses después del cierre no debería inflar la
+    duración "del proyecto". **No afecta el cálculo**, solo el reporte — las
+    dependencias y las fechas se computan igual para todas.
+    """
+
+    proyecto = "proyecto"
+    seguimiento = "seguimiento"
+    control = "control"
+
+
+ETIQUETA_AMBITO = {
+    Ambito.proyecto: "Proyecto",
+    Ambito.seguimiento: "Seguimiento",
+    Ambito.control: "Control",
+}
+
+
 class EstadoTarea(str, Enum):
     pendiente = "pendiente"
     en_curso = "en_curso"
@@ -55,8 +76,12 @@ class Task(SQLModel, table=True):
     # Criticidad de negocio: la decide el usuario por KPI o impacto. No confundir
     # con la ruta crítica, que el motor deduce del grafo y expone como holgura.
     critica: bool = Field(default=False)
+    ambito: Ambito = Field(default=Ambito.proyecto)
     # duración 0 = hito: marca un momento, no consume días del cronograma
     duracion: int = Field(default=1, ge=0, le=3650)
+    # Rango opcional: cuando la duración es una estimación y no un dato.
+    duracion_optimista: int | None = Field(default=None, ge=0, le=3650)
+    duracion_pesimista: int | None = Field(default=None, ge=0, le=3650)
     snet: date | None = Field(default=None)
     estado: EstadoTarea = Field(default=EstadoTarea.pendiente)
     orden: int = Field(default=0)

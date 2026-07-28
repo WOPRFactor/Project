@@ -17,9 +17,14 @@
         <span class="tenue">primera tarea: {{ resumen.inicio | fecha }}</span>
       {% endif %}
     </form>
-    <div class="dato">
-      <span class="etiqueta">Fin</span>
+    <div class="dato {{ 'con-rango' if estimadas }}">
+      <span class="etiqueta">Fin{{ ' probable' if estimadas }}</span>
       <strong>{{ resumen.fin | fecha }}</strong>
+      {% if estimadas %}
+        <span class="tenue">
+          entre {{ ventana.optimista | fecha }} y {{ ventana.pesimista | fecha }}
+        </span>
+      {% endif %}
     </div>
     <div class="dato destacado">
       <span class="etiqueta">Duración</span>
@@ -31,12 +36,34 @@
       <strong>{{ resumen.tareas }}</strong>
       {% if resumen.hitos %}<span class="tenue">+ {{ resumen.hitos }} hitos</span>{% endif %}
     </div>
+    {% if estimadas %}
+      <div class="dato">
+        <span class="etiqueta">Estimadas</span>
+        <strong>{{ estimadas }}</strong>
+        <span class="tenue">tareas con duración incierta</span>
+      </div>
+    {% endif %}
     <div class="dato">
       <span class="etiqueta">Avance</span>
       <strong>{{ resumen.avance }}%</strong>
       <span class="tenue">{{ resumen.hechas }} de {{ resumen.tareas }} hechas</span>
     </div>
   </div>
+
+  {% if por_ambito %}
+    <div class="resumen por-ambito">
+      {% for bloque in por_ambito %}
+        <div class="dato">
+          <span class="etiqueta">{{ bloque.etiqueta }}</span>
+          <strong>{{ bloque.dias_habiles }} días hábiles</strong>
+          <span class="tenue">
+            {{ bloque.inicio | fecha }} → {{ bloque.fin | fecha }} ·
+            {{ bloque.tareas }} tareas{% if bloque.hitos %} + {{ bloque.hitos }} hitos{% endif %}
+          </span>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
 {% endif %}
 
 <div class="barra-grilla">

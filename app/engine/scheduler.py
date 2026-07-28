@@ -13,6 +13,7 @@ from . import graph
 from .calendar import fin_desde_inicio, siguiente_habil, sumar_habiles
 from .types import (
     DependencyEdge,
+    Escenario,
     Schedule,
     ScheduledTask,
     TaskNode,
@@ -34,6 +35,7 @@ def inicio_exigido(
     previa: ScheduledTask,
     nodo_previo: TaskNode,
     nodo: TaskNode,
+    escenario: Escenario = Escenario.PROBABLE,
 ) -> date:
     """Primer día en que la sucesora puede arrancar según esta dependencia."""
     if arista.tipo is TipoDependencia.SS:
@@ -41,7 +43,7 @@ def inicio_exigido(
     if arista.tipo is TipoDependencia.FF:
         # Tiene que terminar con la otra: se despeja el inicio desde ese fin.
         fin_minimo = sumar_habiles(previa.fin, arista.lag)
-        return sumar_habiles(fin_minimo, -(max(nodo.duracion, 1) - 1))
+        return sumar_habiles(fin_minimo, -(max(nodo.duracion_en(escenario), 1) - 1))
     return sumar_habiles(previa.fin, salto_tras(nodo_previo) + arista.lag)
 
 
@@ -49,8 +51,12 @@ def calcular(
     inicio_proyecto: date,
     nodos: list[TaskNode],
     aristas: list[DependencyEdge],
+    escenario: Escenario = Escenario.PROBABLE,
 ) -> Schedule:
-    """Calcula el cronograma completo. Lanza ScheduleError si el input es inválido."""
+    """Calcula el cronograma completo. Lanza ScheduleError si el input es inválido.
+
+    `escenario` elige qué duración usar en las tareas que declaran un rango.
+    """
     graph.validar_arbol(nodos)
     graph.validar_dependencias(nodos, aristas)
 
@@ -63,7 +69,7 @@ def calcular(
         return schedule
 
     arranque = siguiente_habil(inicio_proyecto)
-    _forward_pass(schedule, arranque, hojas, aristas, por_id)
+    _forward_pass(schedule, arranque, hojas, aristas, por_id, escenario)
     _rollup(schedule, grupos)
     _fechas_de_proyecto(schedule, arranque)
     return schedule
@@ -75,6 +81,7 @@ def _forward_pass(
     hojas: list[TaskNode],
     aristas: list[DependencyEdge],
     por_id: dict[int, TaskNode],
+    escenario: Escenario,
 ) -> None:
     ids_hoja = [n.id for n in hojas]
     hojas_validas = set(ids_hoja)
@@ -92,7 +99,9 @@ def _forward_pass(
             previa = schedule.tareas[arista.predecessor_id]
             inicio = max(
                 inicio,
-                inicio_exigido(arista, previa, por_id[arista.predecessor_id], nodo),
+                inicio_exigido(
+                    arista, previa, por_id[arista.predecessor_id], nodo, escenario
+                ),
             )
         if nodo.snet is not None:
             inicio = max(inicio, siguiente_habil(nodo.snet))
@@ -100,7 +109,7 @@ def _forward_pass(
         schedule.tareas[task_id] = ScheduledTask(
             id=task_id,
             inicio=inicio,
-            fin=fin_desde_inicio(inicio, nodo.duracion),
+            fin=fin_desde_inicio(inicio, nodo.duracion_en(escenario)),
             es_hito=nodo.es_hito,
         )
 

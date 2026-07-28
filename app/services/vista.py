@@ -13,7 +13,7 @@ from sqlmodel import Session
 
 from ..engine.calendar import contar_habiles
 from ..engine.timeline import Extremo, Grilla, ancho_columna, barra, construir_grilla, flecha
-from ..models import Dependency, Task
+from ..models import ETIQUETA_AMBITO, Ambito, Dependency, Task
 from . import dependencies as dependencies_service
 from . import predecesoras as predecesoras_service
 from . import schedule as schedule_service
@@ -36,6 +36,7 @@ class Fila:
     predecesoras: list[Dependency] | None = None
     predecesoras_texto: str = ""
     tiene_predecesoras: bool = False
+    es_estimada: bool = False
 
 
 @dataclass(frozen=True)
@@ -50,8 +51,13 @@ class Flecha:
 
 @dataclass
 class Resumen:
-    """Cuánto dura el proyecto según el cronograma de este momento."""
+    """Cuánto dura un bloque de tareas según el cronograma de este momento.
 
+    Hay uno por ámbito más el total: el acompañamiento posterior no tiene por qué
+    inflar la duración del alcance comprometido, pero tampoco desaparecer.
+    """
+
+    etiqueta: str = "Total"
     inicio: date | None = None
     fin: date | None = None
     dias_habiles: int = 0
@@ -76,6 +82,9 @@ class VistaProyecto:
     columna_hoy: int | None
     error: str | None
     resumen: Resumen = field(default_factory=Resumen)
+    por_ambito: list[Resumen] = field(default_factory=list)
+    ventana: dict = field(default_factory=dict)
+    estimadas: int = 0
     flechas: list[Flecha] = field(default_factory=list)
     ancho_dia: int = 22
     alto_fila: int = 32
@@ -117,6 +126,8 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
             nivel=nivel,
             es_resumen=bool(calculada and calculada.es_resumen),
             es_hito=tarea.duracion == 0,
+            es_estimada=tarea.duracion_optimista is not None
+            or tarea.duracion_pesimista is not None,
             predecesoras=propias,
             predecesoras_texto=_texto_predecesoras(propias, codigos),
             tiene_predecesoras=bool(propias),
@@ -135,7 +146,10 @@ def armar(session: Session, project_id: int, hoy: date | None = None) -> VistaPr
         grilla=grilla,
         columna_hoy=grilla.columna_de(hoy or date.today()) if grilla else None,
         error=error,
-        resumen=_resumir(filas, cronograma.inicio, cronograma.fin),
+        resumen=_resumir(filas, "Total", cronograma.inicio, cronograma.fin),
+        por_ambito=_por_ambito(filas),
+        ventana=schedule_service.ventana(session, project_id),
+        estimadas=len([f for f in filas if f.es_estimada and not f.es_resumen]),
         flechas=_flechas(filas, dependencies_service.listar(session, project_id), ancho),
         ancho_dia=ancho,
     )
@@ -173,10 +187,32 @@ def _flechas(filas: list[Fila], dependencias, ancho_dia: int) -> list[Flecha]:
     return salida
 
 
-def _resumir(filas: list[Fila], inicio: date | None, fin: date | None) -> Resumen:
-    """Duración total del proyecto: se recalcula sola al agregar o quitar tareas."""
+def _por_ambito(filas: list[Fila]) -> list[Resumen]:
+    """Un contador por ámbito que tenga tareas, en el orden del enum."""
+    salida = []
+    for ambito in Ambito:
+        del_ambito = [f for f in filas if not f.es_resumen and f.tarea.ambito == ambito]
+        if not del_ambito:
+            continue
+        fechas = [(f.inicio, f.fin) for f in del_ambito if f.inicio and f.fin]
+        if not fechas:
+            continue
+        salida.append(_resumir(
+            del_ambito,
+            ETIQUETA_AMBITO[ambito],
+            min(i for i, _ in fechas),
+            max(f for _, f in fechas),
+        ))
+    return salida if len(salida) > 1 else []
+
+
+def _resumir(
+    filas: list[Fila], etiqueta: str, inicio: date | None, fin: date | None
+) -> Resumen:
+    """Duración de un bloque: se recalcula sola al agregar o quitar tareas."""
     hojas = [f for f in filas if not f.es_resumen]
     return Resumen(
+        etiqueta=etiqueta,
         inicio=inicio,
         fin=fin,
         dias_habiles=contar_habiles(inicio, fin) if inicio and fin else 0,

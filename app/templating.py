@@ -7,7 +7,7 @@ from datetime import date
 from fastapi.templating import Jinja2Templates
 
 from .config import RAIZ
-from .models import ETIQUETA_ESTADO_PROYECTO, ETIQUETA_ESTADO_TAREA
+from .models import ETIQUETA_AMBITO, ETIQUETA_ESTADO_PROYECTO, ETIQUETA_ESTADO_TAREA
 
 templates = Jinja2Templates(directory=RAIZ / "app" / "templates")
 
@@ -19,3 +19,4 @@ def formato_fecha(valor: date | None) -> str:
 templates.env.filters["fecha"] = formato_fecha
 templates.env.globals["etiqueta_estado_tarea"] = ETIQUETA_ESTADO_TAREA
 templates.env.globals["etiqueta_estado_proyecto"] = ETIQUETA_ESTADO_PROYECTO
+templates.env.globals["etiqueta_ambito"] = ETIQUETA_AMBITO

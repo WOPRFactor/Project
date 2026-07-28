@@ -105,3 +105,25 @@ def test_sin_fechas_declaradas_no_hay_diagnostico():
         FilaImportada(titulo="B", wbs="2", duracion=2, predecesoras=["1"]),
     ])
     assert diagnostico_service.analizar(imp).discrepancias == []
+
+
+def test_las_fechas_a_mano_se_reportan_pero_no_se_aplican():
+    """Fijarlas como lag congelaría el cronograma: eso lo decide una persona."""
+    imp = Importacion(filas=[
+        fila("1", "A", 3, date(2026, 1, 5), date(2026, 1, 7)),
+        fila("2", "B", 2, date(2026, 3, 2), date(2026, 3, 3), pred=["1"]),
+    ])
+    d = diagnostico_service.analizar(imp)
+    assert len(d.a_revisar) == 1 and d.estructurales == []
+    assert diagnostico_service.aplicar_sugerencias(imp, d) == 0
+    assert imp.filas[1].predecesoras == ["1"]      # intacta
+
+
+def test_sobre_la_planilla_real_solo_se_aplican_las_estructurales():
+    imp = importar_excel.leer(PLANILLA.read_bytes(), "Sheet2")
+    d = diagnostico_service.analizar(imp)
+    assert {x.sugerencia for x in d.estructurales} >= {"4.1SS"}
+    assert all(x.sugerencia.endswith(("SS", "FF")) or "-" in x.sugerencia
+               for x in d.estructurales)
+    # ninguna corrección mete un lag positivo grande, que anclaría el cronograma
+    assert not any("+1" in x.sugerencia and x.estructural for x in d.discrepancias)

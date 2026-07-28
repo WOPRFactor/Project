@@ -51,6 +51,11 @@ Dirección de dependencias única: `routers → services → engine | models/db`
   *relaciones*, no fechas absolutas, así un corrimiento global no genera ruido.
 - Duración en **días hábiles** (L-V, sin feriados en v1). Restricción opcional por
   tarea: "no arrancar antes de X" (SNET).
+- **Ámbito** por tarea (proyecto / seguimiento / control): afecta el *reporte*, nunca
+  el cálculo. Separa el alcance comprometido del acompañamiento posterior.
+- **Duración optimista / probable / pesimista**: el motor calcula los tres escenarios
+  (`Escenario`) y la app muestra la ventana de fin. Sin rango declarado, los tres
+  coinciden.
 - Recálculo total del cronograma en cada cambio — no optimizar lo que no duele.
 
 ## Convenciones

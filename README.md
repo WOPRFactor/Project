@@ -49,6 +49,19 @@ Lo que ves en el timeline:
 El ancho de las columnas se achica solo en proyectos largos, para que un año entre en
 la pantalla sin scrollear kilómetros.
 
+## Contadores y estimación
+
+Cada tarea tiene un **ámbito**: *Proyecto* (el alcance comprometido), *Seguimiento*
+(acompañamiento posterior) o *Control*. El resumen muestra un contador por ámbito, así
+una tarea de acompañamiento que corre seis meses después del cierre deja de inflar la
+duración del proyecto sin desaparecer del cronograma. El ámbito **no cambia el cálculo**:
+las dependencias y las fechas se computan igual para todas.
+
+Cuando una duración es una estimación y no un dato —buscar y contratar gente puede
+tardar dos meses o siete—, se cargan las columnas **Opt · Pes**. El motor calcula los
+tres escenarios y el resumen deja de mostrar una fecha única: dice *fin probable X,
+entre Y y Z*. Las barras estimadas se rayan, porque su fecha no es un dato duro.
+
 ## Reglas del motor (v1)
 
 - Duración en **días hábiles** (lunes a viernes; sin feriados todavía).

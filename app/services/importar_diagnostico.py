@@ -24,13 +24,22 @@ from .predecesoras import parsear
 
 @dataclass
 class Discrepancia:
-    """Una dependencia cuya declaración no coincide con las fechas de la planilla."""
+    """Una dependencia cuya declaración no coincide con las fechas de la planilla.
+
+    `estructural` separa dos cosas muy distintas. Si la planilla muestra que dos
+    tareas arrancan juntas, la relación estaba mal declarada y corregirla es
+    objetivamente mejor. Si en cambio muestra una tarea puesta meses después de lo
+    que exigen sus dependencias, eso es una fecha escrita a mano: convertirla en un
+    lag duro reproduce la planilla pero **congela el accidente** y deja el
+    cronograma sordo a cambios reales. Eso se reporta, no se aplica.
+    """
 
     wbs: str
     titulo: str
     predecesora: str
     sugerencia: str
     motivo: str
+    estructural: bool = True
 
     def __str__(self) -> str:
         return f"{self.wbs} «{self.titulo[:44]}»: {self.motivo} → escribí «{self.sugerencia}»"
@@ -46,11 +55,23 @@ class Diagnostico:
         return bool(self.discrepancias)
 
     @property
+    def estructurales(self) -> list[Discrepancia]:
+        """Relaciones mal declaradas: se pueden corregir con confianza."""
+        return [d for d in self.discrepancias if d.estructural]
+
+    @property
+    def a_revisar(self) -> list[Discrepancia]:
+        """Fechas puestas a mano: las mira una persona, no se tocan solas."""
+        return [d for d in self.discrepancias if not d.estructural]
+
+    @property
     def resumen(self) -> str:
-        return (
-            f"{len(self.discrepancias)} de {self.revisadas} dependencias no coinciden "
-            "con las fechas que trae la planilla"
-        )
+        partes = []
+        if self.estructurales:
+            partes.append(f"{len(self.estructurales)} relaciones mal declaradas")
+        if self.a_revisar:
+            partes.append(f"{len(self.a_revisar)} fechas puestas a mano")
+        return "; ".join(partes) + f" (de {self.revisadas} dependencias)"
 
 
 # Un hueco chico entre lo exigido y lo declarado es ruido de ajuste manual; recién
@@ -117,6 +138,7 @@ def _revisar(
                 fila.wbs, fila.titulo, codigo, f"{codigo}+{hueco}",
                 f"la planilla la arranca {hueco} días hábiles después de lo que exigen "
                 f"sus dependencias: puede faltar una, o la fecha está puesta a mano",
+                estructural=False,
             )
         ]
 
@@ -153,9 +175,12 @@ def _distancia_habil(desde: date, hasta: date) -> int:
 
 
 def aplicar_sugerencias(importacion: Importacion, diagnostico: Diagnostico) -> int:
-    """Reescribe las predecesoras con lo sugerido. Devuelve cuántas cambió."""
+    """Corrige **solo** las relaciones mal declaradas. Devuelve cuántas cambió.
+
+    Las fechas puestas a mano quedan afuera a propósito: ver `Discrepancia`.
+    """
     porfila: dict[str, dict[str, str]] = {}
-    for d in diagnostico.discrepancias:
+    for d in diagnostico.estructurales:
         porfila.setdefault(d.wbs, {})[d.predecesora] = d.sugerencia
 
     cambios = 0

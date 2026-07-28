@@ -93,7 +93,7 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .gantt { display: flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--panel); margin-bottom: 18px; }
 /* Ancho fijo. Tiene que alcanzar para todas las columnas fijas (~615px) más la
    de Tarea; si se achica, el título se aplasta a cero. */
-.panel-izq { flex: 0 0 900px; max-width: 900px; border-right: 2px solid var(--borde); }
+.panel-izq { flex: 0 0 1080px; max-width: 1080px; border-right: 2px solid var(--borde); }
 .panel-der { flex: 1 1 auto; overflow-x: auto; }
 
 .panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
@@ -105,7 +105,7 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 /* Columnas de la grilla.
    min-width: 0 es obligatorio: sin eso, el ancho intrínseco de un <input type=date>
    estira su columna y desalinea el encabezado de las filas. */
-.c-cod, .c-resp, .c-pred, .c-dias, .c-fecha, .c-crit, .c-ops { min-width: 0; }
+.c-cod, .c-resp, .c-pred, .c-dias, .c-fecha, .c-crit, .c-ops, .c-ambito, .c-rango { min-width: 0; }
 .c-cod   { flex: 0 0 52px; }
 .c-tarea { flex: 1 1 auto; min-width: 240px; display: flex; align-items: center; gap: 2px; }
 .c-resp  { flex: 0 0 88px; }
@@ -263,3 +263,21 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .conexion.tipo-SS, .conexion.tipo-FF { stroke-dasharray: 4 3; }
 .punta-flecha { fill: var(--tenue); }
 .punta-flecha.critica { fill: var(--critico); }
+
+.c-ambito { flex: 0 0 96px; min-width: 0; }
+.c-ambito select.celda { font-size: .74rem; padding: 2px; }
+.c-ambito select.ambito-seguimiento { color: var(--curso); }
+.c-ambito select.ambito-control { color: var(--hecho); }
+.resumen.por-ambito .dato { border-style: dashed; }
+
+/* Rango de estimación: mejor y peor caso, opcionales. */
+.c-rango { flex: 0 0 74px; min-width: 0; display: flex; gap: 2px; }
+.c-rango .celda.chico { font-size: .72rem; padding: 2px 3px; }
+.resumen .dato.con-rango { border-color: var(--curso); }
+/* Una barra estimada se raya: su fecha no es un dato duro. */
+.barra-tarea.estimada {
+  background-image: repeating-linear-gradient(
+    45deg, transparent 0 4px, rgba(18, 21, 28, .35) 4px 8px);
+}
+.contradicciones .sub { font-size: .82rem; color: var(--texto); margin: 12px 0 4px; }
+.contradicciones ul.a-revisar { border-left: 2px solid var(--curso); padding-left: 14px; }
