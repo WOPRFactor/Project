@@ -22,8 +22,28 @@ def test_lista_las_hojas():
     assert importar_excel.hojas(contenido()) == ["Sheet1", "Sheet2"]
 
 
-def test_por_default_lee_la_ultima_hoja():
+def test_por_default_lee_la_ultima_hoja_con_datos():
     assert "Sheet2" in importar_excel.leer(contenido()).origen
+
+
+def test_saltea_las_hojas_sin_columnas_de_tareas():
+    """Una hoja de notas al final no puede ganarle a la del plan."""
+    from io import BytesIO
+
+    from openpyxl import Workbook
+
+    libro = Workbook()
+    libro.active.title = "Plan"
+    for fila in [["WBS", "Tarea", "Días"], ["1", "Arrancar", 2]]:
+        libro.active.append(fila)
+    notas = libro.create_sheet("Notas")
+    notas.append(["Acordarse de pedir los accesos"])
+    buffer = BytesIO()
+    libro.save(buffer)
+
+    imp = importar_excel.leer(buffer.getvalue())
+    assert "Plan" in imp.origen
+    assert [f.titulo for f in imp.filas] == ["Arrancar"]
 
 
 def test_lee_la_estructura_completa():
@@ -100,6 +120,27 @@ def test_una_planilla_sin_cabecera_avisa_y_no_rompe():
     imp = importar_excel.leer(planilla_en_memoria([["cualquier", "cosa"], [1, 2]]))
     assert imp.filas == []
     assert any("encabezados" in a for a in imp.avisos)
+
+
+def test_el_lag_escrito_en_la_planilla_se_respeta(session: Session):
+    """`1+2` en la columna Predec. significa lo mismo que en la grilla."""
+    contenido = planilla_en_memoria(
+        [
+            ["WBS", "Tarea", "Predec.", "Días"],
+            ["1", "A", "", 3],
+            ["2", "B", "1+2", 1],
+            ["3", "C", "1-1", 1],
+        ]
+    )
+    imp = importar_excel.leer(contenido)
+    proyecto, avisos = importar_aplicar.aplicar(session, "Lag", date(2026, 1, 5), imp)
+    assert avisos == []
+
+    plan = schedule_service.calcular(session, proyecto.id)
+    por_titulo = {t.titulo: t.id for t, _ in tasks_service.arbol(session, proyecto.id)}
+    assert plan.get(por_titulo["A"]).fin == date(2026, 1, 7)
+    assert plan.get(por_titulo["B"]).inicio == date(2026, 1, 12)  # +2 días hábiles
+    assert plan.get(por_titulo["C"]).inicio == date(2026, 1, 7)   # solapa 1
 
 
 def test_una_planilla_minima_alcanza_con_wbs_y_tarea():

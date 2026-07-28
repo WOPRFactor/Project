@@ -51,16 +51,20 @@ def hojas(contenido: bytes) -> list[str]:
 
 
 def leer(contenido: bytes, hoja: str | None = None) -> Importacion:
-    """Devuelve las filas importables de la hoja pedida (por default, la última)."""
+    """Filas importables de la hoja pedida.
+
+    Sin hoja explícita, se elige la primera que tenga las columnas esperadas: un
+    libro suele traer hojas de notas o de ayuda, y agarrar una de esas por posición
+    daría "no encontré tareas" sobre un archivo perfectamente válido.
+    """
     libro = load_workbook(BytesIO(contenido), data_only=True, read_only=True)
     try:
-        ws = libro[hoja] if hoja and hoja in libro.sheetnames else libro.worksheets[-1]
-        filas_crudas = [list(f) for f in ws.iter_rows(max_row=400, max_col=20, values_only=True)]
+        candidatas = [libro[hoja]] if hoja and hoja in libro.sheetnames else libro.worksheets
+        elegida, filas_crudas, mapa, primera = _elegir_hoja(candidatas)
     finally:
         libro.close()
 
-    importacion = Importacion(origen=f"planilla · hoja «{ws.title}»")
-    mapa, primera = _ubicar_cabecera(filas_crudas)
+    importacion = Importacion(origen=f"planilla · hoja «{elegida}»")
     if mapa is None:
         importacion.avisos.append(
             "No encontré la fila de encabezados: la planilla necesita columnas "
@@ -89,6 +93,25 @@ def leer(contenido: bytes, hoja: str | None = None) -> Importacion:
             importacion.filas.append(fila)
 
     return importacion
+
+
+def _elegir_hoja(candidatas) -> tuple[str, list[list], dict[str, int] | None, int]:
+    """La **última** hoja con cabecera válida.
+
+    Se recorre de derecha a izquierda porque la versión vigente de un plan suele
+    ser la hoja más a la derecha; pero se saltean las que no tienen las columnas
+    (notas, ayuda, glosario), que si no ganarían solo por estar últimas.
+    """
+    ultima = None
+    for ws in reversed(list(candidatas)):
+        filas = [list(f) for f in ws.iter_rows(max_row=400, max_col=20, values_only=True)]
+        mapa, desde = _ubicar_cabecera(filas)
+        if mapa is not None:
+            return ws.title, filas, mapa, desde
+        if ultima is None:
+            ultima = (ws.title, filas)
+    titulo, filas = ultima or ("(vacía)", [])
+    return titulo, filas, None, 0
 
 
 def _ubicar_cabecera(filas: list[list]) -> tuple[dict[str, int] | None, int]:

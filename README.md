@@ -58,10 +58,18 @@ la pantalla sin scrollear kilómetros.
 Desde **Importar**, en la home. Nada se crea hasta que confirmás la previsualización,
 que muestra qué va a entrar y qué hubo que arreglar o saltear.
 
-**Desde una planilla `.xlsx`.** Necesita las columnas `WBS` y `Tarea`; si están,
-también lee `Predec.`, `Días`, `Resp.` y `_tipo` (fase / tarea / hito). El WBS arma la
-jerarquía (`2.3` cuelga de `2`) y las predecesoras se escriben por WBS, separadas por
-coma. Si el archivo tiene varias hojas, elegís cuál.
+**Desde una planilla `.xlsx`.** Hay una **plantilla modelo descargable** desde la misma
+pantalla: trae el formato armado y las columnas de códigos ya en modo texto, para que
+Excel no convierta un WBS como `4.6` en una fecha.
+
+Necesita las columnas `WBS` y `Tarea`; si están, también lee `Predec.`, `Días`, `Resp.`,
+`Crít.` y `_tipo` (fase / tarea / hito). El WBS arma la jerarquía (`2.3` cuelga de `2`) y
+las predecesoras se escriben por WBS, separadas por coma, con lag opcional pegado al
+código (`1.3+2` espera dos días hábiles, `1.3-1` solapa uno). Las fechas **no se cargan**:
+las calcula la app.
+
+Si el archivo tiene varias hojas, elegís cuál; por default toma la última que tenga las
+columnas de tareas, salteando hojas de notas o ayuda.
 
 Dos cosas del mundo real que el importador resuelve y **te reporta**:
 

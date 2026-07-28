@@ -3,7 +3,7 @@
 
 {% block acciones %}
 <div class="acciones-barra">
-  <a class="enlace-tenue" href="/importar">Importar</a>
+  <a class="boton" href="/importar">Importar desde planilla</a>
   <a class="boton primario" href="/proyectos/nuevo">Nuevo proyecto</a>
 </div>
 {% endblock %}
@@ -18,17 +18,29 @@
   </div>
 
   {% if not proyectos %}
-    <p class="vacio">Todavía no hay proyectos. Creá el primero para arrancar.</p>
+    <p class="vacio">
+      Todavía no hay proyectos. Creá uno vacío, o importá una planilla desde
+      <a href="/importar">Importar</a>.
+    </p>
   {% else %}
     <ul class="lista-proyectos">
       {% for proyecto in proyectos %}
         <li>
-          <a href="/proyectos/{{ proyecto.id }}">
-            <span class="nombre">{{ proyecto.nombre }}</span>
-            <span class="chip estado-{{ proyecto.estado.value }}">
-              {{ etiqueta_estado_proyecto[proyecto.estado] }}
+          <div class="fila-proyecto">
+            <a href="/proyectos/{{ proyecto.id }}">
+              <span class="nombre">{{ proyecto.nombre }}</span>
+              <span class="chip estado-{{ proyecto.estado.value }}">
+                {{ etiqueta_estado_proyecto[proyecto.estado] }}
+              </span>
+            </a>
+            <span class="ops-proyecto">
+              <a class="icono" href="/proyectos/{{ proyecto.id }}/editar" title="Editar">✎</a>
+              <form method="post" action="/proyectos/{{ proyecto.id }}/eliminar" class="en-linea"
+                    onsubmit="return confirm('¿Borrar «{{ proyecto.nombre }}» con todas sus tareas? Esto no se puede deshacer.')">
+                <button class="icono" type="submit" title="Borrar proyecto">✕</button>
+              </form>
             </span>
-          </a>
+          </div>
           <p class="tenue">
             Arranca el {{ proyecto.fecha_inicio | fecha }}
             {% if proyecto.descripcion %} · {{ proyecto.descripcion }}{% endif %}

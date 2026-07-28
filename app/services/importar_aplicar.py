@@ -15,6 +15,7 @@ from ..schemas import DependenciaIn, ProyectoIn, TareaIn
 from . import dependencies as dependencies_service
 from . import projects as projects_service
 from . import tasks as tasks_service
+from . import predecesoras as predecesoras_service
 from .importar import FilaImportada, Importacion
 from .tasks import TareaInvalida
 
@@ -123,7 +124,15 @@ def _vincular(
         destino = por_wbs.get(fila.wbs)
         if destino is None:
             continue
-        for codigo in fila.predecesoras:
+        for crudo in fila.predecesoras:
+            referencia = predecesoras_service.parsear(crudo)
+            if referencia is None:
+                avisos.append(
+                    f"«{fila.titulo}»: no entiendo la predecesora «{crudo}», "
+                    "se escribe 1.3 o 1.3+2"
+                )
+                continue
+            codigo, lag = referencia
             origen = por_wbs.get(codigo)
             if origen is None:
                 avisos.append(
@@ -135,7 +144,7 @@ def _vincular(
                 dependencies_service.crear(
                     session,
                     project_id,
-                    DependenciaIn(predecessor_id=origen, successor_id=destino),
+                    DependenciaIn(predecessor_id=origen, successor_id=destino, lag=lag),
                 )
             except TareaInvalida as error:
                 avisos.append(f"«{fila.titulo}» ← WBS {codigo}: {error}")

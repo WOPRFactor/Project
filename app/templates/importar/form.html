@@ -17,7 +17,13 @@
       <h2>Desde una planilla</h2>
       <p class="tenue pie">
         Necesita las columnas <strong>WBS</strong> y <strong>Tarea</strong>. Si están,
-        también lee <em>Predec.</em>, <em>Días</em>, <em>Resp.</em> y <em>_tipo</em>.
+        también lee <em>Predec.</em>, <em>Días</em>, <em>Resp.</em>, <em>Crít.</em> y
+        <em>_tipo</em>. Las fechas no se cargan: las calcula la app.
+      </p>
+      <p class="pie">
+        <a href="/importar/plantilla">Descargar la planilla modelo</a> — trae el formato
+        armado y las columnas de códigos ya en modo texto, para que Excel no convierta
+        un WBS como <code>4.6</code> en una fecha.
       </p>
       <form method="post" action="/importar/planilla" enctype="multipart/form-data"
             class="form-compacto">

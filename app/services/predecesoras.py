@@ -22,6 +22,18 @@ from .tasks import TareaInvalida
 _REFERENCIA = re.compile(r"^([0-9]+(?:\.[0-9]+)*)\s*([+-]\s*[0-9]{1,3})?$")
 
 
+def parsear(crudo: str) -> tuple[str, int] | None:
+    """`1.3+2` → («1.3», 2). Devuelve None si no tiene la forma esperada.
+
+    Lo usan tanto la grilla como el importador, para que una planilla con lag
+    escrito a mano signifique lo mismo que si lo escribieras en la celda.
+    """
+    referencia = _REFERENCIA.match(crudo.strip())
+    if referencia is None:
+        return None
+    return referencia.group(1), int((referencia.group(2) or "0").replace(" ", ""))
+
+
 def texto_de(session: Session, project_id: int, task_id: int) -> str:
     """Cómo se muestra la celda: los códigos de las predecesoras, con su lag."""
     codigos = {
@@ -54,11 +66,11 @@ def guardar(session: Session, project_id: int, task_id: int, texto: str) -> list
         crudo = crudo.strip()
         if not crudo:
             continue
-        referencia = _REFERENCIA.match(crudo)
+        referencia = parsear(crudo)
         if referencia is None:
             avisos.append(f"«{crudo}» no se entiende: se escribe 1.3 o 1.3+2")
             continue
-        codigo, lag_crudo = referencia.group(1), referencia.group(2)
+        codigo, lag = referencia
         predecesora = por_codigo.get(codigo)
         if predecesora is None:
             avisos.append(f"No existe ninguna tarea con código {codigo}")
@@ -66,7 +78,7 @@ def guardar(session: Session, project_id: int, task_id: int, texto: str) -> list
         if predecesora.id == task_id:
             avisos.append("Una tarea no puede depender de sí misma")
             continue
-        pedidas[predecesora.id] = int((lag_crudo or "0").replace(" ", ""))
+        pedidas[predecesora.id] = lag
 
     return _sincronizar(session, project_id, task_id, pedidas, avisos)
 

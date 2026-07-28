@@ -79,6 +79,10 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .lista-proyectos { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
 .lista-proyectos li { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; padding: 14px 18px; }
 .lista-proyectos .nombre { font-weight: 600; color: var(--texto); font-size: 1.05rem; }
+.fila-proyecto { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ops-proyecto { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.ops-proyecto .icono { font-size: 15px; text-decoration: none; }
+.ops-proyecto .icono:hover { color: var(--critico); text-decoration: none; }
 .lista-proyectos p { margin: 4px 0 0; font-size: .88rem; }
 
 .chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .72rem; border: 1px solid var(--borde); color: var(--tenue); margin-left: 8px; }

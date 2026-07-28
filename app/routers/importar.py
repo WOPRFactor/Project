@@ -16,6 +16,7 @@ from ..db import get_session
 from ..services import importar as importar_service
 from ..services import importar_aplicar
 from ..services import importar_excel, importar_texto
+from ..services import plantilla as plantilla_service
 from ..templating import templates
 
 router = APIRouter(prefix="/importar")
@@ -28,6 +29,16 @@ EXTENSIONES = (".xlsx", ".xlsm")
 def formulario(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         request, "importar/form.html", {"hoy": date.today(), "importacion": None}
+    )
+
+
+@router.get("/plantilla")
+def plantilla() -> Response:
+    """Planilla modelo: define el formato esperado sin que haya que documentarlo."""
+    return Response(
+        content=plantilla_service.construir(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="wopr-plantilla.xlsx"'},
     )
 
 
