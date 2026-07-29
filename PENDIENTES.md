@@ -17,14 +17,24 @@ Después, `http://127.0.0.1:8000`.
 
 ## Dónde quedó
 
-Todo lo que funciona con un solo usuario está hecho: **444 tests en verde**. El ciclo
+Todo lo que funciona con un solo usuario está hecho: **465 tests en verde**. El ciclo
 cierra de punta a punta — cargás o importás, planificás, congelás lo aprobado, medís
-el desvío y emitís el informe.
+el desvío y emitís el informe. Las etapas ahora se **pliegan y despliegan** con el
+chevron (▾/▸) de la fila: es orden visual, viaja en la mirada y no toca los totales.
 
-Lo último de la sesión fueron tres arreglos del Gantt, encadenados: la grilla había
-crecido tanto que tapaba el timeline; al arreglarlo se cortaron los títulos; al
-arreglar eso aparecieron dos barras de scroll. Los tres cerrados y medidos en el
-navegador.
+Lo último de la sesión fue una **revisión de código del repo entero con arreglos**.
+Los que importan:
+
+- **Editar una celda ya no borra lo de las columnas ocultas.** Antes, con la vista
+  por defecto, tocar un título reseteaba criticidad, peso, rango y ámbito de esa
+  fila (y con Predec. oculta, borraba sus dependencias). Ahora lo que no viaja en
+  el form se conserva.
+- **Se acabó el SNET fantasma:** guardar una fila ya no ancla la tarea a su fecha
+  calculada; mover el arranque del proyecto vuelve a mover todo.
+- **Bug 3 de esta lista (la barra de vista) arreglado** — detalle abajo.
+- Un XSS en los `confirm()` de borrado (nombre interpolado en JS inline), el WBS
+  duplicado que desviaba dependencias, el import que cortaba en 400 filas en
+  silencio, y una tanda de menores. Todo con test.
 
 ## Lo que marcó Ariel para mañana
 
@@ -40,28 +50,13 @@ el plan de respuesta (evitar / mitigar / transferir / aceptar), riesgo residual
 fecha de revisión, o vincular el riesgo a una tarea de mitigación del cronograma.
 **No arrancar sin definirlo con él.**
 
-**3. La barra de vista entera no funciona** (bug mío, más grande de lo que parecía).
-Ariel lo reportó por las columnas, pero al verificarlo aparecieron los cuatro
-controles rotos: **Detalle, Etapa, Color y Columnas**. Ninguno hace nada desde la
-interfaz.
-
-*Causa única:* el `hx-vals` de `#mirada-actual` —puesto para que la vista sobreviva a
-cada edición— **pisa los valores del formulario que tiene adentro**. Todo request sale
-con lo que ya estaba: `detalle=todo&etapa=0&color=criticidad&columnas=<las de antes>`,
-sin importar qué elijas.
-
-*Reproducido en el navegador:* elegir «Solo etapas» sigue mostrando las 5 filas;
-elegir color «Estado» vuelve a «Criticidad»; tildar «Peso» manda el conjunto viejo.
-
-*Arreglo:* sacar el formulario de vista de adentro del contenedor con `hx-vals`, o
-dejar el `hx-vals` solo para las mutaciones de la grilla. Un cambio, los cuatro
-controles. Chico.
-
-*Por qué se me pasó:* verifiqué la Fase 22 pasando los parámetros por URL
-(`?detalle=etapas&color=estado`), que ejercita el servidor y saltea la interfaz. **La
-lógica está bien y tiene tests; lo que nunca se probó fue el control.** Falta al menos
-un test que haga clic de verdad — hoy el repo no tiene tests con navegador, y esta es
-la razón concreta para sumarlos.
+**3. La barra de vista entera no funciona** — **RESUELTO.** El form de la vista se
+movió afuera del contenedor con `hx-vals` (que pisaba sus valores en htmx 2.0.7), con
+un hidden de `columnas` para que «ninguna tildada» siga siendo una elección válida.
+De paso, el form de «Inicio del proyecto» —que también estaba afuera del contenedor y
+perdía la mirada al usarlo— ahora la lleva consigo. **Pendiente de verificar en el
+navegador** (la causa se confirmó leyendo el htmx vendoreado, pero el clic real sigue
+sin test — la razón para sumar tests con navegador sigue en pie).
 
 **4. Poder apagar las flechas de dependencias** (pedido). Van como un control más de
 la mirada, al lado de Detalle / Etapa / Color, viajando en la URL igual que el resto.

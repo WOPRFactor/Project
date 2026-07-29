@@ -127,7 +127,10 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .panel-izq .cabecera, .panel-izq .fila { width: max-content; min-width: 100%; }
 .panel-der { flex: 0 0 auto; }
 
-.panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
+/* nowrap explícito: la fila de una etapa lleva la clase `resumen`, que también usa
+   el panel de totales de arriba con flex-wrap: wrap — sin esto, sus celdas envuelven
+   a una segunda línea y quedan pintadas encima de la fila siguiente. */
+.panel-izq .cabecera, .panel-izq .fila { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; padding: 0 8px; }
 .panel-izq .cabecera { height: var(--cabecera); border-bottom: 1px solid var(--borde); color: var(--tenue); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; }
 .panel-izq .fila { height: var(--fila); border-bottom: 1px solid rgba(44, 52, 70, .5); font-size: .85rem; margin: 0; }
 .panel-izq .fila.resumen { background: rgba(76, 141, 255, .06); }
@@ -143,9 +146,12 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
   /* Ancho calculado en `gantt_vista.ancho_tarea` según el título más largo: con las
      filas en max-content, un `flex: 1 1 auto` se quedaba en su mínimo y cortaba los
      nombres. El tooltip cubre los que igual pasan el techo. */
-  /* Se estira con lo que sobre; el valor del servidor es solo el punto de
-     partida, y arrastrar el borde lo pisa. */
-  flex: 1 1 var(--w-tarea, var(--ancho-tarea, 260px));
+  /* Crece con lo que sobre pero NO se encoge (shrink 0): el max-content de la fila
+     se calcula con el ancho intrínseco del input (~180px), no con esta base, y con
+     shrink la columna quedaba aplastada y cortaba los títulos aunque hubiera scroll.
+     Si el conjunto no entra, el panel scrollea. Arrastrar el borde (--w-tarea)
+     sigue pisando el valor del servidor. */
+  flex: 1 0 var(--w-tarea, var(--ancho-tarea, 260px));
   min-width: 120px;
   display: flex; align-items: center; gap: 2px;
 }
@@ -155,6 +161,13 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .c-fecha { flex: 0 0 var(--w-fecha, 96px); }
 .c-crit  { flex: 0 0 var(--w-crit, 38px); }
 .c-ops   { flex: 0 0 92px; display: flex; align-items: center; justify-content: flex-end; gap: 1px; }
+
+/* Chevron para plegar una etapa: vive en la celda de tarea de las filas resumen. */
+.chevron {
+  flex: 0 0 16px; padding: 0; border: 0; background: none;
+  color: var(--tenue); cursor: pointer; font-size: .72rem; line-height: 1;
+}
+.chevron:hover { color: var(--acento); }
 
 /* Celdas: parecen texto hasta que las tocás. */
 .celda {

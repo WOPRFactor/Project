@@ -79,6 +79,9 @@ class Mirada:
     etapa: int | None = None
     color: str = POR_CRITICIDAD
     columnas: frozenset[str] = COLUMNAS_POR_DEFECTO
+    # Etapas plegadas (ids de tarea). Es orden visual, no filtro: los totales de
+    # arriba y el cálculo siguen siendo del proyecto entero.
+    colapsadas: frozenset[int] = frozenset()
 
     @property
     def filtrada(self) -> bool:
@@ -92,6 +95,18 @@ class Mirada:
         """Para que la mirada viaje en un `hx-vals` y vuelva igual."""
         return ",".join(sorted(self.columnas))
 
+    @property
+    def colapsadas_texto(self) -> str:
+        return ",".join(str(i) for i in sorted(self.colapsadas))
+
+    def esta_colapsada(self, tarea_id: int | None) -> bool:
+        return tarea_id in self.colapsadas
+
+    def alternar_colapso(self, tarea_id: int | None) -> str:
+        """El valor de `colapsadas` que resulta de tocar el chevron de esta fila."""
+        nuevas = self.colapsadas ^ {tarea_id or 0}
+        return ",".join(str(i) for i in sorted(nuevas))
+
     def normalizada(self) -> "Mirada":
         """Lo que llega del formulario no se toma como viene."""
         return Mirada(
@@ -99,6 +114,7 @@ class Mirada:
             etapa=self.etapa,
             color=self.color if self.color in MODOS_COLOR else POR_CRITICIDAD,
             columnas=frozenset(c for c in self.columnas if c in COLUMNAS),
+            colapsadas=self.colapsadas,
         )
 
 
@@ -110,6 +126,13 @@ def leer_columnas(crudo: list[str] | None) -> frozenset[str]:
         return COLUMNAS_POR_DEFECTO
     partes = [p.strip() for valor in crudo for p in valor.split(",") if p.strip()]
     return frozenset(p for p in partes if p in COLUMNAS)
+
+
+def leer_colapsadas(crudo: str) -> frozenset[int]:
+    """Ids de las etapas plegadas, separados por coma. Lo que no sea número se tira."""
+    return frozenset(
+        int(p.strip()) for p in crudo.split(",") if p.strip().isdigit()
+    )
 
 
 def filtrar(filas: list["Fila"], mirada: Mirada) -> list["Fila"]:
@@ -124,7 +147,27 @@ def filtrar(filas: list["Fila"], mirada: Mirada) -> list["Fila"]:
     elif mirada.detalle in ("n1", "n2"):
         tope = int(mirada.detalle[1])
         visibles = [f for f in visibles if f.nivel <= tope or f.es_hito]
+    if mirada.colapsadas:
+        visibles = _sin_colapsadas(visibles, mirada.colapsadas)
     return visibles
+
+
+def _sin_colapsadas(filas: list["Fila"], colapsadas: frozenset[int]) -> list["Fila"]:
+    """Las descendientes de una etapa plegada no se dibujan; la etapa sí, con su
+    rollup y su barra, así el plegado no pierde las fechas del bloque."""
+    hijas: dict[int | None, list[int]] = {}
+    for fila in filas:
+        hijas.setdefault(fila.tarea.parent_id, []).append(fila.tarea.id or 0)
+
+    ocultas: set[int] = set()
+    pila = [hija for raiz in colapsadas for hija in hijas.get(raiz, [])]
+    while pila:
+        actual = pila.pop()
+        if actual in ocultas:
+            continue
+        ocultas.add(actual)
+        pila.extend(hijas.get(actual, []))
+    return [f for f in filas if (f.tarea.id or 0) not in ocultas]
 
 
 def _rama(filas: list["Fila"], raiz_id: int) -> list["Fila"]:

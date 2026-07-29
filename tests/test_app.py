@@ -101,6 +101,113 @@ def test_un_codigo_inexistente_avisa(cliente):
     assert "No existe ninguna tarea con código 9.9" in respuesta.text
 
 
+def test_editar_una_celda_no_pisa_las_columnas_ocultas(cliente):
+    """La vista por defecto no muestra Crít., Peso, Opt·Pes ni Ámbito: esos campos
+    no viajan en el POST y tienen que conservarse, no volver al default."""
+    crear_proyecto(cliente)
+    cliente.post("/proyectos/1/tareas/agregar")
+    # Primero se carga la fila con todas las columnas visibles.
+    cliente.post("/proyectos/1/tareas/1/celda", data={
+        "codigo": "1", "titulo": "A", "responsable": "", "predecesoras": "",
+        "duracion": "5", "inicio": "", "critica": "1", "ambito": "control",
+        "peso": "40", "duracion_optimista": "3", "duracion_pesimista": "8",
+    })
+    # Después se edita el título desde la vista por defecto (campos ausentes).
+    celda(cliente, 1, codigo="1", titulo="A renombrada", duracion=5)
+
+    pagina = cliente.get(
+        "/proyectos/1",
+        params={"columnas": ["crit", "peso", "rango", "ambito"]},
+    )
+    assert 'value="1" selected' in pagina.text        # sigue crítica
+    assert 'value="control" selected' in pagina.text  # sigue en ámbito control
+    assert 'value="40"' in pagina.text                # el peso no se borró
+    assert 'value="3"' in pagina.text and 'value="8"' in pagina.text  # el rango tampoco
+
+
+def test_editar_sin_la_columna_predecesoras_no_borra_dependencias(cliente):
+    crear_proyecto(cliente)
+    for _ in range(2):
+        cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, codigo="1", titulo="A", duracion=3)
+    celda(cliente, 2, codigo="2", titulo="B", duracion=2, predecesoras="1")
+
+    # Editar B con la columna Predec. apagada: el campo no viaja.
+    cliente.post("/proyectos/1/tareas/2/celda", data={"titulo": "B", "duracion": "2"})
+
+    pagina = cliente.get("/proyectos/1")
+    assert "08/01/2026" in pagina.text  # B sigue arrancando después de A
+
+
+def test_devolver_el_inicio_calculado_no_ancla_la_tarea(cliente):
+    """El input de Inicio muestra la fecha calculada; si vuelve tal cual, el usuario
+    no la escribió y no puede convertirse en un SNET fantasma."""
+    crear_proyecto(cliente, inicio="2026-01-12")
+    cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, codigo="1", titulo="A", duracion=3, inicio="2026-01-12")
+
+    # Adelantar el arranque del proyecto tiene que adelantar la tarea.
+    respuesta = cliente.post("/proyectos/1/inicio", data={"fecha_inicio": "2026-01-05"})
+    assert "05/01/2026" in respuesta.text
+
+
+def test_un_inicio_distinto_del_calculado_si_ancla(cliente):
+    crear_proyecto(cliente)  # arranca el 05/01
+    cliente.post("/proyectos/1/tareas/agregar")
+    respuesta = celda(cliente, 1, codigo="1", titulo="A", duracion=3, inicio="2026-01-12")
+    assert "12/01/2026" in respuesta.text
+
+
+def test_un_codigo_wbs_duplicado_se_rechaza_con_aviso(cliente):
+    crear_proyecto(cliente)
+    for _ in range(2):
+        cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, codigo="1", titulo="A")
+    respuesta = celda(cliente, 2, codigo="1", titulo="B")
+    assert "ya lo usa" in respuesta.text
+
+
+def test_un_lag_desmedido_avisa_y_no_se_guarda(cliente):
+    crear_proyecto(cliente)
+    for _ in range(2):
+        cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, codigo="1", titulo="A", duracion=3)
+    respuesta = celda(cliente, 2, codigo="2", titulo="B", duracion=2, predecesoras="1+500")
+    assert "365" in respuesta.text
+
+
+def test_colapsar_una_etapa_oculta_sus_hijas_y_sobrevive_la_edicion(cliente):
+    crear_proyecto(cliente)
+    for _ in range(2):
+        cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, titulo="Etapa plegable")
+    celda(cliente, 2, titulo="Subtarea escondible")
+    cliente.post("/proyectos/1/tareas/2/indentar")
+
+    plegada = cliente.get("/proyectos/1", params={"colapsadas": "1"})
+    assert "Etapa plegable" in plegada.text
+    assert "Subtarea escondible" not in plegada.text
+
+    # Editar una celda con la mirada viajando no expande lo plegado.
+    respuesta = cliente.post(
+        "/proyectos/1/tareas/1/celda",
+        data={"titulo": "Etapa plegable", "colapsadas": "1"},
+    )
+    assert "Subtarea escondible" not in respuesta.text
+
+    # Y sin plegar, la subtarea está.
+    completa = cliente.get("/proyectos/1")
+    assert "Subtarea escondible" in completa.text
+
+
+def test_agregar_a_un_proyecto_borrado_avisa_sin_crear_huerfanas(cliente):
+    crear_proyecto(cliente)
+    cliente.post("/proyectos/1/eliminar")
+    respuesta = cliente.post("/proyectos/1/tareas/agregar")
+    assert respuesta.status_code == 200
+    assert "ya no existe" in respuesta.text
+
+
 def test_indentar_y_desindentar(cliente):
     crear_proyecto(cliente, "Obra")
     for _ in range(2):

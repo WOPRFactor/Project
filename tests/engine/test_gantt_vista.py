@@ -88,6 +88,44 @@ def test_las_etapas_del_selector_son_las_de_la_raiz():
     assert {f.tarea.id for f in etapas(ARBOL)} == {1, 5}
 
 
+# --- plegar etapas: orden visual, no filtro ---
+
+def test_colapsar_oculta_las_descendientes_pero_no_la_etapa():
+    visibles = filtrar(ARBOL, Mirada(colapsadas=frozenset({1})))
+    assert {f.tarea.id for f in visibles} == {1, 5}  # se van 2, 3 y también 4 (nieta)
+
+
+def test_colapsar_un_subresumen_deja_el_resto_de_la_rama():
+    visibles = filtrar(ARBOL, Mirada(colapsadas=frozenset({2})))
+    assert {f.tarea.id for f in visibles} == {1, 2, 3, 5}  # solo se esconde 4
+
+
+def test_colapsar_no_es_filtrar():
+    """El aviso de «mostrando X de Y» es para filtros; plegar no lo dispara."""
+    assert not Mirada(colapsadas=frozenset({1})).filtrada
+
+
+def test_el_colapso_viaja_y_vuelve_igual():
+    from app.services.gantt_vista import leer_colapsadas
+
+    original = Mirada(colapsadas=frozenset({4, 12}))
+    assert leer_colapsadas(original.colapsadas_texto) == original.colapsadas
+
+
+def test_alternar_colapso_pliega_y_despliega():
+    mirada = Mirada(colapsadas=frozenset({4}))
+    assert mirada.alternar_colapso(12) == "4,12"
+    assert mirada.alternar_colapso(4) == ""
+    assert mirada.esta_colapsada(4) and not mirada.esta_colapsada(12)
+
+
+def test_leer_colapsadas_descarta_lo_que_no_es_numero():
+    from app.services.gantt_vista import leer_colapsadas
+
+    assert leer_colapsadas("") == frozenset()
+    assert leer_colapsadas("4, 12, '; DROP TABLE") == frozenset({4, 12})
+
+
 # --- lo que llega del formulario no se toma como viene ---
 
 def test_un_detalle_invalido_cae_en_todo():

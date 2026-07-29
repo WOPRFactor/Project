@@ -8,7 +8,8 @@
 {% if todas_las_filas %}
   <div class="resumen">
     <form class="dato editable" hx-post="/proyectos/{{ proyecto.id }}/inicio"
-          hx-trigger="change" hx-target="#tablero" hx-swap="innerHTML">
+          hx-trigger="change" hx-target="#tablero" hx-swap="innerHTML"
+          hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}", "columnas": "{{ mirada.columnas_texto }}", "colapsadas": "{{ mirada.colapsadas_texto }}"}'>
       <span class="etiqueta">Inicio del proyecto</span>
       <input id="inicio-proyecto" type="date" name="fecha_inicio"
              value="{{ proyecto.fecha_inicio.isoformat() }}"
@@ -91,12 +92,15 @@
   {% endif %}
 {% endif %}
 
-{# La mirada viaja en cada request: hx-vals se hereda a todos los hijos, así una
-   edición no te devuelve a la vista por defecto perdiendo el filtro elegido. #}
-<div id="mirada-actual" hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}", "columnas": "{{ mirada.columnas_texto }}"}'>
-
+{# El form de la vista queda AFUERA de #mirada-actual: el hx-vals heredado pisa
+   los inputs del mismo nombre, y adentro estos controles no harían nada. #}
 <form class="barra-vista" hx-get="/proyectos/{{ proyecto.id }}" hx-trigger="change"
       hx-target="#tablero" hx-select="#tablero" hx-swap="outerHTML">
+  {# Presente aunque no haya ninguna tildada: «columnas» vacío significa «solo WBS
+     y Tarea», que es distinto de que el parámetro no viaje (= las por defecto). #}
+  <input type="hidden" name="columnas" value="">
+  {# Cambiar Detalle/Etapa/Color no expande lo que estaba plegado. #}
+  <input type="hidden" name="colapsadas" value="{{ mirada.colapsadas_texto }}">
   <label>Detalle
     <select name="detalle" class="celda">
       {% for valor, etiqueta in detalles.items() %}
@@ -147,6 +151,10 @@
     </span>
   {% endif %}
 </form>
+
+{# La mirada viaja en cada mutación: hx-vals se hereda a todos los hijos, así una
+   edición no te devuelve a la vista por defecto perdiendo el filtro elegido. #}
+<div id="mirada-actual" hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}", "columnas": "{{ mirada.columnas_texto }}", "colapsadas": "{{ mirada.colapsadas_texto }}"}'>
 
 <div class="barra-grilla">
   <button class="boton primario" hx-post="/proyectos/{{ proyecto.id }}/tareas/agregar"

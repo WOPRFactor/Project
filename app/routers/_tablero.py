@@ -23,12 +23,15 @@ from ..services.gantt_vista import Mirada
 from ..templating import templates
 
 
-def _armar(detalle: str, etapa: str, color: str, columnas: list[str] | None) -> Mirada:
+def _armar(
+    detalle: str, etapa: str, color: str, columnas: list[str] | None, colapsadas: str
+) -> Mirada:
     return Mirada(
         detalle=detalle,
         etapa=int(etapa) if etapa.strip().isdigit() and etapa.strip() != "0" else None,
         color=color,
         columnas=gantt_vista.leer_columnas(columnas),
+        colapsadas=gantt_vista.leer_colapsadas(colapsadas),
     ).normalizada()
 
 
@@ -37,9 +40,10 @@ def mirada_form(
     etapa: str = Form(""),
     color: str = Form(gantt_vista.POR_CRITICIDAD),
     columnas: list[str] | None = Form(None),
+    colapsadas: str = Form(""),
 ) -> Mirada:
     """Para las mutaciones: la mirada llega como campos del formulario."""
-    return _armar(detalle, etapa, color, columnas)
+    return _armar(detalle, etapa, color, columnas, colapsadas)
 
 
 def mirada_query(
@@ -47,9 +51,10 @@ def mirada_query(
     etapa: str = Query(""),
     color: str = Query(gantt_vista.POR_CRITICIDAD),
     columnas: list[str] | None = Query(None),
+    colapsadas: str = Query(""),
 ) -> Mirada:
     """Para la pantalla del proyecto: la mirada llega en la URL, así es compartible."""
-    return _armar(detalle, etapa, color, columnas)
+    return _armar(detalle, etapa, color, columnas, colapsadas)
 
 
 def contexto(session: Session, project_id: int, mirada: Mirada | None = None) -> dict:

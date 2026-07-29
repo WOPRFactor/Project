@@ -33,6 +33,17 @@
                  class="celda mono" autocomplete="off">
         </span>
         <span class="c-tarea" style="padding-left: {{ fila.nivel * 14 }}px">
+          {% if fila.es_resumen %}
+            {# Plegar es orden visual: viaja en la mirada y no toca los totales. #}
+            <button type="button" class="chevron"
+                    hx-get="/proyectos/{{ proyecto.id }}" hx-target="#tablero"
+                    hx-select="#tablero" hx-swap="outerHTML"
+                    hx-vals='{"colapsadas": "{{ mirada.alternar_colapso(t.id) }}"}'
+                    aria-expanded="{{ 'false' if mirada.esta_colapsada(t.id) else 'true' }}"
+                    title="{{ 'Expandir' if mirada.esta_colapsada(t.id) else 'Colapsar' }} este bloque">
+              {{- '▸' if mirada.esta_colapsada(t.id) else '▾' -}}
+            </button>
+          {% endif %}
           {% if fila.es_hito %}<i class="marca-hito" title="Hito (0 días)">◆</i>{% endif %}
           <input id="tit-{{ t.id }}" name="titulo" value="{{ t.titulo }}" maxlength="200"
                  class="celda {{ 'negrita' if fila.es_resumen }}" autocomplete="off"
