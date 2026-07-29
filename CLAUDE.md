@@ -82,6 +82,11 @@ Dirección de dependencias única: `routers → services → engine | models/db`
   contrato, no crecimiento del existente.
 - Todo cambio de lógica llega con su test; los del engine no tocan la DB; los de
   services no levantan el server.
+- **Un control nuevo se prueba tocándolo.** `tests/navegador/` abre Chromium y hace
+  clic; se saltea solo si no hay navegador. Existe porque dos bugs seguidos —el
+  selector de columnas y la barra de vista entera— pasaron toda la suite: la lógica
+  estaba bien y lo que no andaba era el control, "verificado" pasando parámetros por
+  URL, que ejercita el servidor y saltea la interfaz.
 - UI en castellano.
 
 ## Seguridad
@@ -97,6 +102,30 @@ Dirección de dependencias única: `routers → services → engine | models/db`
 - Sin secretos en el repo ni en el código; si aparece uno, va por variable de entorno.
 - Debug apagado por default; los errores al navegador no muestran stack traces.
 - La DB SQLite (`*.db`) no se commitea.
+
+## Riesgos
+
+El registro vive en `models_riesgo.py` y no toca el cronograma: ningún riesgo mueve
+una fecha. Lo que lo mantiene vivo son cuatro distinciones, y ninguna es cosmética.
+
+- **Inherente y residual son dos números distintos.** Probabilidad e impacto son el
+  riesgo como está hoy; el residual es el mismo par *después* de ejecutar la
+  respuesta, se declara aparte y **no se deriva** — cuánto baja un plan lo estima una
+  persona. `None` = todavía no se estimó, y eso **nunca** se lee como una baja: la
+  lectura cae al inherente. Se dibujan los dos cuadrantes: mostrar solo el residual
+  esconde de qué tamaño era el problema, mostrar solo el inherente hace parecer que
+  no se hizo nada.
+- **La respuesta es una decisión, no un texto.** Evitar / mitigar / transferir /
+  aceptar / escalar, y `sin_definir` como default a propósito: poder contar los que
+  nadie decidió todavía es lo que hace útil el registro.
+- **El plan vive en el cronograma.** `mitigacion_task_id` apunta a la tarea que
+  ejecuta la respuesta; un plan que no está en el cronograma no tiene fecha, ni
+  responsable, ni lugar donde verse.
+- **`riesgos_alertas.py` avisa, nunca bloquea.** Un riesgo a medio cargar es un
+  estado legítimo; frenar la carga es la forma más rápida de que nadie cargue
+  riesgos. Los cerrados quedan afuera de todo.
+
+Responsable = persona del proyecto, igual que en la grilla y por la misma razón.
 
 ## La grilla (Fase 7)
 

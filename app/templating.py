@@ -32,3 +32,6 @@ def etiqueta_ambito_texto(valor: str) -> str:
 
 
 templates.env.globals["etiqueta_ambito_texto"] = etiqueta_ambito_texto
+# `hoy` se resuelve al pintar, no al arrancar: un servidor local queda días abierto
+# y una constante de import mostraría fechas de la semana pasada.
+templates.env.globals["hoy"] = date.today

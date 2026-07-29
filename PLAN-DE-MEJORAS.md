@@ -337,6 +337,23 @@ severidad = P×I y cuatro zonas. La función que da severidad y zona es pura y s
 riesgo en su celda y los tests cubren los cuatro bordes de zona; el cuadrante se imprime en
 blanco y negro sin perder la información (color **más** número, no color solo).
 
+**Fase 19b — Riesgos en profundidad. ✔** Lo que le faltaba al registro para no morirse
+solo: **respuesta** (evitar / mitigar / transferir / aceptar / escalar, con `sin_definir`
+como default a propósito), **riesgo residual** —P e I *después* del plan, declarados
+aparte y nunca derivados; sin declarar, la lectura cae al inherente y no se supone
+ninguna baja—, **disparador** observable, **fecha de revisión**, y el **vínculo a la
+tarea del cronograma que ejecuta el plan**. El responsable pasa a ser persona del
+proyecto, como en la grilla, y aparece en Equipo. `services/riesgos_alertas.py` (puro)
+controla nueve cosas —materializados, revisión vencida, residual peor que el inherente,
+sin respuesta, respuesta sin plan escrito, sin residual estimado, plan sin efecto,
+crítico sin revisión, crítico sin disparador— y **avisa sin bloquear**. El panel dibuja
+los dos cuadrantes, el informe reporta el residual, y el `.xlsx` se lleva el registro en
+una hoja aparte que el importador ignora.
+*Hecho cuando:* un residual sin declarar no baja la severidad en ninguna vista; las
+alertas se prueban sin base ni sesión; el formulario se prueba tocándolo, no solo por
+service; y una base de la versión anterior migra su `riesgo.responsable` de texto a
+contactos deduplicando por nombre normalizado.
+
 **Fase 20 — Comentarios con categoría y tags.** Tabla `Comentario` (tarea o proyecto, autor,
 fecha, texto plano, editado) con **una categoría** de un vocabulario que define el dueño
 (Decisión / Riesgo / Bloqueo / Avance por default) y **N tags** libres reutilizables con

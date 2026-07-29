@@ -91,6 +91,65 @@ def test_el_riesgo_se_marca(session: Session, proyecto):
     assert not filas["Análisis"][12]  # openpyxl guarda la cadena vacía como celda vacía
 
 
+# --- la hoja del registro de riesgos ---
+
+def test_sin_riesgos_no_se_agrega_la_hoja(session: Session, proyecto):
+    poblar(session, proyecto)
+    libro = load_workbook(BytesIO(exportar_excel.a_excel(session, proyecto.id)))
+    assert libro.sheetnames == ["Plan"]
+
+
+def test_el_registro_sale_en_su_propia_hoja(session: Session, proyecto):
+    from app.models import Respuesta
+    from app.schemas import RiesgoIn
+
+    creadas = poblar(session, proyecto)
+    riesgos_service.crear(session, proyecto.id, RiesgoIn(
+        descripcion="Cae el proveedor", probabilidad=5, impacto=4,
+        respuesta=Respuesta.mitigar, mitigacion="Segundo proveedor",
+        probabilidad_residual=2, impacto_residual=2, responsable="Ariel",
+        mitigacion_task_id=creadas["sub_b"].id,
+    ), creadas["sub_a"].id)
+
+    libro = load_workbook(BytesIO(exportar_excel.a_excel(session, proyecto.id)))
+    assert libro.sheetnames == ["Plan", "Riesgos"]
+    fila = next(libro["Riesgos"].iter_rows(min_row=2, values_only=True))
+    assert fila[0] == "Cae el proveedor"
+    assert fila[1] == "Relevamiento"        # la tarea amenazada
+    assert (fila[2], fila[3], fila[4]) == (5, 4, 20)
+    assert fila[5] == "Mitigar"
+    assert (fila[7], fila[8], fila[9]) == (2, 2, 4)
+    assert fila[11] == "Ariel"
+    assert fila[13] == "Análisis"           # la tarea que ejecuta el plan
+
+
+def test_el_residual_sin_estimar_sale_vacio_y_no_repetido(session: Session, proyecto):
+    """Repetir el inherente en la columna del residual lo haría parecer estimado."""
+    from app.schemas import RiesgoIn
+
+    poblar(session, proyecto)
+    riesgos_service.crear(session, proyecto.id, RiesgoIn(
+        descripcion="Sin plan todavía", probabilidad=4, impacto=4))
+
+    libro = load_workbook(BytesIO(exportar_excel.a_excel(session, proyecto.id)))
+    fila = next(libro["Riesgos"].iter_rows(min_row=2, values_only=True))
+    assert (fila[7], fila[8], fila[9]) == (None, None, None)
+
+
+def test_la_hoja_de_riesgos_no_confunde_al_importador(session: Session, proyecto):
+    """El importador elige la hoja por sus columnas, así que «Riesgos» no le molesta."""
+    from app.schemas import RiesgoIn
+
+    poblar(session, proyecto)
+    riesgos_service.crear(session, proyecto.id, RiesgoIn(descripcion="Algo"))
+
+    contenido = exportar_excel.a_excel(session, proyecto.id)
+    leida = importar_excel.leer(contenido)
+
+    assert "Plan" in leida.origen
+    assert [f.titulo for f in leida.filas][:2] == ["Etapa 1", "Relevamiento"]
+
+
 # --- el contrato de la fase: ida y vuelta ---
 
 def test_exportar_y_reimportar_reproduce_el_proyecto(session: Session, proyecto):

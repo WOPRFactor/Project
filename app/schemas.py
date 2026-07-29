@@ -10,7 +10,14 @@ from datetime import date
 
 from pydantic import BaseModel, Field, field_validator
 
-from .models import Ambito, ColorEstado, EstadoProyecto, EstadoRiesgo, TipoDependencia
+from .models import (
+    Ambito,
+    ColorEstado,
+    EstadoProyecto,
+    EstadoRiesgo,
+    Respuesta,
+    TipoDependencia,
+)
 
 
 def _texto_obligatorio(valor: str) -> str:
@@ -86,10 +93,19 @@ class RiesgoIn(BaseModel):
     probabilidad: int = Field(default=3, ge=1, le=5)
     impacto: int = Field(default=3, ge=1, le=5)
     mitigacion: str = Field(default="", max_length=1000)
+    # Texto libre igual que en la grilla: el service lo resuelve contra los contactos
+    # del proyecto. Ver `services/contactos.resolver`.
     responsable: str = Field(default="", max_length=120)
     estado: EstadoRiesgo = EstadoRiesgo.abierto
+    respuesta: Respuesta = Respuesta.sin_definir
+    # `None` = todavía no se estimó. Distinto de "no baja".
+    probabilidad_residual: int | None = Field(default=None, ge=1, le=5)
+    impacto_residual: int | None = Field(default=None, ge=1, le=5)
+    disparador: str = Field(default="", max_length=300)
+    revisar_el: date | None = None
+    mitigacion_task_id: int | None = Field(default=None, gt=0)
 
-    @field_validator("descripcion", "mitigacion", "responsable")
+    @field_validator("descripcion", "mitigacion", "responsable", "disparador")
     @classmethod
     def sin_bordes(cls, valor: str) -> str:
         return valor.strip()

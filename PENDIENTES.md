@@ -1,7 +1,7 @@
 # Para retomar
 
-Nota corta para abrir mañana y saber dónde estamos. El detalle está en
-`PLAN-DE-OBRA.md` (v1) y `PLAN-DE-MEJORAS.md` (v2); esto es solo el punto de entrada.
+Nota corta para abrir y saber dónde estamos. El detalle está en `PLAN-DE-OBRA.md` (v1)
+y `PLAN-DE-MEJORAS.md` (v2); esto es solo el punto de entrada.
 
 ## Levantar la app
 
@@ -17,66 +17,57 @@ Después, `http://127.0.0.1:8000`.
 
 ## Dónde quedó
 
-Todo lo que funciona con un solo usuario está hecho: **444 tests en verde**. El ciclo
-cierra de punta a punta — cargás o importás, planificás, congelás lo aprobado, medís
-el desvío y emitís el informe.
+Todo lo que funciona con un solo usuario está hecho: **491 tests en verde**, de los
+cuales 19 abren un navegador de verdad. El ciclo cierra de punta a punta — cargás o
+importás, planificás, congelás lo aprobado, medís el desvío y emitís el informe.
 
-Lo último de la sesión fueron tres arreglos del Gantt, encadenados: la grilla había
-crecido tanto que tapaba el timeline; al arreglarlo se cortaron los títulos; al
-arreglar eso aparecieron dos barras de scroll. Los tres cerrados y medidos en el
-navegador.
+**Los cuatro puntos que habías marcado están cerrados.** Los cuatro, más lo que
+apareció al probarlos.
 
-## Lo que marcó Ariel para mañana
+## Lo que se hizo desde tu lista
 
-**1. Se pierden los nombres de las columnas al bajar** (bug). El encabezado de la
-grilla se va con el scroll vertical. Falta `position: sticky` en la cabecera, en las
-dos mitades — la de la grilla y la del timeline (meses y semanas), o al bajar tampoco
-se sabe qué semana es cada barra.
+**1. Encabezados anclados.** La cabecera de la grilla y la fila de semanas quedan fijas
+al bajar. Hay un test que scrollea hasta el fondo y las mide.
 
-**2. Riesgos: revisar la sección más a fondo** (a definir con Ariel). Hoy tiene
-registro, cuadrante 5×5 y el tilde en la grilla. Falta charlar qué le falta: puede ser
-el plan de respuesta (evitar / mitigar / transferir / aceptar), riesgo residual
-—probabilidad e impacto *después* de mitigar, que es lo que se reporta—, disparadores,
-fecha de revisión, o vincular el riesgo a una tarea de mitigación del cronograma.
-**No arrancar sin definirlo con él.**
+**2. Riesgos, a fondo.** Dijiste «hacé todo», así que elegí el set estándar y te lo
+dejo explícito para que corrijas lo que no te cierre:
 
-**3. La barra de vista entera no funciona** (bug mío, más grande de lo que parecía).
-Ariel lo reportó por las columnas, pero al verificarlo aparecieron los cuatro
-controles rotos: **Detalle, Etapa, Color y Columnas**. Ninguno hace nada desde la
-interfaz.
+- **Respuesta**: evitar / mitigar / transferir / aceptar / escalar. El default es
+  *Sin definir* a propósito: poder contar los que nadie decidió es medio registro.
+- **Riesgo residual**: P e I *después* del plan. Se declara aparte y **no se calcula**
+  —cuánto baja un plan lo estimás vos—. Sin declarar, la app **no supone ninguna
+  baja**: el riesgo se dibuja donde está. Hay dos cuadrantes, inherente y residual.
+- **Disparador**: qué habría que ver para saber que el riesgo está pasando.
+- **Fecha de revisión**, con la vencida marcada en rojo.
+- **Tarea del plan**: el riesgo se engancha a la tarea del cronograma que ejecuta la
+  respuesta. Si borrás esa tarea, el riesgo queda sin plan enganchado y se avisa.
+- **Responsable = persona del proyecto**, igual que en la grilla. Aparece en Equipo.
+- **Pendientes del registro**: nueve controles que avisan y **nunca bloquean**
+  (materializados, revisión vencida, residual peor que el inherente, sin respuesta,
+  respuesta sin plan escrito, sin residual, plan sin efecto, crítico sin revisión,
+  crítico sin disparador).
+- El informe reporta el residual y el `.xlsx` se lleva el registro en su propia hoja.
 
-*Causa única:* el `hx-vals` de `#mirada-actual` —puesto para que la vista sobreviva a
-cada edición— **pisa los valores del formulario que tiene adentro**. Todo request sale
-con lo que ya estaba: `detalle=todo&etapa=0&color=criticidad&columnas=<las de antes>`,
-sin importar qué elijas.
+*Lo que no hice y es tu llamado:* que un riesgo materializado abra la tarea de impacto
+en el cronograma con un clic, y matrices con escala distinta de 5×5.
 
-*Reproducido en el navegador:* elegir «Solo etapas» sigue mostrando las 5 filas;
-elegir color «Estado» vuelve a «Criticidad»; tildar «Peso» manda el conjunto viejo.
+**3. El selector de columnas anda** — y con él Detalle, Etapa y Color, que estaban
+rotos por la misma causa. El `hx-vals` que hace sobrevivir la vista a cada edición
+pisaba los valores del formulario que tenía adentro. El formulario salió del
+contenedor.
 
-*Arreglo:* sacar el formulario de vista de adentro del contenedor con `hx-vals`, o
-dejar el `hx-vals` solo para las mutaciones de la grilla. Un cambio, los cuatro
-controles. Chico.
-
-*Por qué se me pasó:* verifiqué la Fase 22 pasando los parámetros por URL
-(`?detalle=etapas&color=estado`), que ejercita el servidor y saltea la interfaz. **La
-lógica está bien y tiene tests; lo que nunca se probó fue el control.** Falta al menos
-un test que haga clic de verdad — hoy el repo no tiene tests con navegador, y esta es
-la razón concreta para sumarlos.
-
-**4. Poder apagar las flechas de dependencias** (pedido). Van como un control más de
-la mirada, al lado de Detalle / Etapa / Color, viajando en la URL igual que el resto.
-Chico: las flechas ya se calculan aparte en `vista._flechas`.
+**4. Interruptor de flechas**, al lado de Detalle / Etapa / Color. Apagadas, ni se
+calculan.
 
 ## Lo primero que conviene mirar
 
-1. **Abrí tu proyecto y mirá el Gantt.** Es lo que estuvimos arreglando y no lo viste
-   funcionando todavía.
-2. **Probá el selector de Columnas** (arriba de la grilla, dice «Columnas (6 de 13)»)
-   y **arrastrá el borde de la columna Tarea**. Los anchos se guardan por proyecto.
+1. **Abrí tu proyecto y mirá el Gantt.** Es lo que estuvimos arreglando y todavía no lo
+   viste funcionando.
+2. **Entrá a Riesgos.** Es lo más nuevo y lo que más quiero que revises: si la
+   respuesta y el residual son los campos que usás, o si te sobra o falta alguno.
 3. **Decidí las columnas por defecto.** Hoy vienen Resp., Predec., Días, Inicio, Fin y
-   Avance. Con esas, en 1600px al título le quedan ~295px y se corta en 33 de tus 41
-   tareas. Si me decís cuáles usás de verdad, achico el default y el título se
-   ensancha solo. Es cambiar una línea.
+   Avance. Si me decís cuáles usás de verdad, achico el default y el título de la tarea
+   se ensancha solo. Es cambiar una línea.
 
 ## Decisiones que están esperándote
 
@@ -100,8 +91,10 @@ Afuera del plan: el import desde Word y el asistente con IA que dejaste para des
 
 ## Deudas técnicas conocidas
 
-- El ancho de las columnas es CSS y **no lo cubre ningún test**: se verificó a mano en
-  el navegador, en 1600px y en 1366px. Blindarlo pediría tests con navegador, que hoy
-  el repo no tiene.
 - Las tres deudas de JS inline que la Fase 13 iba a tener que pagar para poner una CSP
   estricta **ya están saldadas** (todo vive en `static/grilla.js`, vendoreado).
+- Los tests de navegador necesitan Chromium: `uv run playwright install chromium`. Sin
+  eso se saltean solos y `uv run pytest` sigue andando igual.
+- El registro de riesgos **sale** a Excel pero no vuelve: el importador solo entiende
+  la hoja del cronograma. Si alguna vez querés cargar riesgos desde una planilla, es
+  una fase aparte.

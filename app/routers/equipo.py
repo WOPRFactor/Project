@@ -10,10 +10,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session
 
 from ..db import get_session
-from ..models import Contacto
+from ..models import Contacto, EstadoRiesgo
 from ..services import contactos as contactos_service
 from ..services import linea_base as linea_base_service
 from ..services import projects as projects_service
+from ..services import riesgos as riesgos_service
 from ..services import vista as vista_service
 from ..services.contactos import ContactoInvalido
 from ..services.resumen import esta_hecha
@@ -33,6 +34,9 @@ class Carga:
     hechas: int = 0
     atrasadas: int = 0
     sin_margen: int = 0
+    # Riesgos que esta persona tiene que responder. Están acá porque un riesgo sin
+    # dueño no lo mira nadie, y la pregunta "qué tengo encima" incluye los riesgos.
+    riesgos: int = 0
 
     @property
     def avance(self) -> int:
@@ -86,10 +90,19 @@ def _cargas(session: Session, project_id: int, datos) -> list[Carga]:
         if fila.sin_holgura and not esta_hecha(fila):
             carga.sin_margen += 1
 
+    for riesgo in riesgos_service.listar(session, project_id):
+        if riesgo.estado == EstadoRiesgo.cerrado:
+            continue
+        carga = por_contacto.setdefault(riesgo.responsable_id, Carga(contacto=None))
+        carga.riesgos += 1
+
     cargas = list(por_contacto.values())
     # Lo sin asignar al final: es un pendiente, no una persona.
     cargas.sort(key=lambda c: (c.contacto is None, -c.esfuerzo))
-    return [c for c in cargas if c.tareas or c.hitos or c.contacto is not None]
+    return [
+        c for c in cargas
+        if c.tareas or c.hitos or c.riesgos or c.contacto is not None
+    ]
 
 
 @router.post("")

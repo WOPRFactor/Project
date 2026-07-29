@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -10,7 +11,7 @@ from pydantic import ValidationError
 from sqlmodel import Session
 
 from ..db import get_session
-from ..models import ETIQUETA_ESTADO_RIESGO
+from ..models import ETIQUETA_ESTADO_RIESGO, ETIQUETA_RESPUESTA
 from ..schemas import RiesgoIn
 from ..services import matriz as matriz_service
 from ..services import projects as projects_service
@@ -19,6 +20,46 @@ from ..services.riesgos import RiesgoInvalido
 from ..templating import templates
 
 router = APIRouter(prefix="/proyectos/{project_id}/riesgos")
+
+
+def formulario(
+    descripcion: str = Form(""),
+    probabilidad: str = Form("3"),
+    impacto: str = Form("3"),
+    mitigacion: str = Form(""),
+    responsable: str = Form(""),
+    estado: str = Form("abierto"),
+    respuesta: str = Form("sin_definir"),
+    probabilidad_residual: str = Form(""),
+    impacto_residual: str = Form(""),
+    disparador: str = Form(""),
+    revisar_el: str = Form(""),
+    mitigacion_task_id: str = Form(""),
+) -> tuple:
+    """El formulario del registro, ya validado. Devuelve `(datos, error)`.
+
+    Alta y edición mandan exactamente los mismos campos, así que se leen en un solo
+    lugar; si no, cada campo nuevo hay que acordarse de agregarlo dos veces.
+    """
+    try:
+        return RiesgoIn(
+            descripcion=descripcion,
+            probabilidad=_entero(probabilidad, 3),
+            impacto=_entero(impacto, 3),
+            mitigacion=mitigacion,
+            responsable=responsable,
+            estado=estado,
+            respuesta=respuesta,
+            probabilidad_residual=_opcional(probabilidad_residual),
+            impacto_residual=_opcional(impacto_residual),
+            disparador=disparador,
+            revisar_el=_fecha(revisar_el),
+            mitigacion_task_id=_opcional(mitigacion_task_id),
+        ), ""
+    except ValidationError as error:
+        return None, "; ".join(e.get("msg", "dato inválido") for e in error.errors())
+    except ValueError as error:
+        return None, str(error)
 
 
 @router.get("", response_class=HTMLResponse)
@@ -34,6 +75,7 @@ def panel(
         "proyecto": proyecto,
         "panel": riesgos_service.panel(session, project_id),
         "estados_riesgo": ETIQUETA_ESTADO_RIESGO,
+        "respuestas": ETIQUETA_RESPUESTA,
         "etiqueta_zona": matriz_service.ETIQUETA_ZONA,
         "etiqueta_probabilidad": matriz_service.ETIQUETA_PROBABILIDAD,
         "etiqueta_impacto": matriz_service.ETIQUETA_IMPACTO,
@@ -44,16 +86,11 @@ def panel(
 @router.post("")
 def crear(
     project_id: int,
-    descripcion: str = Form(""),
-    probabilidad: str = Form("3"),
-    impacto: str = Form("3"),
-    mitigacion: str = Form(""),
-    responsable: str = Form(""),
-    estado: str = Form("abierto"),
     task_id: str = Form(""),
+    entrada: tuple = Depends(formulario),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
-    datos, error = _leer(descripcion, probabilidad, impacto, mitigacion, responsable, estado)
+    datos, error = entrada
     if error:
         return _volver(project_id, error)
     try:
@@ -70,17 +107,12 @@ def crear(
 def actualizar(
     project_id: int,
     riesgo_id: int,
-    descripcion: str = Form(""),
-    probabilidad: str = Form("3"),
-    impacto: str = Form("3"),
-    mitigacion: str = Form(""),
-    responsable: str = Form(""),
-    estado: str = Form("abierto"),
+    entrada: tuple = Depends(formulario),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     if not _del_proyecto(session, project_id, riesgo_id):
         return _volver(project_id, "Ese riesgo no es de este proyecto")
-    datos, error = _leer(descripcion, probabilidad, impacto, mitigacion, responsable, estado)
+    datos, error = entrada
     if error:
         return _volver(project_id, error)
     try:
@@ -100,22 +132,22 @@ def eliminar(
     return _volver(project_id, "Riesgo borrado")
 
 
-def _leer(descripcion, probabilidad, impacto, mitigacion, responsable, estado):
-    try:
-        return RiesgoIn(
-            descripcion=descripcion,
-            probabilidad=_entero(probabilidad, 3),
-            impacto=_entero(impacto, 3),
-            mitigacion=mitigacion,
-            responsable=responsable,
-            estado=estado,
-        ), ""
-    except ValidationError as error:
-        return None, "; ".join(e.get("msg", "dato inválido") for e in error.errors())
-
-
 def _entero(crudo: str, default: int) -> int:
     return int(crudo) if crudo.strip().isdigit() else default
+
+
+def _opcional(crudo: str) -> int | None:
+    """Vacío es un valor: «todavía no se estimó», que no es lo mismo que un número."""
+    return int(crudo) if crudo.strip().isdigit() else None
+
+
+def _fecha(crudo: str) -> date | None:
+    if not crudo.strip():
+        return None
+    try:
+        return date.fromisoformat(crudo.strip())
+    except ValueError:
+        raise ValueError("La fecha de revisión no es válida") from None
 
 
 def _del_proyecto(session: Session, project_id: int, riesgo_id: int) -> bool:

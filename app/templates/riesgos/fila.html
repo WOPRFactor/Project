@@ -1,0 +1,82 @@
+{# Un riesgo del registro, editable en el lugar. Tres renglones, y el orden es el de
+   la conversación: qué puede pasar y cuánto pesa · qué vamos a hacer y cuánto queda
+   después · con qué plan, quién y cuándo se revisa. #}
+<form method="post" action="/proyectos/{{ proyecto.id }}/riesgos/{{ riesgo.id }}"
+      class="fila-riesgo {{ 'borrador' if not riesgo.descripcion }}">
+  <div class="r-arriba">
+    <input name="descripcion" value="{{ riesgo.descripcion }}" maxlength="500"
+           class="celda" placeholder="Qué puede pasar (borrador sin completar)">
+    <select name="probabilidad" class="celda chico" title="Probabilidad inherente">
+      {% for i in range(1, 6) %}
+        <option value="{{ i }}" {{ 'selected' if riesgo.probabilidad == i }}>P{{ i }} · {{ etiqueta_probabilidad[i] }}</option>
+      {% endfor %}
+    </select>
+    <select name="impacto" class="celda chico" title="Impacto inherente">
+      {% for i in range(1, 6) %}
+        <option value="{{ i }}" {{ 'selected' if riesgo.impacto == i }}>I{{ i }} · {{ etiqueta_impacto[i] }}</option>
+      {% endfor %}
+    </select>
+    <span class="sev" title="Severidad inherente → residual">
+      {{ riesgo.severidad }} → <b>{{ riesgo.severidad_residual }}</b>
+    </span>
+    <select name="estado" class="celda chico">
+      {% for valor, etiqueta in estados_riesgo.items() %}
+        <option value="{{ valor.value }}" {{ 'selected' if riesgo.estado == valor }}>{{ etiqueta }}</option>
+      {% endfor %}
+    </select>
+    <button class="boton" type="submit">Guardar</button>
+  </div>
+
+  <div class="r-medio">
+    <select name="respuesta" class="celda chico" title="Qué se decidió hacer">
+      {% for valor, etiqueta in respuestas.items() %}
+        <option value="{{ valor.value }}" {{ 'selected' if riesgo.respuesta == valor }}>{{ etiqueta }}</option>
+      {% endfor %}
+    </select>
+    {# Vacío = todavía no se estimó. Es distinto de «no baja», y el registro lo avisa. #}
+    <select name="probabilidad_residual" class="celda chico" title="Probabilidad después del plan">
+      <option value="">P residual —</option>
+      {% for i in range(1, 6) %}
+        <option value="{{ i }}" {{ 'selected' if riesgo.probabilidad_residual == i }}>P{{ i }}</option>
+      {% endfor %}
+    </select>
+    <select name="impacto_residual" class="celda chico" title="Impacto después del plan">
+      <option value="">I residual —</option>
+      {% for i in range(1, 6) %}
+        <option value="{{ i }}" {{ 'selected' if riesgo.impacto_residual == i }}>I{{ i }}</option>
+      {% endfor %}
+    </select>
+    <input name="responsable" list="personas-riesgo" maxlength="120" class="celda chico"
+           value="{{ panel.personas.get(riesgo.responsable_id, '') }}"
+           placeholder="Responsable" title="Quién responde por este riesgo">
+    <label class="revision {{ 'vencida' if riesgo.revisar_el and riesgo.revisar_el < hoy() }}">
+      Revisar
+      <input type="date" name="revisar_el" class="celda chico"
+             value="{{ riesgo.revisar_el.isoformat() if riesgo.revisar_el else '' }}">
+    </label>
+  </div>
+
+  <div class="r-abajo">
+    <input name="mitigacion" value="{{ riesgo.mitigacion }}" maxlength="1000"
+           class="celda" placeholder="En qué consiste la respuesta">
+    <input name="disparador" value="{{ riesgo.disparador }}" maxlength="300"
+           class="celda" placeholder="Disparador: qué habría que ver para saber que está pasando">
+    <select name="mitigacion_task_id" class="celda chico" title="La tarea del cronograma que ejecuta el plan">
+      <option value="">Sin tarea de plan</option>
+      {% for tarea in panel.tareas %}
+        <option value="{{ tarea.id }}" {{ 'selected' if riesgo.mitigacion_task_id == tarea.id }}>{{ tarea.codigo }} {{ tarea.titulo }}</option>
+      {% endfor %}
+    </select>
+    <span class="tenue r-tarea">
+      {%- if riesgo.task_id and riesgo.task_id in panel.titulos -%}
+        ⤷ amenaza «{{ panel.titulos[riesgo.task_id] }}»
+      {%- else -%}
+        ⤷ del proyecto
+      {%- endif -%}
+    </span>
+  </div>
+</form>
+<form method="post" class="borrar-riesgo"
+      action="/proyectos/{{ proyecto.id }}/riesgos/{{ riesgo.id }}/eliminar">
+  <button class="boton peligro" type="submit">Borrar</button>
+</form>

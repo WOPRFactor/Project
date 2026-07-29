@@ -20,6 +20,7 @@ from openpyxl.utils import get_column_letter
 from sqlmodel import Session
 
 from ..models import ETIQUETA_AMBITO
+from . import exportar_riesgos
 from . import riesgos as riesgos_service
 from . import vista as vista_service
 from .gantt_vista import avance
@@ -39,7 +40,7 @@ _CALCULADA = PatternFill("solid", fgColor="F0F2F6")
 
 
 def a_excel(session: Session, project_id: int) -> bytes | None:
-    """Un libro con una hoja: la grilla completa del proyecto."""
+    """La grilla completa del proyecto, más la hoja de riesgos si hay alguno."""
     from . import projects as projects_service
 
     proyecto = projects_service.obtener(session, project_id)
@@ -65,6 +66,8 @@ def a_excel(session: Session, project_id: int) -> bytes | None:
         hoja.cell(row=numero, column=2).alignment = Alignment(indent=fila.nivel)
 
     hoja.freeze_panes = "C2"
+    exportar_riesgos.agregar_hoja(libro, session, project_id)
+
     salida = BytesIO()
     libro.save(salida)
     return salida.getvalue()

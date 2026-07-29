@@ -1,31 +1,10 @@
-"""Tests de las rutas: usan una DB temporal, nunca la del usuario."""
+"""Tests de las rutas: usan una DB temporal, nunca la del usuario.
+
+El cliente HTTP lo arma `conftest.py`, que es de donde lo toman también los otros
+módulos que van por la app entera.
+"""
 
 from datetime import date
-
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
-
-from app.db import get_session
-from app.main import app
-
-
-@pytest.fixture(name="cliente")
-def cliente_fixture():
-    engine = create_engine(
-        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
-    )
-    SQLModel.metadata.create_all(engine)
-
-    def sesion_de_prueba():
-        with Session(engine) as session:
-            yield session
-
-    app.dependency_overrides[get_session] = sesion_de_prueba
-    with TestClient(app) as cliente:
-        yield cliente
-    app.dependency_overrides.clear()
 
 
 def test_salud(cliente):

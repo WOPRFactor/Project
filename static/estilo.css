@@ -455,11 +455,37 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
   display: flex; flex-direction: column; gap: 4px; margin: 0;
 }
 .fila-riesgo.borrador { border-style: dashed; }
-.r-arriba, .r-abajo { display: flex; gap: 6px; align-items: center; }
-.r-arriba input[name=descripcion] { flex: 1 1 auto; }
-.r-abajo input[name=mitigacion] { flex: 1 1 auto; }
+.r-arriba, .r-medio, .r-abajo { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+/* `.celda` viene de la grilla, donde ocupa el 100% de su columna. Acá el ancho lo
+   decide el flex de la fila: sin esto cada control se lleva el renglón entero. */
+.fila-riesgo .celda, .en-fila .celda { width: auto; }
+.fila-riesgo select.celda { flex: 0 0 auto; max-width: 200px; }
+.fila-riesgo input.chico { flex: 0 1 130px; }
+.r-arriba input[name=descripcion] { flex: 1 1 260px; }
+.r-abajo input[name=mitigacion],
+.r-abajo input[name=disparador] { flex: 1 1 220px; }
+.en-fila input[name=descripcion] { flex: 1 1 240px; }
+.en-fila input[name=mitigacion] { flex: 1 1 200px; }
+.r-medio { font-size: .78rem; color: var(--tenue); }
 .r-tarea { flex: 0 0 auto; font-size: .75rem; }
 .borrar-riesgo { margin: 0 0 8px; align-self: flex-end; }
+
+/* Inherente → residual en la fila. El número va siempre: el color de la matriz no
+   se lee impreso en blanco y negro. */
+.sev { font-size: .78rem; color: var(--tenue); white-space: nowrap; }
+.sev b { color: var(--texto); }
+.revision { display: flex; align-items: center; gap: 4px; }
+.revision.vencida { color: var(--c-rojo); font-weight: 600; }
+
+/* Los pendientes del registro: avisan, no bloquean. Por eso van como lista y no
+   como error. */
+.alertas-riesgo {
+  border: 1px solid var(--borde); border-left: 4px solid var(--c-ambar);
+  border-radius: 8px; padding: 10px 14px; margin: 14px 0;
+}
+.alertas-riesgo h2 { margin: 0 0 6px; font-size: .95rem; }
+.alertas-riesgo ul { margin: 0; padding-left: 18px; font-size: .85rem; }
+.alertas-riesgo li.grave { color: var(--c-rojo); }
 
 
 /* --- Vistas y colores del Gantt (Fase 22) --- */

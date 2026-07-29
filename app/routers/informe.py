@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse
 from sqlmodel import Session
 
 from ..db import get_session
-from ..models import ETIQUETA_ESTADO_RIESGO
+from ..models import ETIQUETA_ESTADO_RIESGO, ETIQUETA_RESPUESTA
 from ..services import informe as informe_service
 from ..services import matriz as matriz_service
 from ..services.informe import InformeInvalido
@@ -34,6 +34,7 @@ def informe(
     return templates.TemplateResponse(request, "informe/hoja.html", {
         "informe": datos,
         "estados_riesgo": ETIQUETA_ESTADO_RIESGO,
+        "respuestas": ETIQUETA_RESPUESTA,
         "etiqueta_zona": matriz_service.ETIQUETA_ZONA,
         "etiqueta_probabilidad": matriz_service.ETIQUETA_PROBABILIDAD,
         "etiqueta_impacto": matriz_service.ETIQUETA_IMPACTO,

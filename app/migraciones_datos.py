@@ -16,7 +16,7 @@ import logging
 from sqlalchemy import Engine, inspect, text
 from sqlmodel import Session, select
 
-from .models import Contacto, Estado, Project, Task
+from .models import Contacto, Estado, Project, Riesgo, Task
 from .services import contactos as contactos_service
 from .services import estados as estados_service
 
@@ -62,37 +62,45 @@ def _avance_desde_estado(session: Session) -> list[str]:
 
 
 def _migrar_responsable_a_contacto(engine: Engine) -> list[str]:
-    """Convierte el viejo `task.responsable` (texto) en contactos del proyecto.
+    """Convierte los viejos `responsable` de texto en contactos del proyecto.
 
     Deduplica por nombre normalizado, así los «Ariel» / «ariel» de una planilla
     entran como una sola persona. Igual que con los estados: primero se traduce y
     recién después se borra la columna, para que un fallo en el medio no pierda nada.
     """
+    return _texto_a_contacto(engine, "task", Task) + _texto_a_contacto(
+        engine, "riesgo", Riesgo
+    )
+
+
+def _texto_a_contacto(engine: Engine, tabla: str, modelo) -> list[str]:
     inspector = inspect(engine)
-    if "task" not in set(inspector.get_table_names()):
+    if tabla not in set(inspector.get_table_names()):
         return []
-    if "responsable" not in {c["name"] for c in inspector.get_columns("task")}:
+    if "responsable" not in {c["name"] for c in inspector.get_columns(tabla)}:
         return []  # ya migrada
 
     with Session(engine) as session:
-        filas = session.exec(text("SELECT id, project_id, responsable FROM task")).all()
+        filas = session.exec(
+            text(f"SELECT id, project_id, responsable FROM {tabla}")  # noqa: S608
+        ).all()
         creados = 0
-        for task_id, project_id, nombre in filas:
+        for fila_id, project_id, nombre in filas:
             if not (nombre or "").strip():
                 continue
             antes = len(contactos_service.listar(session, project_id))
             contacto_id = contactos_service.resolver(session, project_id, nombre)
             creados += len(contactos_service.listar(session, project_id)) - antes
-            tarea = session.get(Task, task_id)
-            if tarea is not None:
-                tarea.responsable_id = contacto_id
-                session.add(tarea)
+            registro = session.get(modelo, fila_id)
+            if registro is not None:
+                registro.responsable_id = contacto_id
+                session.add(registro)
         session.commit()
 
     with engine.begin() as conexion:
-        conexion.execute(text("ALTER TABLE task DROP COLUMN responsable"))
-    log.info("Columna task.responsable migrada a contactos (%s creados)", creados)
-    return [f"task.responsable → contacto ({creados} personas)"]
+        conexion.execute(text(f"ALTER TABLE {tabla} DROP COLUMN responsable"))
+    log.info("Columna %s.responsable migrada a contactos (%s creados)", tabla, creados)
+    return [f"{tabla}.responsable → contacto ({creados} personas)"]
 
 
 def _sembrar_estados(session: Session) -> list[str]:

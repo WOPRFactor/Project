@@ -198,23 +198,41 @@
     <section class="bloque salto">
       <h2>Riesgos</h2>
       <div class="riesgos-arriba">
-        <div class="cuadrante-caja">{% include "riesgos/cuadrante.html" %}</div>
+        {# El cuadrante hay que pasárselo explícito: el parcial se comparte con el
+           panel y no sabe de dónde sale. Sin este `set` salía la grilla vacía. #}
+        <div class="cuadrante-caja">
+          {% set cuadrante = informe.riesgos.cuadrante_residual %}
+          {% include "riesgos/cuadrante.html" %}
+          <p class="pie tenue">Residual: cómo queda cada riesgo con su plan ejecutado.</p>
+        </div>
         <div class="zonas">
           {% for zona, cuantos in informe.riesgos.por_zona.items() %}
             <div class="dato zona-{{ zona.value }}">
               <span class="etiqueta">{{ etiqueta_zona[zona] }}</span>
               <strong>{{ cuantos }}</strong>
+              <span class="tenue">→ {{ informe.riesgos.por_zona_residual[zona] }}</span>
             </div>
           {% endfor %}
+          <p class="pie tenue">Inherente → residual.</p>
         </div>
       </div>
+      {% if informe.riesgos.graves %}
+        <p class="aviso">
+          {% for alerta in informe.riesgos.graves %}
+            {{ alerta.cuantos }} {{ 'riesgo' if alerta.cuantos == 1 else 'riesgos' }}
+            {{ alerta.mensaje }}.
+          {% endfor %}
+        </p>
+      {% endif %}
       <table class="tabla-informe">
-        <thead><tr><th>Riesgo</th><th>P×I</th><th>Mitigación</th><th>Estado</th></tr></thead>
+        <thead><tr><th>Riesgo</th><th>P×I</th><th>Residual</th><th>Respuesta</th><th>Plan</th><th>Estado</th></tr></thead>
         <tbody>
           {% for r in informe.riesgos.riesgos[:15] if r.descripcion %}
             <tr>
               <td>{{ r.descripcion }}</td>
-              <td class="num">{{ r.probabilidad }}×{{ r.impacto }} = {{ r.probabilidad * r.impacto }}</td>
+              <td class="num">{{ r.probabilidad }}×{{ r.impacto }} = {{ r.severidad }}</td>
+              <td class="num">{{ r.probabilidad_hoy }}×{{ r.impacto_hoy }} = {{ r.severidad_residual }}{% if not r.residual_declarado %} <i class="tenue">(sin estimar)</i>{% endif %}</td>
+              <td>{{ respuestas[r.respuesta] }}</td>
               <td>{{ r.mitigacion or '—' }}</td>
               <td>{{ estados_riesgo[r.estado] }}</td>
             </tr>

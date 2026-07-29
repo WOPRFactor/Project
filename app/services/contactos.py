@@ -19,7 +19,7 @@ import unicodedata
 
 from sqlmodel import Session, select
 
-from ..models import Contacto, Project, Task
+from ..models import Contacto, Project, Riesgo, Task
 
 _ESPACIOS = re.compile(r"\s+")
 
@@ -117,6 +117,9 @@ def unir(session: Session, origen_id: int, destino_id: int) -> int:
     for proyecto in session.exec(select(Project).where(Project.responsable_id == origen_id)):
         proyecto.responsable_id = destino_id
         session.add(proyecto)
+    for riesgo in session.exec(select(Riesgo).where(Riesgo.responsable_id == origen_id)):
+        riesgo.responsable_id = destino_id
+        session.add(riesgo)
     session.delete(origen)
     session.commit()
     return movidas
@@ -133,6 +136,9 @@ def eliminar(session: Session, contacto_id: int) -> None:
     for proyecto in session.exec(select(Project).where(Project.responsable_id == contacto_id)):
         proyecto.responsable_id = None
         session.add(proyecto)
+    for riesgo in session.exec(select(Riesgo).where(Riesgo.responsable_id == contacto_id)):
+        riesgo.responsable_id = None
+        session.add(riesgo)
     session.delete(contacto)
     session.commit()
 

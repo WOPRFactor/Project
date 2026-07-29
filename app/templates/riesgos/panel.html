@@ -7,14 +7,45 @@
 
   {% if aviso %}<p class="aviso">{{ aviso }}</p>{% endif %}
 
+  {# Los contactos del proyecto, para que el responsable se escriba con autocompletado
+     y no entren tres personas con el mismo nombre escrito distinto. #}
+  <datalist id="personas-riesgo">
+    {% for nombre in panel.personas.values() %}<option value="{{ nombre }}">{% endfor %}
+  </datalist>
+
+  {% if panel.alertas %}
+    <div class="alertas-riesgo">
+      <h2>Pendientes del registro</h2>
+      <ul>
+        {% for alerta in panel.alertas %}
+          <li class="{{ 'grave' if alerta.grave }}">
+            <strong>{{ alerta.cuantos }}</strong>
+            {{ 'riesgo' if alerta.cuantos == 1 else 'riesgos' }} {{ alerta.mensaje }}.
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="pie tenue">
+        Ninguno de estos avisos frena nada: un riesgo a medio cargar es un estado
+        legítimo. Están para que el registro no se vuelva una planilla que nadie mira.
+      </p>
+    </div>
+  {% endif %}
+
   <div class="riesgos-arriba">
     <div class="cuadrante-caja">
-      <h2>Cuadrante</h2>
+      <h2>Inherente</h2>
       {% set cuadrante = panel.cuadrante %}
       {% include "riesgos/cuadrante.html" %}
+      <p class="pie tenue">El riesgo como está hoy, sin contar el plan.</p>
+    </div>
+
+    <div class="cuadrante-caja">
+      <h2>Residual</h2>
+      {% set cuadrante = panel.cuadrante_residual %}
+      {% include "riesgos/cuadrante.html" %}
       <p class="pie tenue">
-        Severidad = probabilidad × impacto. El número de cada casilla es la severidad y
-        el círculo, cuántos riesgos caen ahí. Los cerrados no se dibujan.
+        Cómo queda si el plan se ejecuta. Los que no tienen residual estimado se
+        dibujan donde están: no se supone una baja que nadie declaró.
       </p>
     </div>
 
@@ -24,11 +55,20 @@
         <div class="dato zona-{{ zona.value }}">
           <span class="etiqueta">{{ etiqueta_zona[zona] }}</span>
           <strong>{{ cuantos }}</strong>
+          <span class="tenue">→ {{ panel.por_zona_residual[zona] }} residual</span>
         </div>
       {% endfor %}
-      <p class="pie tenue">{{ panel.abiertos }} abiertos de {{ panel.riesgos | length }}.</p>
+      <p class="pie tenue">
+        {{ panel.abiertos }} abiertos de {{ panel.riesgos | length }} ·
+        exposición {{ panel.exposicion }}.
+      </p>
     </div>
   </div>
+
+  <p class="pie tenue">
+    Severidad = probabilidad × impacto. El número de cada casilla es la severidad y el
+    círculo, cuántos riesgos caen ahí. Los cerrados no se dibujan.
+  </p>
 
   <h2>Registro</h2>
   {% if not panel.riesgos %}
@@ -40,50 +80,13 @@
 
   <div class="lista-riesgos">
     {% for riesgo in panel.riesgos %}
-      <form method="post" action="/proyectos/{{ proyecto.id }}/riesgos/{{ riesgo.id }}"
-            class="fila-riesgo {{ 'borrador' if not riesgo.descripcion }}">
-        <div class="r-arriba">
-          <input name="descripcion" value="{{ riesgo.descripcion }}" maxlength="500"
-                 class="celda" placeholder="Qué puede pasar (borrador sin completar)">
-          <select name="probabilidad" class="celda chico" title="Probabilidad">
-            {% for i in range(1, 6) %}
-              <option value="{{ i }}" {{ 'selected' if riesgo.probabilidad == i }}>P{{ i }} · {{ etiqueta_probabilidad[i] }}</option>
-            {% endfor %}
-          </select>
-          <select name="impacto" class="celda chico" title="Impacto">
-            {% for i in range(1, 6) %}
-              <option value="{{ i }}" {{ 'selected' if riesgo.impacto == i }}>I{{ i }} · {{ etiqueta_impacto[i] }}</option>
-            {% endfor %}
-          </select>
-          <select name="estado" class="celda chico">
-            {% for valor, etiqueta in estados_riesgo.items() %}
-              <option value="{{ valor.value }}" {{ 'selected' if riesgo.estado == valor }}>{{ etiqueta }}</option>
-            {% endfor %}
-          </select>
-          <button class="boton" type="submit">Guardar</button>
-        </div>
-        <div class="r-abajo">
-          <input name="mitigacion" value="{{ riesgo.mitigacion }}" maxlength="1000"
-                 class="celda" placeholder="Mitigación">
-          <input name="responsable" value="{{ riesgo.responsable }}" maxlength="120"
-                 class="celda chico" placeholder="Responsable">
-          <span class="tenue r-tarea">
-            {%- if riesgo.task_id and riesgo.task_id in panel.titulos -%}
-              ⤷ {{ panel.titulos[riesgo.task_id] }}
-            {%- else -%}
-              ⤷ del proyecto
-            {%- endif -%}
-          </span>
-        </div>
-      </form>
-      <form method="post" class="borrar-riesgo"
-            action="/proyectos/{{ proyecto.id }}/riesgos/{{ riesgo.id }}/eliminar">
-        <button class="boton peligro" type="submit">Borrar</button>
-      </form>
+      {% include "riesgos/fila.html" %}
     {% endfor %}
   </div>
 
   <h2>Agregar riesgo</h2>
+  {# Alta corta a propósito: qué puede pasar y cuánto pesa. El plan, el residual y la
+     revisión se completan después en la fila, que es cuando se saben. #}
   <form method="post" action="/proyectos/{{ proyecto.id }}/riesgos" class="tarjeta en-fila">
     <input name="descripcion" placeholder="Qué puede pasar" maxlength="500" class="celda" required>
     <select name="probabilidad" class="celda chico">

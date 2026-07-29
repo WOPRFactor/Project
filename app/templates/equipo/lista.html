@@ -50,7 +50,8 @@
         <span class="e-color">
           {% if carga.atrasadas %}<b class="atrasado">{{ carga.atrasadas }} atrasadas</b>{% endif %}
           {% if carga.sin_margen %}<span class="tenue">{{ carga.sin_margen }} sin margen</span>{% endif %}
-          {% if not carga.atrasadas and not carga.sin_margen %}<span class="tenue">—</span>{% endif %}
+          {% if carga.riesgos %}<span class="tenue">{{ carga.riesgos }} riesgos</span>{% endif %}
+          {% if not carga.atrasadas and not carga.sin_margen and not carga.riesgos %}<span class="tenue">—</span>{% endif %}
         </span>
       </div>
     {% endfor %}
