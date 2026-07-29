@@ -193,3 +193,44 @@ def test_las_columnas_viajan_y_vuelven_igual():
 
     original = Mirada(columnas=frozenset({"fin", "dias", "resp"}))
     assert leer_columnas([original.columnas_texto]) == original.columnas
+
+
+# --- ancho de la columna Tarea ---
+
+def test_sin_filas_el_ancho_es_el_minimo():
+    from app.services.gantt_vista import ancho_tarea
+
+    assert ancho_tarea([]) == 260
+
+
+def test_un_titulo_largo_ensancha_la_columna():
+    from app.services.gantt_vista import ancho_tarea
+
+    corto = ancho_tarea([_con_titulo("A")])
+    largo = ancho_tarea([_con_titulo("Incorporación de Líder + 4 Especialistas Técnicos")])
+    assert largo > corto == 260
+
+
+def test_el_ancho_tiene_techo():
+    """Sin tope, un título kilométrico se comería el panel y dejaría el resto afuera."""
+    from app.services.gantt_vista import ancho_tarea
+
+    assert ancho_tarea([_con_titulo("x" * 400)]) == 440
+
+
+def test_la_sangria_cuenta_para_el_ancho():
+    """Una subtarea arranca corrida a la derecha: su título necesita más lugar."""
+    from app.services.gantt_vista import ancho_tarea
+
+    titulo = "Validación y firma formal de la Matriz RACI"  # largo para pasar el mínimo
+    llano = ancho_tarea([_con_titulo(titulo, nivel=0)])
+    hondo = ancho_tarea([_con_titulo(titulo, nivel=3)])
+    assert hondo > llano
+
+
+def _con_titulo(titulo, nivel=0):
+    from app.models import Task
+
+    from app.services.vista import Fila
+
+    return Fila(tarea=Task(id=1, project_id=1, titulo=titulo), nivel=nivel, es_resumen=False)

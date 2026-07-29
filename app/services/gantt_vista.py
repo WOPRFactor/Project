@@ -148,6 +148,31 @@ def etapas(filas: list["Fila"]) -> list["Fila"]:
     return [f for f in filas if f.nivel == 0]
 
 
+# La columna Tarea se dimensiona sola: es la única cuyo contenido no tiene un largo
+# acotado, y es la que más importa leer entera. Se estima por cantidad de caracteres
+# —la fuente es proporcional, así que es una aproximación— pero queda encerrada entre
+# un mínimo y un máximo, así que equivocarse por poco no rompe nada.
+_ANCHO_CARACTER = 7.2
+_SANGRIA_POR_NIVEL = 14
+_TAREA_MINIMO = 260
+# Tope deliberadamente moderado: el auto-ajuste busca que la mayoría de los
+# títulos entren, no que entre el más largo. Pasado esto la columna sola se
+# comería el panel y dejaría el resto fuera de vista; para esos casos están el
+# tooltip y el arrastre del borde.
+_TAREA_MAXIMO = 440
+
+
+def ancho_tarea(filas: list["Fila"]) -> int:
+    """Ancho en píxeles para la columna Tarea, según el título más largo que se ve."""
+    if not filas:
+        return _TAREA_MINIMO
+    mas_ancho = max(
+        len(f.tarea.titulo) * _ANCHO_CARACTER + f.nivel * _SANGRIA_POR_NIVEL
+        for f in filas
+    )
+    return int(max(_TAREA_MINIMO, min(_TAREA_MAXIMO, mas_ancho + 34)))
+
+
 def avance(fila: "Fila") -> int:
     """Cuánto de la barra va pintado: el avance real que cargó el usuario."""
     return max(0, min(100, fila.tarea.avance))

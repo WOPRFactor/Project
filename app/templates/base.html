@@ -7,17 +7,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%234c8dff'/%3E%3Crect x='3' y='4' width='7' height='2' fill='%2308101f'/%3E%3Crect x='5' y='7' width='8' height='2' fill='%2308101f'/%3E%3Crect x='3' y='10' width='5' height='2' fill='%2308101f'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/estilo.css">
   <script src="/static/htmx.min.js" defer></script>
-  <script>
-    // Cada edición repinta toda la grilla (el cronograma se recalcula entero),
-    // así que hay que devolver el foco a la celda donde estabas.
-    document.addEventListener('htmx:beforeSwap', () => {
-      window._celdaFoco = document.activeElement && document.activeElement.id;
-    });
-    document.addEventListener('htmx:afterSwap', () => {
-      const celda = window._celdaFoco && document.getElementById(window._celdaFoco);
-      if (celda) { celda.focus(); if (celda.select) celda.select(); }
-    });
-  </script>
+  <script src="/static/grilla.js" defer></script>
 </head>
 <body>
   <header class="barra">

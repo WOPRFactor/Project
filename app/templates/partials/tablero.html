@@ -133,8 +133,11 @@
       {% endfor %}
       <p class="pie tenue">
         WBS y Tarea no se pueden apagar. Cuantas menos prendas, más ancho le queda
-        al Gantt.
+        al Gantt. Los anchos se cambian arrastrando el borde del encabezado.
       </p>
+      <button class="boton" type="button" data-accion="anchos-por-defecto">
+        Restablecer anchos
+      </button>
     </div>
   </details>
   {% if mirada.filtrada %}
@@ -170,12 +173,10 @@
           hx-vals='{"criterio": "limpiar"}' hx-target="#tablero" hx-swap="innerHTML"
           hx-confirm="Borra todos los pesos declarados y vuelve al reparto automático parejo. ¿Sigo?"
           title="Volver al reparto automático">Limpiar pesos</button>
-  <button class="boton" type="button"
-          onclick="document.getElementById('importar-bloque').classList.toggle('oculto')">
+  <button class="boton" type="button" data-alterna="importar-bloque">
     Importar planilla
   </button>
-  <button class="boton" type="button"
-          onclick="document.getElementById('pegar-bloque').classList.toggle('oculto')">
+  <button class="boton" type="button" data-alterna="pegar-bloque">
     Pegar lista de tareas
   </button>
 </div>

@@ -3,23 +3,23 @@
   {% for persona in contactos %}<option value="{{ persona.nombre }}"></option>{% endfor %}
 </datalist>
 <div class="gantt">
-  <div class="panel-izq">
+  <div class="panel-izq" style="--ancho-tarea: {{ ancho_tarea }}px">
     <div class="cabecera">
-      <span class="c-cod">WBS</span>
-      <span class="c-tarea">Tarea</span>
-      {% if mirada.ve("resp") %}<span class="c-resp">Resp.</span>{% endif %}
-      {% if mirada.ve("pred") %}<span class="c-pred">Predec.</span>{% endif %}
-      {% if mirada.ve("dias") %}<span class="c-dias" title="Duración probable">Días</span>{% endif %}
-      {% if mirada.ve("rango") %}<span class="c-rango" title="Optimista y pesimista: opcionales">Opt · Pes</span>{% endif %}
-      {% if mirada.ve("inicio") %}<span class="c-fecha">Inicio</span>{% endif %}
+      <span class="c-cod" data-col="cod">WBS<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>
+      <span class="c-tarea" data-col="tarea">Tarea<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>
+      {% if mirada.ve("resp") %}<span class="c-resp" data-col="resp">Resp.<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
+      {% if mirada.ve("pred") %}<span class="c-pred" data-col="pred">Predec.<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
+      {% if mirada.ve("dias") %}<span class="c-dias" data-col="dias" title="Duración probable">Días<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
+      {% if mirada.ve("rango") %}<span class="c-rango" data-col="rango" title="Optimista y pesimista: opcionales">Opt · Pes<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
+      {% if mirada.ve("inicio") %}<span class="c-fecha" data-col="fecha">Inicio<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
       {% if mirada.ve("fin") %}<span class="c-fecha">Fin</span>{% endif %}
-      {% if linea_base and mirada.ve("desvio") %}<span class="c-desvio" title="Contra «{{ linea_base.nombre }}». Positivo = tarde">Desvío</span>{% endif %}
-      {% if mirada.ve("crit") %}<span class="c-crit">Crít.</span>{% endif %}
-      {% if mirada.ve("peso") %}<span class="c-peso" title="% del padre. Vacío = se reparte solo">Peso</span>{% endif %}
-      {% if mirada.ve("avance") %}<span class="c-avance" title="Avance real. El estado lo sugiere, vos lo confirmás">Avance</span>{% endif %}
-      {% if mirada.ve("riesgo") %}<span class="c-riesgo" title="¿Esta tarea tiene riesgos?">Riesgo</span>{% endif %}
-      {% if mirada.ve("estado") %}<span class="c-estado">Estado</span>{% endif %}
-      {% if mirada.ve("ambito") %}<span class="c-ambito">Ámbito</span>{% endif %}
+      {% if linea_base and mirada.ve("desvio") %}<span class="c-desvio" data-col="desvio" title="Contra «{{ linea_base.nombre }}». Positivo = tarde">Desvío<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
+      {% if mirada.ve("crit") %}<span class="c-crit" data-col="crit">Crít.<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
+      {% if mirada.ve("peso") %}<span class="c-peso" data-col="peso" title="% del padre. Vacío = se reparte solo">Peso<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
+      {% if mirada.ve("avance") %}<span class="c-avance" data-col="avance" title="Avance real. El estado lo sugiere, vos lo confirmás">Avance<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
+      {% if mirada.ve("riesgo") %}<span class="c-riesgo" data-col="riesgo" title="¿Esta tarea tiene riesgos?">Riesgo<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
+      {% if mirada.ve("estado") %}<span class="c-estado" data-col="estado">Estado<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
+      {% if mirada.ve("ambito") %}<span class="c-ambito" data-col="ambito">Ámbito<i class="tirador" title="Arrastrá para cambiar el ancho · doble clic para volver al automático"></i></span>{% endif %}
       <span class="c-ops"></span>
     </div>
 
@@ -35,7 +35,8 @@
         <span class="c-tarea" style="padding-left: {{ fila.nivel * 14 }}px">
           {% if fila.es_hito %}<i class="marca-hito" title="Hito (0 días)">◆</i>{% endif %}
           <input id="tit-{{ t.id }}" name="titulo" value="{{ t.titulo }}" maxlength="200"
-                 class="celda {{ 'negrita' if fila.es_resumen }}" autocomplete="off" required>
+                 class="celda {{ 'negrita' if fila.es_resumen }}" autocomplete="off"
+                 title="{{ t.titulo }}" required>
         </span>
         {% if mirada.ve("resp") %}
         <span class="c-resp">

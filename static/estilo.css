@@ -123,13 +123,19 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
    estira su columna y desalinea el encabezado de las filas. */
 .c-cod, .c-resp, .c-pred, .c-dias, .c-fecha, .c-crit, .c-ops, .c-ambito, .c-rango,
 .c-estado, .c-peso, .c-riesgo, .c-desvio, .c-avance { min-width: 0; }
-.c-cod   { flex: 0 0 52px; }
-.c-tarea { flex: 1 1 auto; min-width: 240px; display: flex; align-items: center; gap: 2px; }
-.c-resp  { flex: 0 0 88px; }
-.c-pred  { flex: 0 0 86px; }
-.c-dias  { flex: 0 0 46px; }
-.c-fecha { flex: 0 0 96px; }
-.c-crit  { flex: 0 0 38px; }
+.c-cod   { flex: 0 0 var(--w-cod, 52px); }
+.c-tarea {
+  /* Ancho calculado en `gantt_vista.ancho_tarea` según el título más largo: con las
+     filas en max-content, un `flex: 1 1 auto` se quedaba en su mínimo y cortaba los
+     nombres. El tooltip cubre los que igual pasan el techo. */
+  flex: 0 0 var(--w-tarea, var(--ancho-tarea, 260px));
+  display: flex; align-items: center; gap: 2px;
+}
+.c-resp  { flex: 0 0 var(--w-resp, 88px); }
+.c-pred  { flex: 0 0 var(--w-pred, 86px); }
+.c-dias  { flex: 0 0 var(--w-dias, 46px); }
+.c-fecha { flex: 0 0 var(--w-fecha, 96px); }
+.c-crit  { flex: 0 0 var(--w-crit, 38px); }
 .c-ops   { flex: 0 0 92px; display: flex; align-items: center; justify-content: flex-end; gap: 1px; }
 
 /* Celdas: parecen texto hasta que las tocás. */
@@ -277,18 +283,18 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .punta-flecha { fill: var(--tenue); }
 .punta-flecha.critica { fill: var(--critico); }
 
-.c-ambito { flex: 0 0 96px; min-width: 0; }
+.c-ambito { flex: 0 0 var(--w-ambito, 96px); min-width: 0; }
 .c-ambito select.celda { font-size: .74rem; padding: 2px; }
 .c-ambito select.ambito-seguimiento { color: var(--curso); }
 .c-ambito select.ambito-control { color: var(--hecho); }
 
 /* Estados definibles: el color lo elige el usuario dentro de una paleta cerrada,
    así que acá solo hay seis clases y ningún estilo inline (la CSP no los permitiría). */
-.c-estado { flex: 0 0 104px; }
+.c-estado { flex: 0 0 var(--w-estado, 104px); }
 
 /* Peso: lo editable es el % del padre; al lado, en tenue, lo que vale sobre el
    proyecto entero. Dos números distintos, y por eso uno es input y el otro no. */
-.c-peso { flex: 0 0 84px; display: flex; align-items: center; gap: 3px; }
+.c-peso { flex: 0 0 var(--w-peso, 84px); display: flex; align-items: center; gap: 3px; }
 .c-peso input.celda { flex: 1 1 auto; }
 .peso-abs { flex: 0 0 auto; color: var(--tenue); font-size: .68rem; font-variant-numeric: tabular-nums; }
 .aviso.pesos-abiertos { margin-top: 8px; }
@@ -331,7 +337,7 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .resumen.por-ambito .dato { border-style: dashed; }
 
 /* Rango de estimación: mejor y peor caso, opcionales. */
-.c-rango { flex: 0 0 74px; min-width: 0; display: flex; gap: 2px; }
+.c-rango { flex: 0 0 var(--w-rango, 74px); min-width: 0; display: flex; gap: 2px; }
 .c-rango .celda.chico { font-size: .72rem; padding: 2px 3px; }
 .resumen .dato.con-rango { border-color: var(--curso); }
 /* Una barra estimada se raya: su fecha no es un dato duro. */
@@ -352,7 +358,7 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 
 
 /* --- Riesgos --- */
-.c-riesgo { flex: 0 0 54px; display: flex; justify-content: center; }
+.c-riesgo { flex: 0 0 var(--w-riesgo, 54px); display: flex; justify-content: center; }
 .tilde-riesgo {
   width: 26px; height: 22px; padding: 0; cursor: pointer;
   background: transparent; border: 1px solid var(--borde); border-radius: 4px;
@@ -443,7 +449,7 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 
 
 /* --- Línea base y desvío (Fase 17) --- */
-.c-desvio { flex: 0 0 62px; }
+.c-desvio { flex: 0 0 var(--w-desvio, 62px); }
 .c-desvio .celda { text-align: right; font-variant-numeric: tabular-nums; }
 .atrasado   { color: var(--critico); font-weight: 600; }
 .adelantado { color: var(--hecho); }
@@ -459,7 +465,7 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 }
 .chip.vigente { border-color: var(--hecho); color: var(--hecho); }
 
-.c-avance { flex: 0 0 60px; }
+.c-avance { flex: 0 0 var(--w-avance, 60px); }
 .c-avance .celda { text-align: right; }
 
 
@@ -532,3 +538,26 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .columnas-lista label { display: flex; align-items: center; gap: 6px; font-size: .82rem; }
 .columnas-lista label.apagada { color: var(--tenue); }
 .columnas-lista .pie { margin: 6px 0 0; }
+
+
+/* Tirador de ancho: la franja de 6px sobre el borde derecho del encabezado.
+   El agarre se ensancha con un pseudo-elemento para que no haya que apuntar al píxel. */
+/* Los encabezados se estiran a lo alto para que el tirador tenga dónde agarrarse:
+   con `align-items: center` el span medía lo que el texto y el agarre quedaba en
+   17px de alto. */
+.panel-izq .cabecera { align-items: stretch; }
+.panel-izq .cabecera > span {
+  position: relative; display: flex; align-items: center;
+}
+.tirador {
+  position: absolute; top: 0; right: -3px; bottom: 0; width: 7px;
+  cursor: col-resize; touch-action: none;
+}
+.tirador::after {
+  content: ""; position: absolute; inset: 4px 2px;
+  border-radius: 2px; background: transparent;
+}
+.tirador:hover::after { background: var(--acento); }
+body.redimensionando { cursor: col-resize; user-select: none; }
+body.redimensionando .tirador::after { background: var(--acento); }
+.columnas-lista .boton { margin-top: 4px; }

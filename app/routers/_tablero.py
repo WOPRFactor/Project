@@ -69,6 +69,7 @@ def contexto(session: Session, project_id: int, mirada: Mirada | None = None) ->
         "detalles": gantt_vista.DETALLES,
         "modos_color": gantt_vista.MODOS_COLOR,
         "columnas_disponibles": gantt_vista.COLUMNAS,
+        "ancho_tarea": gantt_vista.ancho_tarea(datos.filas),
         "grilla": datos.grilla,
         "columna_hoy": datos.columna_hoy,
         "estados": datos.estados,
