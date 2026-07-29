@@ -146,14 +146,40 @@ def desindentar(session: Session, task_id: int) -> Task:
     return tarea
 
 
+def guardar_codigo(session: Session, task_id: int, codigo: str) -> str | None:
+    """Cambia el WBS escrito a mano. Devuelve un aviso si se rechaza.
+
+    El código es único en todo el proyecto: las predecesoras escritas a mano se
+    resuelven por él, y con un duplicado apuntarían a cualquiera de los dos.
+    """
+    tarea = session.get(Task, task_id)
+    if tarea is None:
+        return None
+    limpio = codigo.strip()[:40]
+    if tarea.codigo == limpio:
+        return None
+    if limpio:
+        duenio = session.exec(
+            select(Task).where(
+                Task.project_id == tarea.project_id,
+                Task.codigo == limpio,
+                Task.id != task_id,
+            )
+        ).first()
+        if duenio is not None:
+            return f"El código {limpio} ya lo usa «{duenio.titulo}»: no lo cambié"
+    tarea.codigo = limpio
+    session.add(tarea)
+    session.commit()
+    return None
+
+
 def renumerar(session: Session, project_id: int) -> int:
     """Reasigna todos los códigos según la posición actual en el árbol.
 
     Rompe a propósito las referencias escritas a mano que ya no correspondan: por
     eso es una acción explícita del usuario y no algo automático.
     """
-    from . import tasks as tasks_service
-
     cambiados = 0
 
     def bajar(parent_id: int | None, prefijo: str) -> None:
@@ -168,7 +194,6 @@ def renumerar(session: Session, project_id: int) -> int:
 
     bajar(None, "")
     session.commit()
-    tasks_service.listar(session, project_id)
     return cambiados
 
 
@@ -184,6 +209,7 @@ __all__ = [
     "agregar_al_final",
     "codigo_sugerido",
     "desindentar",
+    "guardar_codigo",
     "hermanas",
     "indentar",
     "insertar_debajo",

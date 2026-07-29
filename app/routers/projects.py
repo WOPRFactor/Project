@@ -58,6 +58,7 @@ def crear(
 def detalle(
     project_id: int,
     request: Request,
+    aviso: str = "",
     mirada: Mirada = Depends(mirada_query),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
@@ -66,7 +67,8 @@ def detalle(
         return templates.TemplateResponse(
             request, "error.html", {"mensaje": "Ese proyecto no existe"}, status_code=404
         )
-    datos["aviso"] = None
+    # El import de proyecto nuevo redirige acá con sus avisos en la URL.
+    datos["aviso"] = aviso.strip()[:1500] or None
     return templates.TemplateResponse(request, "proyectos/detalle.html", datos)
 
 

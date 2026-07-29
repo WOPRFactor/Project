@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import date
 
+from pydantic import ValidationError
 from sqlmodel import Session
 
 from ..models import Ambito, Project
@@ -52,13 +53,21 @@ def aplicar(
             ),
         )
         if fila.wbs:
-            # El WBS de la planilla pasa a ser el código con el que se escriben
-            # las dependencias en la grilla.
-            tarea.codigo = fila.wbs[:40]
-            session.add(tarea)
-            session.commit()
-            session.refresh(tarea)
-            por_wbs[fila.wbs] = tarea.id
+            if fila.wbs in por_wbs:
+                # Dos filas con el mismo WBS: con el código duplicado, las
+                # dependencias apuntarían a cualquiera de las dos.
+                avisos.append(
+                    f"El WBS {fila.wbs} está repetido en la planilla: "
+                    f"«{fila.titulo[:40]}» entró sin código"
+                )
+            else:
+                # El WBS de la planilla pasa a ser el código con el que se escriben
+                # las dependencias en la grilla.
+                tarea.codigo = fila.wbs[:40]
+                session.add(tarea)
+                session.commit()
+                session.refresh(tarea)
+                por_wbs[fila.wbs] = tarea.id
         ultimo_por_nivel[fila.nivel] = tarea.id
         for mas_hondo in [n for n in ultimo_por_nivel if n > fila.nivel]:
             del ultimo_por_nivel[mas_hondo]
@@ -194,4 +203,11 @@ def _vincular(
                 )
             except TareaInvalida as error:
                 avisos.append(f"«{fila.titulo}» ← WBS {codigo}: {error}")
+            except ValidationError:
+                # Un lag desmedido (parsear acepta hasta ±999) no puede abortar el
+                # import a mitad de camino con el proyecto ya creado.
+                avisos.append(
+                    f"«{fila.titulo}» ← WBS {codigo}: el lag no puede superar "
+                    "±365 días hábiles, la dependencia no se creó"
+                )
     return avisos

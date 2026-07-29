@@ -7,6 +7,7 @@ hay, y recién con la confirmación se escribe en la base.
 from __future__ import annotations
 
 from datetime import date
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -92,7 +93,9 @@ def confirmar(
     proyecto, avisos = importar_aplicar.aplicar(session, nombre, fecha_inicio, importacion)
     destino = f"/proyectos/{proyecto.id}"
     if avisos:
-        destino += "?avisos=" + str(len(avisos))
+        # Los textos viajan en el redirect: un conteo («avisos=3») no le dice al
+        # usuario qué dependencia no se creó ni por qué.
+        destino += "?" + urlencode({"aviso": "; ".join(avisos)[:1500]})
     return RedirectResponse(destino, status_code=303)
 
 

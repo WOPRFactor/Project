@@ -75,7 +75,9 @@ def calcular(
     nodos = _nodos(tareas)
     aristas = _aristas(dependencias)
     cronograma = motor_calcular(proyecto.fecha_inicio, nodos, aristas, escenario)
-    return marcar(cronograma, nodos, aristas, _topes_por_ambito(tareas, cronograma))
+    return marcar(
+        cronograma, nodos, aristas, _topes_por_ambito(tareas, cronograma), escenario
+    )
 
 
 def _topes_por_ambito(tareas: list[Task], cronograma: Schedule) -> dict[int, date]:
@@ -111,14 +113,22 @@ def calcular_seguro(session: Session, project_id: int) -> tuple[Schedule, str | 
         return Schedule(), str(error)
 
 
-def ventana(session: Session, project_id: int) -> dict[str, date | None]:
+def ventana(
+    session: Session, project_id: int, fin_probable: date | None = None
+) -> dict[str, date | None]:
     """Fin del proyecto en los tres escenarios.
 
     Con tareas de duración estimada, un fin único es una precisión que no se tiene:
     lo defendible es la ventana. Si nadie declaró rangos, los tres coinciden.
+
+    `fin_probable` permite reusar el cronograma que el llamador ya calculó, en vez
+    de correr el escenario probable de nuevo en el mismo render.
     """
     salida: dict[str, date | None] = {}
     for escenario in Escenario:
+        if escenario is Escenario.PROBABLE and fin_probable is not None:
+            salida[escenario.value] = fin_probable
+            continue
         try:
             plan = calcular(session, project_id, escenario=escenario)
         except ScheduleError:

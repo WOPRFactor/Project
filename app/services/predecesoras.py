@@ -23,6 +23,8 @@ from .tasks import TareaInvalida
 _REFERENCIA = re.compile(
     r"^([0-9]+(?:\.[0-9]+)*)\s*(FS|SS|FF)?\s*([+-]\s*[0-9]{1,3})?$", re.IGNORECASE
 )
+# El mismo tope que DependenciaIn: la grilla arma el modelo directo, sin Pydantic.
+_LAG_MAXIMO = 365
 
 
 def parsear(crudo: str) -> tuple[str, int, TipoDependencia] | None:
@@ -85,6 +87,9 @@ def guardar(session: Session, project_id: int, task_id: int, texto: str) -> list
             )
             continue
         codigo, lag, tipo = referencia
+        if abs(lag) > _LAG_MAXIMO:
+            avisos.append(f"«{crudo}»: el lag no puede superar ±{_LAG_MAXIMO} días hábiles")
+            continue
         predecesora = por_codigo.get(codigo)
         if predecesora is None:
             avisos.append(f"No existe ninguna tarea con código {codigo}")

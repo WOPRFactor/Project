@@ -2,7 +2,7 @@
 
 from datetime import date
 
-from app.engine import calcular
+from app.engine import calcular, marcar
 from app.engine.types import DependencyEdge, Escenario, TaskNode
 
 INICIO = date(2026, 1, 5)
@@ -59,6 +59,18 @@ def test_es_estimada_solo_si_declara_rango():
     assert not tarea(1, duracion=5).es_estimada
     assert tarea(2, duracion=5, opt=3).es_estimada
     assert tarea(3, duracion=5, pes=9).es_estimada
+
+
+def test_la_holgura_se_mide_con_la_duracion_del_escenario():
+    """El backward pass tiene que usar la misma duración que el forward: medir un
+    cronograma pesimista con duraciones probables inventa margen que no existe."""
+    nodos = [tarea(1), tarea(2, duracion=1, pes=10), tarea(3, duracion=15)]
+    aristas = [DependencyEdge(1, 2)]
+    plan = calcular(INICIO, nodos, aristas, Escenario.PESIMISTA)
+    marcar(plan, nodos, aristas, escenario=Escenario.PESIMISTA)
+    # T3 (15d) manda el fin. La cadena T1→T2 dura 1+10: le sobran 4 días, no 13.
+    assert plan.get(1).holgura == 4
+    assert plan.get(2).holgura == 4
 
 
 def test_el_resumen_envuelve_el_escenario_que_se_calcula():

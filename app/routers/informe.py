@@ -12,6 +12,7 @@ from ..db import get_session
 from ..models import ETIQUETA_ESTADO_RIESGO
 from ..services import informe as informe_service
 from ..services import matriz as matriz_service
+from ..services import projects as projects_service
 from ..services.informe import InformeInvalido
 from ..templating import templates
 
@@ -25,6 +26,12 @@ def informe(
     corte: str = "",
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
+    # Proyecto inexistente es 404, como en el resto de la app; el 400 queda para
+    # los informes que no se pueden emitir (pesos abiertos, sin línea base…).
+    if projects_service.obtener(session, project_id) is None:
+        return templates.TemplateResponse(
+            request, "error.html", {"mensaje": "Ese proyecto no existe"}, status_code=404
+        )
     try:
         datos = informe_service.armar(session, project_id, _fecha(corte))
     except InformeInvalido as error:

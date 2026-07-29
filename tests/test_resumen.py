@@ -163,6 +163,13 @@ def test_sin_hitos_no_hay_tarjeta(session: Session, proyecto):
     assert vista_service.armar(session, proyecto.id).proximo_hito is None
 
 
+def test_con_todos_los_hitos_pasados_tampoco_hay_proximo(session: Session, proyecto):
+    """Mostrar el último hito vencido como «próximo» sería mentir: mejor nada."""
+    agregar(session, proyecto, "Hito viejo", duracion=0)
+    datos = vista_service.armar(session, proyecto.id, hoy=date(2027, 1, 1))
+    assert datos.proximo_hito is None
+
+
 def test_la_holgura_se_mide_contra_el_fin_del_ambito(session: Session, proyecto):
     """El acompañamiento largo no debe regalarle margen al alcance comprometido."""
     from app.models import Ambito

@@ -46,6 +46,26 @@ def test_saltea_las_hojas_sin_columnas_de_tareas():
     assert [f.titulo for f in imp.filas] == ["Arrancar"]
 
 
+def test_una_planilla_mas_grande_que_el_tope_avisa_que_se_corto():
+    """Antes se cortaba en 400 filas en silencio, muy por debajo de MAX_FILAS."""
+    from io import BytesIO
+
+    from openpyxl import Workbook
+
+    from app.services.importar import MAX_FILAS
+
+    libro = Workbook()
+    libro.active.append(["WBS", "Tarea", "Días"])
+    for i in range(MAX_FILAS + 100):
+        libro.active.append([str(i + 1), f"Tarea {i + 1}", 1])
+    buffer = BytesIO()
+    libro.save(buffer)
+
+    imp = importar_excel.leer(buffer.getvalue())
+    assert len(imp.filas) >= MAX_FILAS  # el viejo tope de 400 ya no corta
+    assert any("no entró" in a for a in imp.avisos)
+
+
 def test_lee_la_estructura_completa():
     imp = importar_excel.leer(contenido(), "Sheet2")
     tipos = [f.tipo for f in imp.filas]

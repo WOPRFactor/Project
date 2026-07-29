@@ -7,6 +7,7 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from app.migraciones import poner_al_dia
 from app.migraciones_datos import poner_al_dia as poner_al_dia_datos
+from app.migraciones_datos import preparar_registro
 from app.schemas import TareaIn
 from app.services import projects as projects_service
 from app.services import tasks as tasks_service
@@ -53,6 +54,7 @@ def base_vieja(tmp_path):
 def migrar_todo(engine):
     """Lo mismo que hace `init_db` al arrancar: crear, poner al día, migrar datos."""
     SQLModel.metadata.create_all(engine)
+    preparar_registro(engine)
     return poner_al_dia(engine) + poner_al_dia_datos(engine)
 
 
@@ -125,3 +127,35 @@ def test_correrla_dos_veces_no_hace_nada(tmp_path):
     engine = base_vieja(tmp_path)
     assert migrar_todo(engine)  # la primera pasada aplica cambios
     assert migrar_todo(engine) == []  # la segunda no toca nada
+
+
+def test_la_siembra_de_avance_sobrevive_un_arranque_cortado(tmp_path):
+    """Si el proceso muere entre el ALTER y la migración de datos, el próximo
+    arranque tiene que sembrar igual: la señal vive en la base, no en memoria."""
+    engine = base_vieja(tmp_path)
+    with Session(engine) as session:
+        session.exec(
+            text(
+                "INSERT INTO project (nombre, descripcion, fecha_inicio, estado) "
+                "VALUES ('Viejo', '', '2026-01-05', 'activo')"
+            )
+        )
+        session.exec(
+            text(
+                "INSERT INTO task (project_id, titulo, notas, duracion, estado, orden) "
+                "VALUES (1, 'Terminada', '', 3, 'hecha', 0)"
+            )
+        )
+        session.commit()
+
+    # Primer arranque: muere después de tocar el esquema, antes de los datos.
+    SQLModel.metadata.create_all(engine)
+    preparar_registro(engine)
+    poner_al_dia(engine)
+
+    # Segundo arranque, esta vez completo.
+    migrar_todo(engine)
+
+    with Session(engine) as session:
+        tareas = tasks_service.listar(session, 1)
+        assert tareas[0].avance == 100  # «hecha» en v1 no puede aparecer al 0 %

@@ -44,6 +44,13 @@ def test_arbol_con_ciclo_de_jerarquia_falla():
         validar_arbol([nodo(1, parent=2), nodo(2, parent=1)])
 
 
+def test_un_ancestro_colgante_tambien_da_error_claro():
+    """El padre inexistente puede estar más arriba en la cadena: tiene que ser
+    TreeError igual, nunca un KeyError crudo (que en la app sería un 500)."""
+    with pytest.raises(TreeError):
+        validar_arbol([nodo(3, parent=2), nodo(2, parent=999)])
+
+
 def test_dependencia_a_tarea_inexistente_falla():
     with pytest.raises(DanglingReferenceError):
         validar_dependencias([nodo(1)], [DependencyEdge(1, 42)])

@@ -10,7 +10,7 @@ from datetime import date
 
 from sqlmodel import Session, select
 
-from ..models import Dependency, Task
+from ..models import Dependency, Project, Task
 from ..schemas import TareaIn
 from . import contactos as contactos_service
 from . import estados as estados_service
@@ -71,6 +71,11 @@ def ids_descendientes(session: Session, project_id: int, task_id: int) -> set[in
 
 
 def crear(session: Session, project_id: int, datos: TareaIn) -> Task:
+    # Un tablero HTMX viejo puede seguir apuntando a un proyecto borrado: sin este
+    # chequeo se crean tareas huérfanas (SQLite no exige las FK) y hasta estados
+    # sembrados para un proyecto que no existe.
+    if session.get(Project, project_id) is None:
+        raise TareaInvalida("Ese proyecto ya no existe")
     if datos.parent_id is not None:
         padre = session.get(Task, datos.parent_id)
         if padre is None or padre.project_id != project_id:

@@ -34,20 +34,27 @@ def es_resumen(nodo: TaskNode, grupos: dict[int | None, list[TaskNode]]) -> bool
 
 
 def validar_arbol(nodos: list[TaskNode]) -> None:
-    """Verifica que cada padre exista y que la jerarquía no tenga ciclos."""
+    """Verifica que cada padre exista y que la jerarquía no tenga ciclos.
+
+    La existencia se chequea en cada paso de la subida, no solo en el padre
+    directo: un ancestro colgante también tiene que dar TreeError, no un KeyError.
+    """
     por_id = {n.id: n for n in nodos}
     for nodo in nodos:
         if nodo.parent_id is None:
             continue
-        if nodo.parent_id not in por_id:
-            raise TreeError(f"La tarea {nodo.id} cuelga de un padre inexistente ({nodo.parent_id})")
         visto = {nodo.id}
-        actual = por_id[nodo.parent_id]
+        actual = nodo
         while actual.parent_id is not None:
-            if actual.id in visto:
+            padre = por_id.get(actual.parent_id)
+            if padre is None:
+                raise TreeError(
+                    f"La tarea {actual.id} cuelga de un padre inexistente ({actual.parent_id})"
+                )
+            if padre.id in visto:
                 raise TreeError(f"La jerarquía de la tarea {nodo.id} forma un ciclo")
-            visto.add(actual.id)
-            actual = por_id[actual.parent_id]
+            visto.add(padre.id)
+            actual = padre
 
 
 def orden_jerarquico(nodos: list[TaskNode]) -> list[TaskNode]:

@@ -11,7 +11,7 @@ from datetime import date
 from . import graph
 from .calendar import contar_habiles, sumar_habiles
 from .scheduler import salto_tras
-from .types import DependencyEdge, Schedule, TaskNode, TipoDependencia
+from .types import DependencyEdge, Escenario, Schedule, TaskNode, TipoDependencia
 
 
 def marcar(
@@ -19,6 +19,7 @@ def marcar(
     nodos: list[TaskNode],
     aristas: list[DependencyEdge],
     tope_por_tarea: dict[int, date] | None = None,
+    escenario: Escenario = Escenario.PROBABLE,
 ) -> Schedule:
     """Anota holgura y `critica` sobre el cronograma recibido y lo devuelve.
 
@@ -39,7 +40,7 @@ def marcar(
         a for a in aristas if a.predecessor_id in ids_hoja and a.successor_id in ids_hoja
     ]
 
-    _holgura_de_hojas(schedule, hojas, relevantes, por_id, tope_por_tarea or {})
+    _holgura_de_hojas(schedule, hojas, relevantes, por_id, tope_por_tarea or {}, escenario)
     _holgura_de_resumenes(schedule, grupos)
     return schedule
 
@@ -50,6 +51,7 @@ def _holgura_de_hojas(
     aristas: list[DependencyEdge],
     por_id: dict[int, TaskNode],
     tope_por_tarea: dict[int, date],
+    escenario: Escenario,
 ) -> None:
     salientes = graph.sucesoras_por_tarea(aristas)
     orden = graph.orden_topologico([n.id for n in hojas], aristas)
@@ -60,7 +62,9 @@ def _holgura_de_hojas(
     for task_id in reversed(orden):
         tarea = schedule.tareas[task_id]
         nodo = por_id[task_id]
-        duracion = max(nodo.duracion, 1)
+        # La misma duración con la que se calculó el cronograma: holgura medida
+        # sobre un escenario con la duración de otro daría márgenes falsos.
+        duracion = max(nodo.duracion_en(escenario), 1)
 
         fin_tardio = tope_por_tarea.get(task_id, fin_proyecto)
         for arista in salientes.get(task_id, []):

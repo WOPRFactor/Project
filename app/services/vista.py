@@ -180,7 +180,7 @@ def armar(
         contactos=list(personas.values()),
         resumen=resumen_service.armar(filas, "Total", cronograma.inicio, cronograma.fin),
         por_ambito=resumen_service.por_ambito(filas),
-        ventana=schedule_service.ventana(session, project_id),
+        ventana=schedule_service.ventana(session, project_id, fin_probable=cronograma.fin),
         estimadas=len([f for f in filas if f.es_estimada and not f.es_resumen]),
         avance_ponderado=pesos_service.avance_ponderado(
             nodos_peso, {f.tarea.id or 0: f.tarea.avance for f in filas},

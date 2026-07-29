@@ -91,6 +91,7 @@
     function soltar() {
       tirador.removeEventListener('pointermove', mover);
       tirador.removeEventListener('pointerup', soltar);
+      tirador.removeEventListener('pointercancel', soltar);
       document.body.classList.remove('redimensionando');
       var anchos = guardados();
       anchos[col] = Math.round(actual);
@@ -99,6 +100,9 @@
 
     tirador.addEventListener('pointermove', mover);
     tirador.addEventListener('pointerup', soltar);
+    /* Sin esto, un gesto cancelado (touch, cambio de ventana) deja el arrastre
+       enganchado y el próximo hover redimensiona sin apretar nada. */
+    tirador.addEventListener('pointercancel', soltar);
   });
 
   /* Doble clic en el tirador: esa columna vuelve al ancho que calcula el servidor. */
@@ -123,6 +127,16 @@
     if (alterna) {
       var destino = document.getElementById(alterna.dataset.alterna);
       if (destino) destino.classList.toggle('oculto');
+    }
+  });
+
+  /* Confirmación de formularios de borrado. El texto viene entero del servidor en
+     data-confirmar: un nombre interpolado dentro de JS inline es XSS aunque el HTML
+     esté escapado (el navegador decodifica las entidades antes de evaluar). */
+  document.addEventListener('submit', function (evento) {
+    var form = evento.target.closest('form[data-confirmar]');
+    if (form && !window.confirm(form.dataset.confirmar)) {
+      evento.preventDefault();
     }
   });
 

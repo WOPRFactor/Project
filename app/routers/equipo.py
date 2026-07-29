@@ -1,8 +1,8 @@
-"""Las personas del proyecto y qué tiene asignado cada una."""
+"""Las personas del proyecto y qué tiene asignado cada una. HTTP puro: las
+cuentas de carga viven en `services/equipo.py`."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -10,33 +10,15 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session
 
 from ..db import get_session
-from ..models import Contacto
 from ..services import contactos as contactos_service
+from ..services import equipo as equipo_service
 from ..services import linea_base as linea_base_service
 from ..services import projects as projects_service
 from ..services import vista as vista_service
 from ..services.contactos import ContactoInvalido
-from ..services.resumen import esta_hecha
 from ..templating import templates
 
 router = APIRouter(prefix="/proyectos/{project_id}/equipo")
-
-
-@dataclass
-class Carga:
-    """Cuánto tiene encima una persona. Es la pregunta que antes no se podía hacer."""
-
-    contacto: Contacto | None
-    tareas: int = 0
-    hitos: int = 0
-    esfuerzo: int = 0
-    hechas: int = 0
-    atrasadas: int = 0
-    sin_margen: int = 0
-
-    @property
-    def avance(self) -> int:
-        return round(100 * self.hechas / self.tareas) if self.tareas else 0
 
 
 @router.get("", response_class=HTMLResponse)
@@ -54,42 +36,12 @@ def panel(
     return templates.TemplateResponse(request, "equipo/lista.html", {
         "proyecto": proyecto,
         "contactos": contactos_service.listar(session, project_id),
-        "cargas": _cargas(session, project_id, datos),
+        "cargas": equipo_service.cargas(session, project_id, datos),
         "etapas_sin_responsable": [
             f for f in datos.todas_las_filas if f.es_resumen and f.responsable is None
         ],
         "aviso": aviso or None,
     })
-
-
-def _cargas(session: Session, project_id: int, datos) -> list[Carga]:
-    """Una fila por persona, más una para lo que quedó sin asignar."""
-    por_contacto: dict[int | None, Carga] = {}
-    for contacto in contactos_service.listar(session, project_id):
-        por_contacto[contacto.id] = Carga(contacto=contacto)
-    por_contacto.setdefault(None, Carga(contacto=None))
-
-    for fila in datos.todas_las_filas:
-        if fila.es_resumen:
-            continue
-        clave = fila.responsable.id if fila.responsable else None
-        carga = por_contacto.setdefault(clave, Carga(contacto=fila.responsable))
-        if fila.es_hito:
-            carga.hitos += 1
-        else:
-            carga.tareas += 1
-            carga.esfuerzo += fila.tarea.duracion
-        if esta_hecha(fila):
-            carga.hechas += 1
-        if fila.desvio is not None and fila.desvio > 0:
-            carga.atrasadas += 1
-        if fila.sin_holgura and not esta_hecha(fila):
-            carga.sin_margen += 1
-
-    cargas = list(por_contacto.values())
-    # Lo sin asignar al final: es un pendiente, no una persona.
-    cargas.sort(key=lambda c: (c.contacto is None, -c.esfuerzo))
-    return [c for c in cargas if c.tareas or c.hitos or c.contacto is not None]
 
 
 @router.post("")

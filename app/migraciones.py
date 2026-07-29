@@ -75,4 +75,13 @@ def _default(columna) -> str:
         crudo = "" if "CHAR" in columna.type.compile().upper() else 0
     if isinstance(crudo, str):
         return "'" + crudo.replace("'", "''") + "'"
-    return str(int(crudo))
+    if isinstance(crudo, bool):
+        return str(int(crudo))
+    if isinstance(crudo, (int, float)):
+        return str(crudo)
+    # Un default callable o de fecha no se puede expresar acá: mejor frenar el
+    # arranque con un mensaje claro que truncarlo o reventar con un TypeError.
+    raise RuntimeError(
+        f"La columna {columna.name} tiene un default {type(crudo).__name__} que este "
+        "migrador no sabe expresar: necesita una migración a mano"
+    )

@@ -117,15 +117,16 @@ def por_ambito(filas: list["Fila"]) -> list[Resumen]:
 
 
 def proximo_hito(filas: list["Fila"], hoy: date) -> "Fila | None":
-    """El primer hito que todavía no pasó. Es lo que se mira un martes a la mañana."""
+    """El primer hito que todavía no pasó. Es lo que se mira un martes a la mañana.
+
+    Con todos los hitos pasados no hay «próximo»: devolver el último ya vencido
+    con esa etiqueta sería mentir, así que la tarjeta directamente no se muestra.
+    """
     pendientes = [
         f for f in filas
         if f.es_hito and f.fin and f.fin >= hoy and not esta_hecha(f)
     ]
-    if pendientes:
-        return min(pendientes, key=lambda f: f.fin)
-    futuros = [f for f in filas if f.es_hito and f.fin]
-    return max(futuros, key=lambda f: f.fin) if futuros else None
+    return min(pendientes, key=lambda f: f.fin) if pendientes else None
 
 
 def niveles_abiertos(

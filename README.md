@@ -150,10 +150,12 @@ Todo por variables de entorno, con defaults pensados para uso local:
 
 | Variable | Default | Qué hace |
 |---|---|---|
-| `WOPR_HOST` | `127.0.0.1` | Interfaz de escucha. **Exponerlo fuera de localhost exige auth + HTTPS antes.** |
-| `WOPR_PORT` | `8000` | Puerto |
 | `WOPR_DB` | `./wopr-proyectos.db` | Ruta del archivo SQLite |
 | `WOPR_DEBUG` | `false` | Modo debug; apagado por default |
+
+El host y el puerto se pasan a `uvicorn` en la línea de comandos (`--host`,
+`--port`); el default de uvicorn ya es `127.0.0.1`. **Exponer la app fuera de
+localhost exige auth + HTTPS antes.**
 
 ## Arquitectura
 

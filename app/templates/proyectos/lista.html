@@ -36,7 +36,7 @@
             <span class="ops-proyecto">
               <a class="icono" href="/proyectos/{{ proyecto.id }}/editar" title="Editar">✎</a>
               <form method="post" action="/proyectos/{{ proyecto.id }}/eliminar" class="en-linea"
-                    onsubmit="return confirm('¿Borrar «{{ proyecto.nombre }}» con todas sus tareas? Esto no se puede deshacer.')">
+                    data-confirmar="¿Borrar «{{ proyecto.nombre }}» con todas sus tareas? Esto no se puede deshacer.">
                 <button class="icono" type="submit" title="Borrar proyecto">✕</button>
               </form>
             </span>

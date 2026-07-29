@@ -25,22 +25,60 @@ log = logging.getLogger("wopr.migraciones")
 # Los tres valores del viejo enum `EstadoTarea`, en el orden de `ESTADOS_POR_DEFECTO`.
 _ESTADOS_V1 = ["pendiente", "en_curso", "hecha"]
 
+_TABLA_REGISTRO = "migracion_aplicada"
+_SIEMBRA_AVANCE = "avance_desde_estado"
 
-def poner_al_dia(engine: Engine, agregadas: list[str] | None = None) -> list[str]:
-    """`agregadas` son las columnas que acaba de crear `migraciones.poner_al_dia`.
 
-    Se usa para correr una migración de datos **exactamente una vez**: cuando la
-    columna nació recién. Adivinarlo mirando los datos sería frágil.
+def preparar_registro(engine: Engine) -> None:
+    """Crea la tabla que anota qué migraciones de datos ya corrieron.
+
+    Va **antes** de tocar el esquema: si el proceso muere entre el ALTER y la
+    migración de datos, en el próximo arranque la ausencia de la marca dice que
+    falta correr — una señal en memoria se pierde con el proceso. Si la tabla nace
+    sobre una base que ya tiene `task.avance`, esa base migró con el código viejo:
+    se anota sin correr nada, para no pisar avances que el usuario ya editó.
     """
+    inspector = inspect(engine)
+    tablas = set(inspector.get_table_names())
+    if _TABLA_REGISTRO in tablas:
+        return
+    ya_migrada = "task" in tablas and "avance" in {
+        c["name"] for c in inspector.get_columns("task")
+    }
+    with engine.begin() as conexion:
+        conexion.execute(
+            text(f'CREATE TABLE "{_TABLA_REGISTRO}" (nombre TEXT PRIMARY KEY)')
+        )
+        if ya_migrada:
+            conexion.execute(
+                text(f'INSERT INTO "{_TABLA_REGISTRO}" (nombre) VALUES (:n)'),
+                {"n": _SIEMBRA_AVANCE},
+            )
+
+
+def poner_al_dia(engine: Engine) -> list[str]:
+    """Corre las migraciones de datos pendientes. Cada una detecta **en la base**
+    si ya corrió: por la columna vieja que sigue existiendo, o por su marca en
+    `migracion_aplicada`."""
+    preparar_registro(engine)
     aplicadas: list[str] = []
     with Session(engine) as session:
         aplicadas += _sembrar_estados(session)
     aplicadas += _migrar_estado_a_tabla(engine)
     aplicadas += _migrar_responsable_a_contacto(engine)
-    if "task.avance" in (agregadas or []):
+    if not _corrida(engine, _SIEMBRA_AVANCE):
         with Session(engine) as session:
             aplicadas += _avance_desde_estado(session)
     return aplicadas
+
+
+def _corrida(engine: Engine, nombre: str) -> bool:
+    with engine.connect() as conexion:
+        fila = conexion.execute(
+            text(f'SELECT nombre FROM "{_TABLA_REGISTRO}" WHERE nombre = :n'),
+            {"n": nombre},
+        ).first()
+    return fila is not None
 
 
 def _avance_desde_estado(session: Session) -> list[str]:
@@ -57,6 +95,11 @@ def _avance_desde_estado(session: Session) -> list[str]:
             tarea.avance = estado.avance_sugerido
             session.add(tarea)
             tocadas += 1
+    # La marca va en la misma transacción que la siembra: o pasan las dos o ninguna.
+    session.connection().execute(
+        text(f'INSERT OR IGNORE INTO "{_TABLA_REGISTRO}" (nombre) VALUES (:n)'),
+        {"n": _SIEMBRA_AVANCE},
+    )
     session.commit()
     return [f"avance sembrado desde el estado en {tocadas} tareas"] if tocadas else []
 
@@ -123,6 +166,7 @@ def _migrar_estado_a_tabla(engine: Engine) -> list[str]:
     if "estado" not in {c["name"] for c in inspector.get_columns("task")}:
         return []  # ya migrada
 
+    sin_traducir = 0
     with Session(engine) as session:
         por_proyecto: dict[int, list[Estado]] = {}
         for estado in session.exec(select(Estado)):
@@ -134,6 +178,7 @@ def _migrar_estado_a_tabla(engine: Engine) -> list[str]:
         for task_id, project_id, viejo in filas:
             estados = por_proyecto.get(project_id) or []
             if not estados:
+                sin_traducir += 1
                 continue
             indice = _ESTADOS_V1.index(viejo) if viejo in _ESTADOS_V1 else 0
             equivalente = estados[min(indice, len(estados) - 1)]
@@ -143,6 +188,13 @@ def _migrar_estado_a_tabla(engine: Engine) -> list[str]:
                 session.add(tarea)
         session.commit()
 
+    if sin_traducir:
+        # Tareas de proyectos sin estados (huérfanas de un proyecto borrado): su
+        # estado viejo se pierde con el DROP, que al menos quede dicho en el log.
+        log.warning(
+            "%s tareas sin estados en su proyecto: el valor viejo de `estado` se pierde",
+            sin_traducir,
+        )
     with engine.begin() as conexion:
         conexion.execute(text("ALTER TABLE task DROP COLUMN estado"))
     log.info("Columna task.estado migrada a task.estado_id y eliminada")

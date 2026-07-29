@@ -80,7 +80,7 @@
         {% if contactos | length > 1 %}
           <form method="post" class="borrar"
                 action="/proyectos/{{ proyecto.id }}/equipo/{{ persona.id }}/unir"
-                onsubmit="return confirm('Unir «{{ persona.nombre }}» con la persona elegida? Sus tareas se le reasignan y este contacto se borra.')">
+                data-confirmar="¿Unir «{{ persona.nombre }}» con la persona elegida? Sus tareas se le reasignan y este contacto se borra.">
             <select name="destino_id" class="celda" title="Es la misma persona que...">
               {% for otra in contactos if otra.id != persona.id %}
                 <option value="{{ otra.id }}">es la misma que {{ otra.nombre }}</option>
@@ -92,7 +92,7 @@
 
         <form method="post" class="borrar"
               action="/proyectos/{{ proyecto.id }}/equipo/{{ persona.id }}/eliminar"
-              onsubmit="return confirm('Borrar a «{{ persona.nombre }}»? Sus tareas quedan sin asignar, no se borran.')">
+              data-confirmar="¿Borrar a «{{ persona.nombre }}»? Sus tareas quedan sin asignar, no se borran.">
           <button class="boton peligro" type="submit">Borrar</button>
         </form>
       </div>

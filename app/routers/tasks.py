@@ -10,7 +10,6 @@ from pydantic import ValidationError
 from sqlmodel import Session
 
 from ..db import get_session
-from ..models import Ambito
 from ..schemas import ProyectoIn, TareaIn
 from ..services import arbol as arbol_service
 from ..services import pesos_aplicar
@@ -20,6 +19,7 @@ from ..services import riesgos as riesgos_service
 from ..services import tasks as tasks_service
 from ..services.riesgos import RiesgoInvalido
 from ..services.tasks import TareaInvalida
+from . import _celda
 from ._tablero import Mirada, mirada_form, render
 
 router = APIRouter(prefix="/proyectos/{project_id}")
@@ -32,7 +32,10 @@ def agregar(
     mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    arbol_service.agregar_al_final(session, project_id, TareaIn(titulo="Tarea nueva"))
+    try:
+        arbol_service.agregar_al_final(session, project_id, TareaIn(titulo="Tarea nueva"))
+    except TareaInvalida as error:
+        return render(request, session, project_id, aviso=str(error), mirada=mirada)
     return render(request, session, project_id, mirada=mirada)
 
 
@@ -41,53 +44,47 @@ def guardar_celda(
     project_id: int,
     task_id: int,
     request: Request,
-    codigo: str = Form(""),
     titulo: str = Form(...),
-    responsable: str = Form(""),
-    predecesoras: str = Form(""),
+    codigo: str | None = Form(None),
+    responsable: str | None = Form(None),
+    predecesoras: str | None = Form(None),
     duracion: str = Form(""),
-    inicio: str = Form(""),
-    critica: str = Form("0"),
-    ambito: str = Form("proyecto"),
+    inicio: str | None = Form(None),
+    critica: str | None = Form(None),
+    ambito: str | None = Form(None),
     estado_id: str = Form(""),
-    peso: str = Form(""),
+    peso: str | None = Form(None),
     avance: str = Form(""),
-    duracion_optimista: str = Form(""),
-    duracion_pesimista: str = Form(""),
+    duracion_optimista: str | None = Form(None),
+    duracion_pesimista: str | None = Form(None),
     mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    """Guarda la fila completa: el formulario manda todas sus celdas en cada cambio."""
+    """Guarda la fila completa. Los campos que no viajan (None) son columnas
+    apagadas: se conserva lo que la tarea ya tiene en vez de pisarlo con defaults."""
     tarea = tasks_service.obtener(session, task_id)
     if tarea is None or tarea.project_id != project_id:
         return render(request, session, project_id, aviso="Esa tarea ya no existe", mirada=mirada)
 
+    fila = _celda.FilaCruda(
+        titulo=titulo, responsable=responsable, duracion=duracion, inicio=inicio,
+        critica=critica, ambito=ambito, estado_id=estado_id, peso=peso, avance=avance,
+        duracion_optimista=duracion_optimista, duracion_pesimista=duracion_pesimista,
+    )
     try:
-        datos = TareaIn(
-            titulo=titulo,
-            notas=tarea.notas,
-            responsable=responsable,
-            critica=critica.strip() in {"1", "true", "on", "sí", "si"},
-            ambito=Ambito(ambito) if ambito in Ambito.__members__ else Ambito.proyecto,
-            # Celda vacía = sin peso declarado, que no es lo mismo que peso cero:
-            # significa "repartime lo que sobre".
-            peso=int(peso) if peso.strip() else None,
-            avance=int(avance) if avance.strip() else tarea.avance,
-            duracion=int(duracion) if duracion.strip() else tarea.duracion,
-            duracion_optimista=int(duracion_optimista) if duracion_optimista.strip() else None,
-            duracion_pesimista=int(duracion_pesimista) if duracion_pesimista.strip() else None,
-            snet=date.fromisoformat(inicio) if inicio.strip() else None,
-            estado_id=int(estado_id) if estado_id.strip().isdigit() else tarea.estado_id,
-        )
+        datos = _celda.a_tarea(session, tarea, fila)
     except (ValidationError, ValueError) as error:
         return render(request, session, project_id, aviso=_mensaje(error), mirada=mirada)
 
     tasks_service.actualizar(session, task_id, datos)
-    _guardar_codigo(session, task_id, codigo)
 
     avisos: list[str] = []
-    if not tasks_service.tiene_hijas(session, task_id):
-        avisos = predecesoras_service.guardar(session, project_id, task_id, predecesoras)
+    if codigo is not None:
+        aviso_codigo = arbol_service.guardar_codigo(session, task_id, codigo)
+        if aviso_codigo:
+            avisos.append(aviso_codigo)
+    if predecesoras is not None and not tasks_service.tiene_hijas(session, task_id):
+        avisos += predecesoras_service.guardar(session, project_id, task_id, predecesoras)
     return render(request, session, project_id, aviso="; ".join(avisos) or None, mirada=mirada)
 
 
@@ -218,12 +215,14 @@ def repartir_pesos(
         return render(
             request, session, project_id,
             aviso=f"{cambiadas} pesos borrados: vuelven al reparto automático parejo.",
+            mirada=mirada,
         )
     cambiadas = pesos_aplicar.repartir(session, project_id, criterio)
     como = "por duración" if criterio == pesos_aplicar.POR_DURACION else "en partes iguales"
     return render(
         request, session, project_id,
         aviso=f"{cambiadas} pesos repartidos {como}. Ajustá lo que no represente el valor real.",
+        mirada=mirada,
     )
 
 
@@ -244,15 +243,6 @@ def _mover(request: Request, session: Session, project_id: int, operacion, task_
     except TareaInvalida as error:
         return render(request, session, project_id, aviso=str(error), mirada=mirada)
     return render(request, session, project_id, mirada=mirada)
-
-
-def _guardar_codigo(session: Session, task_id: int, codigo: str) -> None:
-    tarea = tasks_service.obtener(session, task_id)
-    limpio = codigo.strip()[:40]
-    if tarea is not None and tarea.codigo != limpio:
-        tarea.codigo = limpio
-        session.add(tarea)
-        session.commit()
 
 
 def _mensaje(error: Exception) -> str:

@@ -78,7 +78,7 @@
         <span class="e-ops">
           <form method="post" class="en-linea"
                 action="/proyectos/{{ proyecto.id }}/base/{{ linea.id }}/eliminar"
-                onsubmit="return confirm('Borrar «{{ linea.nombre }}»? La foto se pierde y no se puede reconstruir.')">
+                data-confirmar="¿Borrar «{{ linea.nombre }}»? La foto se pierde y no se puede reconstruir.">
             <button class="boton peligro" type="submit">Borrar</button>
           </form>
         </span>

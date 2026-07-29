@@ -15,7 +15,11 @@ from io import BytesIO
 
 from openpyxl import load_workbook
 
-from .importar import AMBITOS, TIPOS, FilaImportada, Importacion
+from .importar import AMBITOS, MAX_FILAS, TIPOS, FilaImportada, Importacion
+
+# El tope real de tareas más un margen para la cabecera (está en las primeras 15
+# filas). Antes se cortaba en 400 en silencio, muy por debajo de MAX_FILAS.
+_MAX_LEER = MAX_FILAS + 20
 
 _COLUMNAS = {
     "wbs": "wbs",
@@ -84,6 +88,10 @@ def leer(contenido: bytes, hoja: str | None = None) -> Importacion:
             "«WBS» y «Tarea»."
         )
         return importacion
+    if len(filas_crudas) >= _MAX_LEER:
+        importacion.avisos.append(
+            f"La hoja tiene más de {MAX_FILAS} filas: leí hasta ahí y el resto no entró"
+        )
 
     vacias = 0
     vio_wbs = False
@@ -117,7 +125,7 @@ def _elegir_hoja(candidatas) -> tuple[str, list[list], dict[str, int] | None, in
     """
     ultima = None
     for ws in reversed(list(candidatas)):
-        filas = [list(f) for f in ws.iter_rows(max_row=400, max_col=20, values_only=True)]
+        filas = [list(f) for f in ws.iter_rows(max_row=_MAX_LEER, max_col=20, values_only=True)]
         mapa, desde = _ubicar_cabecera(filas)
         if mapa is not None:
             return ws.title, filas, mapa, desde

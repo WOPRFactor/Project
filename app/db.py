@@ -11,6 +11,7 @@ from . import models_base  # noqa: F401  — línea base
 from .config import settings
 from .migraciones import poner_al_dia
 from .migraciones_datos import poner_al_dia as poner_al_dia_datos
+from .migraciones_datos import preparar_registro
 
 engine = create_engine(
     settings.db_url,
@@ -22,8 +23,11 @@ engine = create_engine(
 def init_db() -> None:
     """Crea lo que falte y pone al día una base de una versión anterior."""
     SQLModel.metadata.create_all(engine)
-    agregadas = poner_al_dia(engine)
-    poner_al_dia_datos(engine, agregadas)
+    # El registro va antes de tocar el esquema: si el proceso muere entre el ALTER
+    # y la migración de datos, el próximo arranque sabe que quedó pendiente.
+    preparar_registro(engine)
+    poner_al_dia(engine)
+    poner_al_dia_datos(engine)
 
 
 def get_session() -> Iterator[Session]:

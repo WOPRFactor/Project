@@ -26,6 +26,7 @@ from ..services import importar_diagnostico as diagnostico_service
 from ..services import importar_excel
 from ..services import importar_texto
 from ..services import projects as projects_service
+from ..services.tasks import TareaInvalida
 from ..templating import templates
 from ._tablero import Mirada, mirada_form, render
 
@@ -115,7 +116,10 @@ def confirmar_planilla(
         corregidas = diagnostico_service.aplicar_sugerencias(importacion, diagnostico)
         importacion.avisos.append(f"{corregidas} dependencias corregidas")
 
-    avisos = importar_aplicar.agregar_a_proyecto(session, project_id, importacion)
+    try:
+        avisos = importar_aplicar.agregar_a_proyecto(session, project_id, importacion)
+    except TareaInvalida as error:
+        return render(request, session, project_id, aviso=str(error), mirada=mirada)
     return render(request, session, project_id, aviso="; ".join(avisos) or None, mirada=mirada)
 
 
@@ -140,5 +144,8 @@ def pegar(
             request, session, project_id,
             aviso="No encontré tareas en lo que pegaste", mirada=mirada,
         )
-    avisos = importar_aplicar.agregar_a_proyecto(session, project_id, importacion)
+    try:
+        avisos = importar_aplicar.agregar_a_proyecto(session, project_id, importacion)
+    except TareaInvalida as error:
+        return render(request, session, project_id, aviso=str(error), mirada=mirada)
     return render(request, session, project_id, aviso="; ".join(avisos) or None, mirada=mirada)
