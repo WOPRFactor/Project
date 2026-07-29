@@ -97,20 +97,35 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .chip.estado-pausado { border-color: var(--curso); color: var(--curso); }
 
 /* ---------- Gantt ---------- */
-.gantt { display: flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--panel); margin-bottom: 18px; }
+/* Un solo scroll horizontal para todo el Gantt. Antes había dos pegados —uno de la
+   grilla y otro del timeline— y era muy fácil mover el equivocado. */
+.gantt {
+  display: flex; border: 1px solid var(--borde); border-radius: 10px;
+  overflow-x: auto; overflow-y: hidden; background: var(--panel); margin-bottom: 18px;
+}
 /* Ancho fijo. Tiene que alcanzar para todas las columnas fijas (~615px) más la
    de Tarea; si se achica, el título se aplasta a cero. */
-/* El panel de la grilla NUNCA se come el timeline: crece con sus columnas pero se
-   frena en el 62% del ancho y a partir de ahí scrollea solo. Con catorce columnas
-   llegó a ocupar 1460 de 1550px y dejó la pista en 90px — o sea, sin Gantt. */
+/* La grilla queda **anclada**: al desplazarse hacia la derecha para ver semanas
+   posteriores, los nombres de las tareas no se van de pantalla. Es lo que hace
+   cualquier planilla con las columnas congeladas.
+   No lleva scroll propio: si no entra, se apagan columnas o se angostan arrastrando
+   el borde — para eso están los dos controles de arriba. */
 .panel-izq {
-  flex: 0 1 auto; max-width: 62%; min-width: 0;
-  overflow-x: auto; border-right: 2px solid var(--borde);
+  flex: 0 0 auto;
+  position: sticky; left: 0; z-index: 3;
+  background: var(--panel);
+  border-right: 2px solid var(--borde);
+  /* Ancho fijo, no según el contenido: anclada y creciendo libre, con muchas
+     columnas la grilla llegó a 1580px y tapó el Gantt entero. Al 62% el timeline
+     siempre conserva su lugar, y la columna Tarea se estira para llenar lo que
+     sobre — así apagar columnas ensancha el título en vez de dejar aire. */
+  width: 62%;
+  overflow-x: auto;
 }
 /* Las filas no se encogen: si no entran, el panel scrollea y siguen alineadas
    con su encabezado. */
 .panel-izq .cabecera, .panel-izq .fila { width: max-content; min-width: 100%; }
-.panel-der { flex: 1 1 auto; overflow-x: auto; }
+.panel-der { flex: 0 0 auto; }
 
 .panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
 .panel-izq .cabecera { height: var(--cabecera); border-bottom: 1px solid var(--borde); color: var(--tenue); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; }
@@ -128,7 +143,10 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
   /* Ancho calculado en `gantt_vista.ancho_tarea` según el título más largo: con las
      filas en max-content, un `flex: 1 1 auto` se quedaba en su mínimo y cortaba los
      nombres. El tooltip cubre los que igual pasan el techo. */
-  flex: 0 0 var(--w-tarea, var(--ancho-tarea, 260px));
+  /* Se estira con lo que sobre; el valor del servidor es solo el punto de
+     partida, y arrastrar el borde lo pisa. */
+  flex: 1 1 var(--w-tarea, var(--ancho-tarea, 260px));
+  min-width: 120px;
   display: flex; align-items: center; gap: 2px;
 }
 .c-resp  { flex: 0 0 var(--w-resp, 88px); }

@@ -62,11 +62,12 @@ COLUMNAS = {
     "ambito": "Ámbito",
 }
 
-# Lo que se ve sin tocar nada. Deliberadamente **no son todas**: con las trece
-# encendidas la grilla mide más de 1400px y empuja el timeline fuera de la pantalla,
-# que es justamente el problema que este selector viene a resolver.
+# Lo que se ve sin tocar nada. Deliberadamente **no son todas**: la grilla queda
+# anclada a la izquierda, así que cada columna prendida es ancho que el Gantt pierde.
+# Este conjunto entra en el tope del panel sin scroll interno; Desvío, Estado, Peso,
+# Riesgo, Ámbito y Opt·Pes están a un clic en el selector.
 COLUMNAS_POR_DEFECTO = frozenset({
-    "resp", "pred", "dias", "inicio", "fin", "desvio", "avance", "estado",
+    "resp", "pred", "dias", "inicio", "fin", "avance",
 })
 
 
@@ -159,7 +160,7 @@ _TAREA_MINIMO = 260
 # títulos entren, no que entre el más largo. Pasado esto la columna sola se
 # comería el panel y dejaría el resto fuera de vista; para esos casos están el
 # tooltip y el arrastre del borde.
-_TAREA_MAXIMO = 440
+_TAREA_MAXIMO = 620
 
 
 def ancho_tarea(filas: list["Fila"]) -> int:

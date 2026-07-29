@@ -212,10 +212,13 @@ def test_un_titulo_largo_ensancha_la_columna():
 
 
 def test_el_ancho_tiene_techo():
-    """Sin tope, un título kilométrico se comería el panel y dejaría el resto afuera."""
-    from app.services.gantt_vista import ancho_tarea
+    """Es solo el punto de partida: después la columna se estira o se encoge con el
+    espacio que sobre en el panel. Sin tope, un título kilométrico pediría un ancho
+    absurdo y el resto de las columnas arrancarían aplastadas."""
+    from app.services.gantt_vista import COLUMNAS, ancho_tarea
 
-    assert ancho_tarea([_con_titulo("x" * 400)]) == 440
+    assert ancho_tarea([_con_titulo("x" * 400)]) == 620
+    assert "tarea" not in COLUMNAS  # no se puede apagar
 
 
 def test_la_sangria_cuenta_para_el_ancho():
