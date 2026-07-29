@@ -79,6 +79,9 @@ class Mirada:
     etapa: int | None = None
     color: str = POR_CRITICIDAD
     columnas: frozenset[str] = COLUMNAS_POR_DEFECTO
+    # Las flechas entre predecesoras son informativas pero con muchas
+    # dependencias tapan las barras; se apagan sin perder el dato.
+    flechas: bool = True
 
     @property
     def filtrada(self) -> bool:
@@ -99,6 +102,7 @@ class Mirada:
             etapa=self.etapa,
             color=self.color if self.color in MODOS_COLOR else POR_CRITICIDAD,
             columnas=frozenset(c for c in self.columnas if c in COLUMNAS),
+            flechas=self.flechas,
         )
 
 

@@ -16,10 +16,16 @@ dependencies = [
 dev = [
     "pytest==8.4.2",
     "httpx==0.28.1",
+    # Los controles de la interfaz no se pueden verificar pasando parámetros por URL:
+    # eso ejercita el servidor y saltea el control. Ver tests/navegador/.
+    "playwright==1.49.1",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "navegador: necesita un navegador; se saltea si no está instalado",
+]
 
 [build-system]
 requires = ["hatchling"]

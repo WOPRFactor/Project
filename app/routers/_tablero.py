@@ -23,12 +23,29 @@ from ..services.gantt_vista import Mirada
 from ..templating import templates
 
 
-def _armar(detalle: str, etapa: str, color: str, columnas: list[str] | None) -> Mirada:
+_PRENDIDO = {"1", "true", "on"}
+
+
+def _leer_flechas(crudo: list[str] | None) -> bool:
+    """Un checkbox sin tildar no se envía, así que el formulario manda además un
+    campo oculto en `0`. Llega como lista —`["0"]` apagado, `["0", "1"]` prendido—
+    y alcanza con que alguno venga prendido. Ausente del todo = prendidas, que es
+    el default de la vista y lo que ve quien entra por una URL pelada."""
+    if not crudo:
+        return True
+    return any(valor.strip() in _PRENDIDO for valor in crudo)
+
+
+def _armar(
+    detalle: str, etapa: str, color: str,
+    columnas: list[str] | None, flechas: list[str] | None,
+) -> Mirada:
     return Mirada(
         detalle=detalle,
         etapa=int(etapa) if etapa.strip().isdigit() and etapa.strip() != "0" else None,
         color=color,
         columnas=gantt_vista.leer_columnas(columnas),
+        flechas=_leer_flechas(flechas),
     ).normalizada()
 
 
@@ -37,9 +54,10 @@ def mirada_form(
     etapa: str = Form(""),
     color: str = Form(gantt_vista.POR_CRITICIDAD),
     columnas: list[str] | None = Form(None),
+    flechas: list[str] | None = Form(None),
 ) -> Mirada:
     """Para las mutaciones: la mirada llega como campos del formulario."""
-    return _armar(detalle, etapa, color, columnas)
+    return _armar(detalle, etapa, color, columnas, flechas)
 
 
 def mirada_query(
@@ -47,9 +65,10 @@ def mirada_query(
     etapa: str = Query(""),
     color: str = Query(gantt_vista.POR_CRITICIDAD),
     columnas: list[str] | None = Query(None),
+    flechas: list[str] | None = Query(None),
 ) -> Mirada:
     """Para la pantalla del proyecto: la mirada llega en la URL, así es compartible."""
-    return _armar(detalle, etapa, color, columnas)
+    return _armar(detalle, etapa, color, columnas, flechas)
 
 
 def contexto(session: Session, project_id: int, mirada: Mirada | None = None) -> dict:

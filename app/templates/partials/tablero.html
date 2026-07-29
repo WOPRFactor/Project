@@ -91,10 +91,9 @@
   {% endif %}
 {% endif %}
 
-{# La mirada viaja en cada request: hx-vals se hereda a todos los hijos, así una
-   edición no te devuelve a la vista por defecto perdiendo el filtro elegido. #}
-<div id="mirada-actual" hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}", "columnas": "{{ mirada.columnas_texto }}"}'>
-
+{# El formulario de la vista va FUERA del contenedor con `hx-vals`. Adentro, ese
+   hx-vals pisaba los valores del propio formulario y ninguno de estos controles
+   hacía nada: cada request salía con la mirada anterior. #}
 <form class="barra-vista" hx-get="/proyectos/{{ proyecto.id }}" hx-trigger="change"
       hx-target="#tablero" hx-select="#tablero" hx-swap="outerHTML">
   <label>Detalle
@@ -118,6 +117,14 @@
         <option value="{{ valor }}" {{ 'selected' if mirada.color == valor }}>{{ etiqueta }}</option>
       {% endfor %}
     </select>
+  </label>
+  <label class="interruptor" title="Con muchas dependencias las flechas tapan las barras">
+    {# El oculto en 0 es lo que hace que *apagarlas* se pueda mandar: un checkbox
+       sin tildar no viaja en el request y el servidor no distinguiría "apagado" de
+       "no vino". #}
+    <input type="hidden" name="flechas" value="0">
+    <input type="checkbox" name="flechas" value="1" {{ 'checked' if mirada.flechas }}>
+    Flechas
   </label>
   <details class="columnas-menu">
     <summary title="Con todas encendidas la grilla no deja lugar para el timeline">
@@ -147,6 +154,10 @@
     </span>
   {% endif %}
 </form>
+
+{# De acá para abajo van las mutaciones de la grilla: heredan la mirada por `hx-vals`
+   para que una edición no te devuelva a la vista por defecto. #}
+<div id="mirada-actual" hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}", "columnas": "{{ mirada.columnas_texto }}", "flechas": "{{ 1 if mirada.flechas else 0 }}"}'>
 
 <div class="barra-grilla">
   <button class="boton primario" hx-post="/proyectos/{{ proyecto.id }}/tareas/agregar"

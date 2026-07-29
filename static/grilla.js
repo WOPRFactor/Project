@@ -44,12 +44,26 @@
     }
   }
 
+  /* El ancho a mano se fija en dos variables, no en una: la columna Tarea es elástica
+     —crece y se encoge para repartir el espacio—, así que fijarle solo la base no
+     cambia nada en pantalla. `--elastico-` en 0 la deja quieta en el ancho pedido;
+     para las columnas de ancho fijo la variable no se usa y no molesta. */
+  function fijar(caja, col, ancho) {
+    caja.style.setProperty('--w-' + col, ancho + 'px');
+    caja.style.setProperty('--elastico-' + col, '0');
+  }
+
+  function soltarAncho(caja, col) {
+    caja.style.removeProperty('--w-' + col);
+    caja.style.removeProperty('--elastico-' + col);
+  }
+
   function aplicar() {
     var caja = panel();
     if (!caja) return;
     var anchos = guardados();
     Object.keys(anchos).forEach(function (col) {
-      caja.style.setProperty('--w-' + col, anchos[col] + 'px');
+      fijar(caja, col, anchos[col]);
     });
   }
 
@@ -57,7 +71,7 @@
     var caja = panel();
     if (caja) {
       Object.keys(guardados()).forEach(function (col) {
-        caja.style.removeProperty('--w-' + col);
+        soltarAncho(caja, col);
       });
     }
     guardar({});
@@ -85,7 +99,7 @@
 
     function mover(e) {
       actual = Math.max(MINIMO, Math.min(MAXIMO, inicial + (e.clientX - desde)));
-      caja.style.setProperty('--w-' + col, actual + 'px');
+      fijar(caja, col, actual);
     }
 
     function soltar() {
@@ -108,7 +122,7 @@
     var cabecera = tirador.closest('[data-col]');
     var caja = panel();
     if (!cabecera || !caja) return;
-    caja.style.removeProperty('--w-' + cabecera.dataset.col);
+    soltarAncho(caja, cabecera.dataset.col);
     var anchos = guardados();
     delete anchos[cabecera.dataset.col];
     guardar(anchos);

@@ -97,12 +97,23 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .chip.estado-pausado { border-color: var(--curso); color: var(--curso); }
 
 /* ---------- Gantt ---------- */
-/* Un solo scroll horizontal para todo el Gantt. Antes había dos pegados —uno de la
-   grilla y otro del timeline— y era muy fácil mover el equivocado. */
+/* Un solo scroll para todo el Gantt, en los dos ejes. Antes había dos barras
+   horizontales pegadas —una de la grilla y otra del timeline— y era muy fácil mover
+   la equivocada. Que el scroll vertical sea de acá y no de la página es lo que
+   permite dejar los encabezados fijos: son `sticky` contra este contenedor. */
 .gantt {
   display: flex; border: 1px solid var(--borde); border-radius: 10px;
-  overflow-x: auto; overflow-y: hidden; background: var(--panel); margin-bottom: 18px;
+  overflow: auto; background: var(--panel); margin-bottom: 18px;
+  max-height: calc(100vh - 150px);
 }
+
+/* Encabezados congelados: al bajar por las tareas del fondo no se pierde ni el
+   nombre de la columna ni la semana en la que cae cada barra. */
+.panel-izq .cabecera,
+.panel-der .cabecera-grilla {
+  position: sticky; top: 0; z-index: 4; background: var(--panel-alto);
+}
+.panel-izq .cabecera { z-index: 5; }   /* la esquina, sobre las dos */
 /* Ancho fijo. Tiene que alcanzar para todas las columnas fijas (~615px) más la
    de Tarea; si se achica, el título se aplasta a cero. */
 /* La grilla queda **anclada**: al desplazarse hacia la derecha para ver semanas
@@ -143,9 +154,15 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
   /* Ancho calculado en `gantt_vista.ancho_tarea` según el título más largo: con las
      filas en max-content, un `flex: 1 1 auto` se quedaba en su mínimo y cortaba los
      nombres. El tooltip cubre los que igual pasan el techo. */
-  /* Se estira con lo que sobre; el valor del servidor es solo el punto de
-     partida, y arrastrar el borde lo pisa. */
-  flex: 1 1 var(--w-tarea, var(--ancho-tarea, 260px));
+  /* Elástica por defecto: se estira con lo que sobra y se achica si falta, con el
+     valor del servidor como punto de partida. Arrastrar el borde la vuelve rígida
+     —`grilla.js` pone `--elastico-tarea: 0` junto con el ancho—, porque si sigue
+     creciendo y encogiendo el reparto del espacio recalcula el ancho y el arrastre
+     no se nota. Rígida y sin lugar, la grilla scrollea: es lo que el usuario pidió
+     al ensancharla. */
+  flex-grow: var(--elastico-tarea, 1);
+  flex-shrink: var(--elastico-tarea, 1);
+  flex-basis: var(--w-tarea, var(--ancho-tarea, 260px));
   min-width: 120px;
   display: flex; align-items: center; gap: 2px;
 }

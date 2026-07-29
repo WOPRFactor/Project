@@ -390,3 +390,48 @@ def test_la_eleccion_de_columnas_sobrevive_a_una_edicion(cliente):
 
     assert 'name="duracion"' in respuesta.text
     assert 'name="responsable"' not in respuesta.text
+
+
+# --- flechas de dependencia ---
+# Un checkbox sin tildar no viaja en el request. Si el servidor tomara "no vino" como
+# "no la tocó", apagar las flechas sería imposible desde la pantalla: por eso el
+# formulario manda además un campo oculto en 0 y acá se prueban las tres formas.
+
+def _proyecto_encadenado(cliente):
+    crear_proyecto(cliente, "Obra")
+    cliente.post("/proyectos/1/pegar", data={"texto": "Relevamiento   5\nAnalisis   3"})
+    cliente.post(
+        "/proyectos/1/tareas/2/celda",
+        data={"codigo": "2", "titulo": "Analisis", "duracion": "3", "predecesoras": "1"},
+    )
+
+
+def test_las_flechas_se_dibujan_por_defecto(cliente):
+    _proyecto_encadenado(cliente)
+
+    assert 'class="conexion' in cliente.get("/proyectos/1").text
+
+
+def test_el_oculto_en_cero_apaga_las_flechas(cliente):
+    _proyecto_encadenado(cliente)
+
+    # Lo que manda el formulario con el interruptor destildado.
+    assert 'class="conexion' not in cliente.get("/proyectos/1?flechas=0").text
+
+
+def test_tildado_manda_el_oculto_y_el_checkbox(cliente):
+    _proyecto_encadenado(cliente)
+
+    # Prendido viajan los dos campos; alcanza con que uno venga prendido.
+    assert 'class="conexion' in cliente.get("/proyectos/1?flechas=0&flechas=1").text
+
+
+def test_apagadas_sobreviven_a_una_edicion(cliente):
+    _proyecto_encadenado(cliente)
+
+    respuesta = cliente.post(
+        "/proyectos/1/tareas/1/celda",
+        data={"codigo": "1", "titulo": "Relevamiento", "duracion": "6", "flechas": "0"},
+    )
+
+    assert 'class="conexion' not in respuesta.text
