@@ -44,6 +44,31 @@ MODOS_COLOR = {
     POR_AVANCE: "Avance",
 }
 
+# Columnas opcionales de la grilla. WBS y Tarea no están acá porque no se pueden
+# apagar: sin ellas la fila no se puede identificar ni referenciar.
+COLUMNAS = {
+    "resp": "Resp.",
+    "pred": "Predec.",
+    "dias": "Días",
+    "rango": "Opt · Pes",
+    "inicio": "Inicio",
+    "fin": "Fin",
+    "desvio": "Desvío",
+    "crit": "Crít.",
+    "peso": "Peso",
+    "avance": "Avance",
+    "riesgo": "Riesgo",
+    "estado": "Estado",
+    "ambito": "Ámbito",
+}
+
+# Lo que se ve sin tocar nada. Deliberadamente **no son todas**: con las trece
+# encendidas la grilla mide más de 1400px y empuja el timeline fuera de la pantalla,
+# que es justamente el problema que este selector viene a resolver.
+COLUMNAS_POR_DEFECTO = frozenset({
+    "resp", "pred", "dias", "inicio", "fin", "desvio", "avance", "estado",
+})
+
 
 @dataclass(frozen=True)
 class Mirada:
@@ -52,10 +77,19 @@ class Mirada:
     detalle: str = TODO
     etapa: int | None = None
     color: str = POR_CRITICIDAD
+    columnas: frozenset[str] = COLUMNAS_POR_DEFECTO
 
     @property
     def filtrada(self) -> bool:
         return self.detalle != TODO or self.etapa is not None
+
+    def ve(self, columna: str) -> bool:
+        return columna in self.columnas
+
+    @property
+    def columnas_texto(self) -> str:
+        """Para que la mirada viaje en un `hx-vals` y vuelva igual."""
+        return ",".join(sorted(self.columnas))
 
     def normalizada(self) -> "Mirada":
         """Lo que llega del formulario no se toma como viene."""
@@ -63,7 +97,18 @@ class Mirada:
             detalle=self.detalle if self.detalle in DETALLES else TODO,
             etapa=self.etapa,
             color=self.color if self.color in MODOS_COLOR else POR_CRITICIDAD,
+            columnas=frozenset(c for c in self.columnas if c in COLUMNAS),
         )
+
+
+def leer_columnas(crudo: list[str] | None) -> frozenset[str]:
+    """Acepta las dos formas en que llegan: repetidas (checkboxes) o separadas por
+    coma (el `hx-vals` que viaja en cada mutación). Ausente = las de por defecto;
+    presente y vacío = solo WBS y Tarea, que es una elección válida."""
+    if crudo is None:
+        return COLUMNAS_POR_DEFECTO
+    partes = [p.strip() for valor in crudo for p in valor.split(",") if p.strip()]
+    return frozenset(p for p in partes if p in COLUMNAS)
 
 
 def filtrar(filas: list["Fila"], mirada: Mirada) -> list["Fila"]:

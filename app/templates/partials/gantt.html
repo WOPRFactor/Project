@@ -7,19 +7,19 @@
     <div class="cabecera">
       <span class="c-cod">WBS</span>
       <span class="c-tarea">Tarea</span>
-      <span class="c-resp">Resp.</span>
-      <span class="c-pred">Predec.</span>
-      <span class="c-dias" title="Duración probable">Días</span>
-      <span class="c-rango" title="Optimista y pesimista: opcionales">Opt · Pes</span>
-      <span class="c-fecha">Inicio</span>
-      <span class="c-fecha">Fin</span>
-      {% if linea_base %}<span class="c-desvio" title="Contra «{{ linea_base.nombre }}». Positivo = tarde">Desvío</span>{% endif %}
-      <span class="c-crit">Crít.</span>
-      <span class="c-peso" title="% del padre. Vacío = se reparte solo">Peso</span>
-      <span class="c-avance" title="Avance real. El estado lo sugiere, vos lo confirmás">Avance</span>
-      <span class="c-riesgo" title="¿Esta tarea tiene riesgos?">Riesgo</span>
-      <span class="c-estado">Estado</span>
-      <span class="c-ambito">Ámbito</span>
+      {% if mirada.ve("resp") %}<span class="c-resp">Resp.</span>{% endif %}
+      {% if mirada.ve("pred") %}<span class="c-pred">Predec.</span>{% endif %}
+      {% if mirada.ve("dias") %}<span class="c-dias" title="Duración probable">Días</span>{% endif %}
+      {% if mirada.ve("rango") %}<span class="c-rango" title="Optimista y pesimista: opcionales">Opt · Pes</span>{% endif %}
+      {% if mirada.ve("inicio") %}<span class="c-fecha">Inicio</span>{% endif %}
+      {% if mirada.ve("fin") %}<span class="c-fecha">Fin</span>{% endif %}
+      {% if linea_base and mirada.ve("desvio") %}<span class="c-desvio" title="Contra «{{ linea_base.nombre }}». Positivo = tarde">Desvío</span>{% endif %}
+      {% if mirada.ve("crit") %}<span class="c-crit">Crít.</span>{% endif %}
+      {% if mirada.ve("peso") %}<span class="c-peso" title="% del padre. Vacío = se reparte solo">Peso</span>{% endif %}
+      {% if mirada.ve("avance") %}<span class="c-avance" title="Avance real. El estado lo sugiere, vos lo confirmás">Avance</span>{% endif %}
+      {% if mirada.ve("riesgo") %}<span class="c-riesgo" title="¿Esta tarea tiene riesgos?">Riesgo</span>{% endif %}
+      {% if mirada.ve("estado") %}<span class="c-estado">Estado</span>{% endif %}
+      {% if mirada.ve("ambito") %}<span class="c-ambito">Ámbito</span>{% endif %}
       <span class="c-ops"></span>
     </div>
 
@@ -37,6 +37,7 @@
           <input id="tit-{{ t.id }}" name="titulo" value="{{ t.titulo }}" maxlength="200"
                  class="celda {{ 'negrita' if fila.es_resumen }}" autocomplete="off" required>
         </span>
+        {% if mirada.ve("resp") %}
         <span class="c-resp">
           {# Texto libre con autocompletado, no un desplegable: obligar a dar de alta
              a la persona antes de escribirla se abandona a la tercera fila. El
@@ -46,12 +47,16 @@
                  maxlength="120" class="celda" autocomplete="off"
                  title="Escribí un nombre; se une solo con los que ya existen">
         </span>
+        {% endif %}
+        {% if mirada.ve("pred") %}
         <span class="c-pred">
           <input id="pre-{{ t.id }}" name="predecesoras" value="{{ fila.predecesoras_texto }}"
                  class="celda mono" autocomplete="off" placeholder="—"
                  title="Códigos separados por coma. 1.3 · 1.3+2 espera 2 días · 1.3-1 solapa 1"
                  {{ 'disabled' if fila.es_resumen }}>
         </span>
+        {% endif %}
+        {% if mirada.ve("dias") %}
         <span class="c-dias">
           {% if fila.es_resumen %}
             <span class="celda calculada">—</span>
@@ -60,6 +65,8 @@
                    min="0" max="3650" class="celda mono" title="0 = hito">
           {% endif %}
         </span>
+        {% endif %}
+        {% if mirada.ve("rango") %}
         <span class="c-rango">
           {% if fila.es_resumen or fila.es_hito %}
             <span class="celda calculada">—</span>
@@ -74,6 +81,8 @@
                    title="Peor caso, en días hábiles">
           {% endif %}
         </span>
+        {% endif %}
+        {% if mirada.ve("inicio") %}
         <span class="c-fecha">
           {% if fila.es_resumen or fila.tiene_predecesoras %}
             <span class="celda calculada"
@@ -84,8 +93,9 @@
                    title="Sin predecesoras: la fecha la ponés vos">
           {% endif %}
         </span>
-        <span class="c-fecha"><span class="celda calculada">{{ fila.fin | fecha }}</span></span>
-        {% if linea_base %}
+        {% endif %}
+        {% if mirada.ve("fin") %}<span class="c-fecha"><span class="celda calculada">{{ fila.fin | fecha }}</span></span>{% endif %}
+        {% if linea_base and mirada.ve("desvio") %}
           <span class="c-desvio">
             {% if fila.es_nueva %}
               <span class="celda calculada nueva" title="No estaba en la línea base: es alcance nuevo, no un atraso">nueva</span>
@@ -97,6 +107,7 @@
             {% endif %}
           </span>
         {% endif %}
+        {% if mirada.ve("crit") %}
         <span class="c-crit">
           <select id="cri-{{ t.id }}" name="critica"
                   class="celda {{ 'es-critica' if t.critica }}"
@@ -105,6 +116,8 @@
             <option value="1" {{ 'selected' if t.critica }}>Sí</option>
           </select>
         </span>
+        {% endif %}
+        {% if mirada.ve("peso") %}
         <span class="c-peso">
           <input id="pso-{{ t.id }}" name="peso" type="number" min="0" max="100"
                  value="{{ t.peso if t.peso is not none }}" placeholder="auto"
@@ -112,6 +125,8 @@
                  title="Peso dentro de su nivel, en %. Vacío = se reparte lo que sobre. Sobre el proyecto entero vale {{ '%.1f' % fila.peso_absoluto }}%.">
           <span class="peso-abs" aria-hidden="true">{{ '%.1f' % fila.peso_absoluto }}</span>
         </span>
+        {% endif %}
+        {% if mirada.ve("avance") %}
         <span class="c-avance">
           {% if fila.es_resumen %}
             <span class="celda calculada">—</span>
@@ -121,6 +136,8 @@
                    title="Avance real en %. Cambiar el estado lo sugiere; si lo escribís vos, manda lo tuyo.{% if t.fin_real %} Terminada el {{ t.fin_real | fecha }}.{% endif %}">
           {% endif %}
         </span>
+        {% endif %}
+        {% if mirada.ve("riesgo") %}
         <span class="c-riesgo">
           {# Fuera del form de la fila a propósito: tildar no guarda la fila, crea o
              saca un riesgo, y destildar con contenido cargado se rechaza. #}
@@ -133,6 +150,8 @@
             {{ '⚠' if fila.tiene_riesgo else '·' }}
           </button>
         </span>
+        {% endif %}
+        {% if mirada.ve("estado") %}
         <span class="c-estado">
           <select id="est-{{ t.id }}" name="estado_id"
                   class="celda color-{{ fila.estado.color.value if fila.estado else 'gris' }}"
@@ -142,6 +161,8 @@
             {% endfor %}
           </select>
         </span>
+        {% endif %}
+        {% if mirada.ve("ambito") %}
         <span class="c-ambito">
           <select id="amb-{{ t.id }}" name="ambito" class="celda ambito-{{ t.ambito.value }}"
                   title="En qué contador suma. No cambia el cálculo, solo el reporte."
@@ -151,6 +172,7 @@
             {% endfor %}
           </select>
         </span>
+        {% endif %}
         <span class="c-ops">
           <button type="button" class="icono" title="Insertar fila debajo"
                   hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ t.id }}/insertar"

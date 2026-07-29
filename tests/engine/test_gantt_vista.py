@@ -138,3 +138,58 @@ def test_el_avance_pintado_es_el_real_de_la_tarea():
     """No el sugerido por el estado: el estado sugiere, la tarea manda."""
     assert avance(fila(1, est=estado(sugerido=100), avance_real=40)) == 40
     assert avance(fila(1)) == 0
+
+
+# --- columnas visibles ---
+
+def test_por_defecto_no_estan_todas_prendidas():
+    """Con las trece la grilla mide más de 1400px y deja el timeline sin lugar."""
+    from app.services.gantt_vista import COLUMNAS, COLUMNAS_POR_DEFECTO
+
+    assert COLUMNAS_POR_DEFECTO < set(COLUMNAS)
+    assert "resp" in COLUMNAS_POR_DEFECTO and "fin" in COLUMNAS_POR_DEFECTO
+
+
+def test_sin_parametro_se_usan_las_de_por_defecto():
+    from app.services.gantt_vista import COLUMNAS_POR_DEFECTO, leer_columnas
+
+    assert leer_columnas(None) == COLUMNAS_POR_DEFECTO
+
+
+def test_lista_vacia_es_una_eleccion_valida():
+    """Dejar solo WBS y Tarea es legítimo; no es lo mismo que no haber elegido."""
+    from app.services.gantt_vista import leer_columnas
+
+    assert leer_columnas([]) == frozenset()
+
+
+def test_acepta_checkboxes_repetidos():
+    from app.services.gantt_vista import leer_columnas
+
+    assert leer_columnas(["resp", "dias"]) == frozenset({"resp", "dias"})
+
+
+def test_acepta_la_forma_separada_por_coma_del_hx_vals():
+    from app.services.gantt_vista import leer_columnas
+
+    assert leer_columnas(["resp,dias,fin"]) == frozenset({"resp", "dias", "fin"})
+
+
+def test_una_columna_inventada_se_descarta():
+    from app.services.gantt_vista import leer_columnas
+
+    assert leer_columnas(["resp", "'; DROP TABLE"]) == frozenset({"resp"})
+
+
+def test_la_mirada_sabe_que_columna_mostrar():
+    from app.services.gantt_vista import Mirada
+
+    mirada = Mirada(columnas=frozenset({"dias"}))
+    assert mirada.ve("dias") and not mirada.ve("peso")
+
+
+def test_las_columnas_viajan_y_vuelven_igual():
+    from app.services.gantt_vista import Mirada, leer_columnas
+
+    original = Mirada(columnas=frozenset({"fin", "dias", "resp"}))
+    assert leer_columnas([original.columnas_texto]) == original.columnas

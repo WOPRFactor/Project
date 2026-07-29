@@ -350,3 +350,43 @@ def test_una_fecha_de_arranque_invalida_no_rompe(cliente):
     assert respuesta.status_code == 200
     assert "no es válida" in respuesta.text
     assert "Traceback" not in respuesta.text
+
+
+# --- columnas de la grilla ---
+# El Gantt había desaparecido de la pantalla: la grilla creció a catorce columnas y
+# empujó la pista del timeline fuera del ancho útil. El ancho se arregla en CSS, pero
+# lo que evita que vuelva a pasar es poder apagar columnas — y eso sí se testea.
+
+def test_la_grilla_muestra_solo_las_columnas_elegidas(cliente):
+    crear_proyecto(cliente, "Obra")
+    cliente.post("/proyectos/1/pegar", data={"texto": "Relevamiento   5"})
+
+    respuesta = cliente.get("/proyectos/1?columnas=dias&columnas=fin")
+
+    assert 'name="duracion"' in respuesta.text
+    assert 'name="responsable"' not in respuesta.text
+    assert 'name="peso"' not in respuesta.text
+
+
+def test_por_defecto_no_se_muestran_todas(cliente):
+    crear_proyecto(cliente, "Obra")
+    cliente.post("/proyectos/1/pegar", data={"texto": "Relevamiento   5"})
+
+    respuesta = cliente.get("/proyectos/1")
+
+    assert 'name="responsable"' in respuesta.text   # una de las de por defecto
+    assert 'name="peso"' not in respuesta.text      # una de las opcionales
+
+
+def test_la_eleccion_de_columnas_sobrevive_a_una_edicion(cliente):
+    crear_proyecto(cliente, "Obra")
+    cliente.post("/proyectos/1/pegar", data={"texto": "Relevamiento   5"})
+
+    respuesta = cliente.post(
+        "/proyectos/1/tareas/1/celda",
+        data={"codigo": "1", "titulo": "Relevamiento", "duracion": "5",
+              "columnas": "dias,fin"},
+    )
+
+    assert 'name="duracion"' in respuesta.text
+    assert 'name="responsable"' not in respuesta.text

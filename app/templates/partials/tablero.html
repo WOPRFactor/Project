@@ -93,7 +93,7 @@
 
 {# La mirada viaja en cada request: hx-vals se hereda a todos los hijos, así una
    edición no te devuelve a la vista por defecto perdiendo el filtro elegido. #}
-<div id="mirada-actual" hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}"}'>
+<div id="mirada-actual" hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}", "columnas": "{{ mirada.columnas_texto }}"}'>
 
 <form class="barra-vista" hx-get="/proyectos/{{ proyecto.id }}" hx-trigger="change"
       hx-target="#tablero" hx-select="#tablero" hx-swap="outerHTML">
@@ -119,6 +119,24 @@
       {% endfor %}
     </select>
   </label>
+  <details class="columnas-menu">
+    <summary title="Con todas encendidas la grilla no deja lugar para el timeline">
+      Columnas ({{ mirada.columnas | length }} de {{ columnas_disponibles | length }})
+    </summary>
+    <div class="columnas-lista">
+      {% for clave, etiqueta in columnas_disponibles.items() %}
+        <label class="{{ 'apagada' if clave == 'desvio' and not linea_base }}">
+          <input type="checkbox" name="columnas" value="{{ clave }}"
+                 {{ 'checked' if mirada.ve(clave) }}>
+          {{ etiqueta }}{% if clave == 'desvio' and not linea_base %} <i class="tenue">(sin línea base)</i>{% endif %}
+        </label>
+      {% endfor %}
+      <p class="pie tenue">
+        WBS y Tarea no se pueden apagar. Cuantas menos prendas, más ancho le queda
+        al Gantt.
+      </p>
+    </div>
+  </details>
   {% if mirada.filtrada %}
     <span class="tenue filtrando">
       Mostrando {{ filas | length }} de {{ todas_las_filas | length }} filas.

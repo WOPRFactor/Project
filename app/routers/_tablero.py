@@ -23,11 +23,12 @@ from ..services.gantt_vista import Mirada
 from ..templating import templates
 
 
-def _armar(detalle: str, etapa: str, color: str) -> Mirada:
+def _armar(detalle: str, etapa: str, color: str, columnas: list[str] | None) -> Mirada:
     return Mirada(
         detalle=detalle,
         etapa=int(etapa) if etapa.strip().isdigit() and etapa.strip() != "0" else None,
         color=color,
+        columnas=gantt_vista.leer_columnas(columnas),
     ).normalizada()
 
 
@@ -35,18 +36,20 @@ def mirada_form(
     detalle: str = Form(gantt_vista.TODO),
     etapa: str = Form(""),
     color: str = Form(gantt_vista.POR_CRITICIDAD),
+    columnas: list[str] | None = Form(None),
 ) -> Mirada:
     """Para las mutaciones: la mirada llega como campos del formulario."""
-    return _armar(detalle, etapa, color)
+    return _armar(detalle, etapa, color, columnas)
 
 
 def mirada_query(
     detalle: str = Query(gantt_vista.TODO),
     etapa: str = Query(""),
     color: str = Query(gantt_vista.POR_CRITICIDAD),
+    columnas: list[str] | None = Query(None),
 ) -> Mirada:
     """Para la pantalla del proyecto: la mirada llega en la URL, así es compartible."""
-    return _armar(detalle, etapa, color)
+    return _armar(detalle, etapa, color, columnas)
 
 
 def contexto(session: Session, project_id: int, mirada: Mirada | None = None) -> dict:
@@ -65,6 +68,7 @@ def contexto(session: Session, project_id: int, mirada: Mirada | None = None) ->
         "mirada": mirada,
         "detalles": gantt_vista.DETALLES,
         "modos_color": gantt_vista.MODOS_COLOR,
+        "columnas_disponibles": gantt_vista.COLUMNAS,
         "grilla": datos.grilla,
         "columna_hoy": datos.columna_hoy,
         "estados": datos.estados,

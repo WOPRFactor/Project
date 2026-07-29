@@ -100,7 +100,16 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .gantt { display: flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; background: var(--panel); margin-bottom: 18px; }
 /* Ancho fijo. Tiene que alcanzar para todas las columnas fijas (~615px) más la
    de Tarea; si se achica, el título se aplasta a cero. */
-.panel-izq { flex: 0 0 1460px; max-width: 1460px; border-right: 2px solid var(--borde); }
+/* El panel de la grilla NUNCA se come el timeline: crece con sus columnas pero se
+   frena en el 62% del ancho y a partir de ahí scrollea solo. Con catorce columnas
+   llegó a ocupar 1460 de 1550px y dejó la pista en 90px — o sea, sin Gantt. */
+.panel-izq {
+  flex: 0 1 auto; max-width: 62%; min-width: 0;
+  overflow-x: auto; border-right: 2px solid var(--borde);
+}
+/* Las filas no se encogen: si no entran, el panel scrollea y siguen alineadas
+   con su encabezado. */
+.panel-izq .cabecera, .panel-izq .fila { width: max-content; min-width: 100%; }
 .panel-der { flex: 1 1 auto; overflow-x: auto; }
 
 .panel-izq .cabecera, .panel-izq .fila { display: flex; align-items: center; gap: 4px; padding: 0 8px; }
@@ -505,3 +514,21 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 }
 
 .fila-estado.sin-asignar { background: rgba(245, 181, 68, .06); }
+
+/* Selector de columnas: <details> nativo, sin una línea de JS. */
+.columnas-menu { position: relative; }
+.columnas-menu summary {
+  cursor: pointer; padding: 3px 8px; border: 1px solid var(--borde);
+  border-radius: 6px; background: var(--panel-alto); list-style: none;
+}
+.columnas-menu summary::-webkit-details-marker { display: none; }
+.columnas-menu summary:hover { border-color: var(--acento); }
+.columnas-lista {
+  position: absolute; z-index: 20; top: 110%; left: 0; width: 230px;
+  display: flex; flex-direction: column; gap: 3px; padding: 10px;
+  background: var(--panel-alto); border: 1px solid var(--borde);
+  border-radius: 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+}
+.columnas-lista label { display: flex; align-items: center; gap: 6px; font-size: .82rem; }
+.columnas-lista label.apagada { color: var(--tenue); }
+.columnas-lista .pie { margin: 6px 0 0; }
