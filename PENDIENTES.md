@@ -40,15 +40,28 @@ el plan de respuesta (evitar / mitigar / transferir / aceptar), riesgo residual
 fecha de revisión, o vincular el riesgo a una tarea de mitigación del cronograma.
 **No arrancar sin definirlo con él.**
 
-**3. No se pueden prender columnas desde el selector** (bug mío, ya diagnosticado).
-El `hx-vals` de `#mirada-actual` —que existe para que la vista sobreviva a cada
-edición— **pisa** los checkboxes del formulario: el request sale con el conjunto viejo
-y la columna nueva nunca llega. Reproducido en el navegador: al tildar «Peso» se envía
-`columnas=avance,dias,fin,inicio,pred,resp`, sin `peso`.
-*Arreglo:* sacar `columnas` del `hx-vals` heredado y que el formulario de vista lo
-mande solo, o mover ese formulario fuera del contenedor con `hx-vals`. Es chico.
-*Por qué se me pasó:* verifiqué el filtro por URL (`?columnas=...`), que ejercita el
-servidor pero saltea el control. **El test que falta es el que toca el checkbox.**
+**3. La barra de vista entera no funciona** (bug mío, más grande de lo que parecía).
+Ariel lo reportó por las columnas, pero al verificarlo aparecieron los cuatro
+controles rotos: **Detalle, Etapa, Color y Columnas**. Ninguno hace nada desde la
+interfaz.
+
+*Causa única:* el `hx-vals` de `#mirada-actual` —puesto para que la vista sobreviva a
+cada edición— **pisa los valores del formulario que tiene adentro**. Todo request sale
+con lo que ya estaba: `detalle=todo&etapa=0&color=criticidad&columnas=<las de antes>`,
+sin importar qué elijas.
+
+*Reproducido en el navegador:* elegir «Solo etapas» sigue mostrando las 5 filas;
+elegir color «Estado» vuelve a «Criticidad»; tildar «Peso» manda el conjunto viejo.
+
+*Arreglo:* sacar el formulario de vista de adentro del contenedor con `hx-vals`, o
+dejar el `hx-vals` solo para las mutaciones de la grilla. Un cambio, los cuatro
+controles. Chico.
+
+*Por qué se me pasó:* verifiqué la Fase 22 pasando los parámetros por URL
+(`?detalle=etapas&color=estado`), que ejercita el servidor y saltea la interfaz. **La
+lógica está bien y tiene tests; lo que nunca se probó fue el control.** Falta al menos
+un test que haga clic de verdad — hoy el repo no tiene tests con navegador, y esta es
+la razón concreta para sumarlos.
 
 **4. Poder apagar las flechas de dependencias** (pedido). Van como un control más de
 la mirada, al lado de Detalle / Etapa / Color, viajando en la URL igual que el resto.
