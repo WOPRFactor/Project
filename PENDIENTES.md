@@ -26,6 +26,34 @@ crecido tanto que tapaba el timeline; al arreglarlo se cortaron los títulos; al
 arreglar eso aparecieron dos barras de scroll. Los tres cerrados y medidos en el
 navegador.
 
+## Lo que marcó Ariel para mañana
+
+**1. Se pierden los nombres de las columnas al bajar** (bug). El encabezado de la
+grilla se va con el scroll vertical. Falta `position: sticky` en la cabecera, en las
+dos mitades — la de la grilla y la del timeline (meses y semanas), o al bajar tampoco
+se sabe qué semana es cada barra.
+
+**2. Riesgos: revisar la sección más a fondo** (a definir con Ariel). Hoy tiene
+registro, cuadrante 5×5 y el tilde en la grilla. Falta charlar qué le falta: puede ser
+el plan de respuesta (evitar / mitigar / transferir / aceptar), riesgo residual
+—probabilidad e impacto *después* de mitigar, que es lo que se reporta—, disparadores,
+fecha de revisión, o vincular el riesgo a una tarea de mitigación del cronograma.
+**No arrancar sin definirlo con él.**
+
+**3. No se pueden prender columnas desde el selector** (bug mío, ya diagnosticado).
+El `hx-vals` de `#mirada-actual` —que existe para que la vista sobreviva a cada
+edición— **pisa** los checkboxes del formulario: el request sale con el conjunto viejo
+y la columna nueva nunca llega. Reproducido en el navegador: al tildar «Peso» se envía
+`columnas=avance,dias,fin,inicio,pred,resp`, sin `peso`.
+*Arreglo:* sacar `columnas` del `hx-vals` heredado y que el formulario de vista lo
+mande solo, o mover ese formulario fuera del contenedor con `hx-vals`. Es chico.
+*Por qué se me pasó:* verifiqué el filtro por URL (`?columnas=...`), que ejercita el
+servidor pero saltea el control. **El test que falta es el que toca el checkbox.**
+
+**4. Poder apagar las flechas de dependencias** (pedido). Van como un control más de
+la mirada, al lado de Detalle / Etapa / Color, viajando en la URL igual que el resto.
+Chico: las flechas ya se calculan aparte en `vista._flechas`.
+
 ## Lo primero que conviene mirar
 
 1. **Abrí tu proyecto y mirá el Gantt.** Es lo que estuvimos arreglando y no lo viste
