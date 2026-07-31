@@ -140,19 +140,60 @@
     }
   });
 
-  /* Foco: se recuerda antes del swap y se devuelve después. */
+  /* Foco y scroll: cada cambio repinta el tablero entero y el navegador pierde
+     dónde estabas — borrar una fila saltaba de lugar y el timeline volvía al
+     arranque en cada edición. Se guardan antes del swap y se devuelven después. */
   var ultimaCelda = null;
+  var scrollGuardado = null;
   document.addEventListener('htmx:beforeSwap', function () {
     ultimaCelda = document.activeElement && document.activeElement.id;
+    var gantt = document.querySelector('.gantt');
+    var izq = panel();
+    scrollGuardado = {
+      pagina: window.scrollY,
+      gantt: gantt ? gantt.scrollLeft : 0,
+      grilla: izq ? izq.scrollLeft : 0,
+    };
   });
   document.addEventListener('htmx:afterSwap', function () {
     aplicar();
+    if (scrollGuardado) {
+      window.scrollTo(window.scrollX, scrollGuardado.pagina);
+      var gantt = document.querySelector('.gantt');
+      if (gantt) gantt.scrollLeft = scrollGuardado.gantt;
+      var izq = panel();
+      if (izq) izq.scrollLeft = scrollGuardado.grilla;
+    }
     var celda = ultimaCelda && document.getElementById(ultimaCelda);
     if (celda) {
-      celda.focus();
+      celda.focus({ preventScroll: true });
       if (celda.select) celda.select();
     }
+    fijarCabeceras();
   });
 
-  document.addEventListener('DOMContentLoaded', aplicar);
+  /* Cabeceras a la vista al bajar: `position: sticky` acá no puede — viven dentro
+     de contenedores con scroll horizontal (.gantt y .panel-izq), y cualquier
+     overflow distinto de visible se captura el sticky para sí. Se corrige a mano
+     con translateY, clavado al scroll de la página. */
+  function fijarCabeceras() {
+    var gantt = document.querySelector('.gantt');
+    if (!gantt) return;
+    var caja = gantt.getBoundingClientRect();
+    var corrimiento = Math.max(0, Math.min(-caja.top, caja.height - 160));
+    ['.panel-izq .cabecera', '.cabecera-grilla'].forEach(function (selector) {
+      var cabecera = document.querySelector(selector);
+      if (cabecera) {
+        cabecera.style.transform =
+          corrimiento > 0 ? 'translateY(' + corrimiento + 'px)' : '';
+      }
+    });
+  }
+  document.addEventListener('scroll', fijarCabeceras, { passive: true });
+  window.addEventListener('resize', fijarCabeceras);
+
+  document.addEventListener('DOMContentLoaded', function () {
+    aplicar();
+    fijarCabeceras();
+  });
 })();

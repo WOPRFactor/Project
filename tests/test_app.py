@@ -195,9 +195,45 @@ def test_colapsar_una_etapa_oculta_sus_hijas_y_sobrevive_la_edicion(cliente):
     )
     assert "Subtarea escondible" not in respuesta.text
 
-    # Y sin plegar, la subtarea está.
-    completa = cliente.get("/proyectos/1")
+    # Volver al proyecto con un link pelado retoma la vista plegada guardada.
+    guardada = cliente.get("/proyectos/1")
+    assert "Subtarea escondible" not in guardada.text
+
+    # Y desplegar explícitamente la muestra de nuevo.
+    completa = cliente.get("/proyectos/1", params={"colapsadas": ""})
     assert "Subtarea escondible" in completa.text
+
+
+def test_la_vista_elegida_se_retoma_al_volver_al_proyecto(cliente):
+    """Salir del proyecto (link pelado, sin parámetros) no resetea las columnas
+    ni el resto de la mirada: se guarda por proyecto y se retoma."""
+    crear_proyecto(cliente)
+    cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, titulo="Una tarea")
+
+    cliente.get("/proyectos/1", params={"columnas": ["crit"], "color": "estado"})
+
+    pagina = cliente.get("/proyectos/1")  # como volver desde la home o Equipo
+    assert 'data-col="crit"' in pagina.text
+    assert 'data-col="resp"' not in pagina.text  # las default no volvieron solas
+
+
+def test_las_flechas_del_timeline_se_pueden_apagar(cliente):
+    crear_proyecto(cliente)
+    for _ in range(2):
+        cliente.post("/proyectos/1/tareas/agregar")
+    celda(cliente, 1, codigo="1", titulo="A", duracion=3)
+    celda(cliente, 2, codigo="2", titulo="B", duracion=2, predecesoras="1")
+
+    con_flechas = cliente.get("/proyectos/1")
+    assert 'class="conexiones"' in con_flechas.text
+
+    sin_flechas = cliente.get("/proyectos/1", params={"flechas": "0"})
+    assert 'class="conexiones"' not in sin_flechas.text
+
+    # La elección queda guardada con el resto de la vista.
+    de_vuelta = cliente.get("/proyectos/1")
+    assert 'class="conexiones"' not in de_vuelta.text
 
 
 def test_agregar_a_un_proyecto_borrado_avisa_sin_crear_huerfanas(cliente):

@@ -25,7 +25,7 @@
 
     {% for fila in filas %}
       {% set t = fila.tarea %}
-      <form class="fila {{ 'resumen' if fila.es_resumen }} {{ 'terminada' if fila.estado and fila.estado.es_final }}"
+      <form class="fila {{ 'resumen' if fila.es_resumen }} {{ 'terminada' if fila.estado and fila.estado.es_final }} {{ 'critica' if t.critica }}"
             hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ t.id }}/celda"
             hx-trigger="change" hx-target="#tablero" hx-swap="innerHTML">
         <span class="c-cod">

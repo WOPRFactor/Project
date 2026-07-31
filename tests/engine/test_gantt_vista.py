@@ -126,6 +126,42 @@ def test_leer_colapsadas_descarta_lo_que_no_es_numero():
     assert leer_colapsadas("4, 12, '; DROP TABLE") == frozenset({4, 12})
 
 
+# --- la mirada serializada (última vista del proyecto) ---
+
+def test_la_mirada_viaja_a_texto_y_vuelve_igual():
+    from app.services.gantt_vista import mirada_a_texto, mirada_desde_texto
+
+    original = Mirada(
+        detalle=ETAPAS, etapa=3, color=POR_ESTADO,
+        columnas=frozenset({"crit", "peso"}), colapsadas=frozenset({4, 12}),
+    )
+    assert mirada_desde_texto(mirada_a_texto(original)) == original
+
+
+def test_columnas_vacias_guardadas_no_son_lo_mismo_que_defaults():
+    """«Solo WBS y Tarea» es una elección: guardarla y retomarla la respeta."""
+    from app.services.gantt_vista import mirada_a_texto, mirada_desde_texto
+
+    sin_columnas = mirada_desde_texto(mirada_a_texto(Mirada(columnas=frozenset())))
+    assert sin_columnas.columnas == frozenset()
+
+
+def test_las_flechas_apagadas_viajan_y_vuelven():
+    from app.services.gantt_vista import mirada_a_texto, mirada_desde_texto
+
+    sin = mirada_desde_texto(mirada_a_texto(Mirada(flechas=False)))
+    assert sin.flechas is False
+    assert mirada_desde_texto("").flechas is True  # sin dato, prendidas
+
+
+def test_un_texto_roto_cae_en_los_defaults():
+    from app.services.gantt_vista import mirada_desde_texto
+
+    assert mirada_desde_texto("") == Mirada()
+    assert mirada_desde_texto("basura sin formato ni =") == Mirada()
+    assert mirada_desde_texto("detalle=inventado&color=rgb(0,0,0)") == Mirada()
+
+
 # --- lo que llega del formulario no se toma como viene ---
 
 def test_un_detalle_invalido_cae_en_todo():

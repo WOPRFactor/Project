@@ -24,7 +24,12 @@ from ..templating import templates
 
 
 def _armar(
-    detalle: str, etapa: str, color: str, columnas: list[str] | None, colapsadas: str
+    detalle: str,
+    etapa: str,
+    color: str,
+    columnas: list[str] | None,
+    colapsadas: str,
+    flechas: list[str] | None,
 ) -> Mirada:
     return Mirada(
         detalle=detalle,
@@ -32,6 +37,8 @@ def _armar(
         color=color,
         columnas=gantt_vista.leer_columnas(columnas),
         colapsadas=gantt_vista.leer_colapsadas(colapsadas),
+        # Llega como lista por el par hidden("0") + checkbox("1"); ausente = prendidas.
+        flechas=flechas is None or "1" in flechas,
     ).normalizada()
 
 
@@ -41,9 +48,10 @@ def mirada_form(
     color: str = Form(gantt_vista.POR_CRITICIDAD),
     columnas: list[str] | None = Form(None),
     colapsadas: str = Form(""),
+    flechas: list[str] | None = Form(None),
 ) -> Mirada:
     """Para las mutaciones: la mirada llega como campos del formulario."""
-    return _armar(detalle, etapa, color, columnas, colapsadas)
+    return _armar(detalle, etapa, color, columnas, colapsadas, flechas)
 
 
 def mirada_query(
@@ -52,14 +60,18 @@ def mirada_query(
     color: str = Query(gantt_vista.POR_CRITICIDAD),
     columnas: list[str] | None = Query(None),
     colapsadas: str = Query(""),
+    flechas: list[str] | None = Query(None),
 ) -> Mirada:
     """Para la pantalla del proyecto: la mirada llega en la URL, así es compartible."""
-    return _armar(detalle, etapa, color, columnas, colapsadas)
+    return _armar(detalle, etapa, color, columnas, colapsadas, flechas)
 
 
 def contexto(session: Session, project_id: int, mirada: Mirada | None = None) -> dict:
-    mirada = mirada or Mirada()
     proyecto = projects_service.obtener(session, project_id)
+    if mirada is not None and proyecto is not None:
+        # La mirada explícita se recuerda: al volver al proyecto se retoma.
+        projects_service.guardar_vista(session, project_id, mirada)
+    mirada = mirada or Mirada()
     base = linea_base_service.fechas_base(session, project_id)
     datos = vista_service.armar(session, project_id, mirada=mirada, base=base)
     return {

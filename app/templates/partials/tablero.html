@@ -9,7 +9,7 @@
   <div class="resumen">
     <form class="dato editable" hx-post="/proyectos/{{ proyecto.id }}/inicio"
           hx-trigger="change" hx-target="#tablero" hx-swap="innerHTML"
-          hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}", "columnas": "{{ mirada.columnas_texto }}", "colapsadas": "{{ mirada.colapsadas_texto }}"}'>
+          hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}", "columnas": "{{ mirada.columnas_texto }}", "colapsadas": "{{ mirada.colapsadas_texto }}", "flechas": "{{ '1' if mirada.flechas else '0' }}"}'>
       <span class="etiqueta">Inicio del proyecto</span>
       <input id="inicio-proyecto" type="date" name="fecha_inicio"
              value="{{ proyecto.fecha_inicio.isoformat() }}"
@@ -123,6 +123,12 @@
       {% endfor %}
     </select>
   </label>
+  <label class="control-flechas" title="Las flechas de dependencias del timeline. Con muchas, apagarlas despeja el Gantt.">
+    {# El hidden garantiza que el parámetro viaje también destildado. #}
+    <input type="hidden" name="flechas" value="0">
+    <input type="checkbox" name="flechas" value="1" {{ 'checked' if mirada.flechas }}>
+    Flechas
+  </label>
   <details class="columnas-menu">
     <summary title="Con todas encendidas la grilla no deja lugar para el timeline">
       Columnas ({{ mirada.columnas | length }} de {{ columnas_disponibles | length }})
@@ -154,7 +160,7 @@
 
 {# La mirada viaja en cada mutación: hx-vals se hereda a todos los hijos, así una
    edición no te devuelve a la vista por defecto perdiendo el filtro elegido. #}
-<div id="mirada-actual" hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}", "columnas": "{{ mirada.columnas_texto }}", "colapsadas": "{{ mirada.colapsadas_texto }}"}'>
+<div id="mirada-actual" hx-vals='{"detalle": "{{ mirada.detalle }}", "etapa": "{{ mirada.etapa or 0 }}", "color": "{{ mirada.color }}", "columnas": "{{ mirada.columnas_texto }}", "colapsadas": "{{ mirada.colapsadas_texto }}", "flechas": "{{ '1' if mirada.flechas else '0' }}"}'>
 
 <div class="barra-grilla">
   <button class="boton primario" hx-post="/proyectos/{{ proyecto.id }}/tareas/agregar"

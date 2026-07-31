@@ -187,7 +187,11 @@ def armar(
         ),
         niveles_abiertos=resumen_service.niveles_abiertos(nodos_peso, filas),
         proximo_hito=resumen_service.proximo_hito(filas, hoy or date.today()),
-        flechas=_flechas(visibles, dependencies_service.listar(session, project_id), ancho),
+        flechas=(
+            _flechas(visibles, dependencies_service.listar(session, project_id), ancho)
+            if mirada.flechas
+            else []
+        ),
         ancho_dia=ancho,
     )
 

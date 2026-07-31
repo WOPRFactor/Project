@@ -82,6 +82,8 @@ class Mirada:
     # Etapas plegadas (ids de tarea). Es orden visual, no filtro: los totales de
     # arriba y el cálculo siguen siendo del proyecto entero.
     colapsadas: frozenset[int] = frozenset()
+    # Las flechas de dependencias del timeline: con muchas, son ruido — se apagan.
+    flechas: bool = True
 
     @property
     def filtrada(self) -> bool:
@@ -115,6 +117,7 @@ class Mirada:
             color=self.color if self.color in MODOS_COLOR else POR_CRITICIDAD,
             columnas=frozenset(c for c in self.columnas if c in COLUMNAS),
             colapsadas=self.colapsadas,
+            flechas=self.flechas,
         )
 
 
@@ -126,6 +129,34 @@ def leer_columnas(crudo: list[str] | None) -> frozenset[str]:
         return COLUMNAS_POR_DEFECTO
     partes = [p.strip() for valor in crudo for p in valor.split(",") if p.strip()]
     return frozenset(p for p in partes if p in COLUMNAS)
+
+
+def mirada_a_texto(mirada: Mirada) -> str:
+    """La mirada entera en una línea, para guardarla como última vista del proyecto."""
+    return (
+        f"detalle={mirada.detalle}&etapa={mirada.etapa or 0}&color={mirada.color}"
+        f"&columnas={mirada.columnas_texto}&colapsadas={mirada.colapsadas_texto}"
+        f"&flechas={'1' if mirada.flechas else '0'}"
+    )
+
+
+def mirada_desde_texto(texto: str) -> Mirada:
+    """La inversa. Un texto roto o viejo cae en los defaults: es una preferencia,
+    no un dato — no amerita error."""
+    partes = dict(p.split("=", 1) for p in texto.split("&") if "=" in p)
+    etapa = partes.get("etapa", "0").strip()
+    return Mirada(
+        detalle=partes.get("detalle", TODO),
+        etapa=int(etapa) if etapa.isdigit() and etapa != "0" else None,
+        color=partes.get("color", POR_CRITICIDAD),
+        columnas=(
+            leer_columnas([partes["columnas"]] if partes["columnas"] else [])
+            if "columnas" in partes
+            else COLUMNAS_POR_DEFECTO
+        ),
+        colapsadas=leer_colapsadas(partes.get("colapsadas", "")),
+        flechas=partes.get("flechas", "1") != "0",
+    ).normalizada()
 
 
 def leer_colapsadas(crudo: str) -> frozenset[int]:

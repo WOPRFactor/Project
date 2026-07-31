@@ -62,6 +62,12 @@ def detalle(
     mirada: Mirada = Depends(mirada_query),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
+    # Sin parámetros de vista en la URL (venir de la home, de Equipo…), se retoma
+    # la última mirada guardada; con parámetros, manda la URL y quedará guardada.
+    de_mirada = ("detalle", "etapa", "color", "columnas", "colapsadas", "flechas")
+    if not any(k in request.query_params for k in de_mirada):
+        mirada = projects_service.vista_guardada(session, project_id)
+
     datos = contexto(session, project_id, mirada)
     if datos["proyecto"] is None:
         return templates.TemplateResponse(

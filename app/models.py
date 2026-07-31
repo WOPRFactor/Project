@@ -76,6 +76,11 @@ class Project(SQLModel, table=True):
     # Rendición de cuentas del proyecto entero. Distinto del dueño, que en la
     # Fase 11 va a ser un permiso: no tienen por qué ser la misma persona.
     responsable_id: int | None = Field(default=None, foreign_key="contacto.id")
+    # Última mirada de la grilla (columnas, detalle, color, plegadas), serializada.
+    # Es preferencia de pantalla: entrar al proyecto sin parámetros la retoma.
+    # server_default: el default vive también en el esquema, así un INSERT que no
+    # conoce la columna (una base vieja, un test con SQL crudo) no revienta.
+    vista: str = Field(default="", max_length=500, sa_column_kwargs={"server_default": "''"})
 
 
 class Estado(SQLModel, table=True):

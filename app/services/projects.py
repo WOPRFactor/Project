@@ -25,6 +25,29 @@ def obtener(session: Session, project_id: int) -> Project | None:
     return session.get(Project, project_id)
 
 
+def vista_guardada(session: Session, project_id: int):
+    """La última mirada de la grilla, o los defaults si nunca se guardó una."""
+    from . import gantt_vista
+
+    proyecto = session.get(Project, project_id)
+    texto = proyecto.vista if proyecto is not None else ""
+    return gantt_vista.mirada_desde_texto(texto)
+
+
+def guardar_vista(session: Session, project_id: int, mirada) -> None:
+    """Recuerda cómo se estaba mirando la grilla, para retomarla al volver."""
+    from . import gantt_vista
+
+    proyecto = session.get(Project, project_id)
+    if proyecto is None:
+        return
+    texto = gantt_vista.mirada_a_texto(mirada)
+    if proyecto.vista != texto:
+        proyecto.vista = texto
+        session.add(proyecto)
+        session.commit()
+
+
 def crear(session: Session, datos: ProyectoIn) -> Project:
     proyecto = Project(**datos.model_dump())
     session.add(proyecto)

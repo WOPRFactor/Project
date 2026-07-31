@@ -133,7 +133,19 @@ form.peligro { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--
 .panel-izq .cabecera, .panel-izq .fila { display: flex; flex-wrap: nowrap; align-items: center; gap: 4px; padding: 0 8px; }
 .panel-izq .cabecera { height: var(--cabecera); border-bottom: 1px solid var(--borde); color: var(--tenue); font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; }
 .panel-izq .fila { height: var(--fila); border-bottom: 1px solid rgba(44, 52, 70, .5); font-size: .85rem; margin: 0; }
-.panel-izq .fila.resumen { background: rgba(76, 141, 255, .06); }
+/* Las etapas se distinguen de un vistazo: fondo más presente, letra un punto más
+   grande, toda la fila en negrita y el título en el azul de acento — así el árbol
+   se lee por color: azul = etapa, blanco = tarea, rojo = crítica. */
+.panel-izq .fila.resumen { background: rgba(76, 141, 255, .12); }
+.panel-izq .fila.resumen .celda { font-size: .95rem; font-weight: 600; }
+.panel-izq .fila.resumen .c-cod input,
+.panel-izq .fila.resumen .c-tarea input { color: var(--acento); }
+/* Tarea crítica de negocio: filo rojo en el borde izquierdo y el título del mismo
+   color que su barra del Gantt, así se encuentran de un vistazo. box-shadow y no
+   border para no correr las columnas; las terminadas conservan su gris tachado. */
+.panel-izq .fila.critica { box-shadow: inset 3px 0 0 var(--critico); }
+.panel-izq .fila.critica:not(.terminada) .c-cod input,
+.panel-izq .fila.critica:not(.terminada) .c-tarea input { color: var(--critico); }
 .panel-izq .fila.terminada .c-tarea input { color: var(--tenue); text-decoration: line-through; }
 
 /* Columnas de la grilla.
@@ -216,6 +228,10 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 
 .pista { position: relative; min-width: max-content; }
 .cabecera-grilla { height: var(--cabecera); border-bottom: 1px solid var(--borde); }
+/* Las cabeceras las fija grilla.js (translateY) al bajar: fondo opaco y z-index
+   para tapar las filas que pasan por debajo. */
+.panel-izq .cabecera { position: relative; z-index: 4; background: var(--panel); }
+.cabecera-grilla { position: relative; z-index: 3; background: var(--panel); }
 .fila-meses, .fila-semanas { display: grid; grid-template-columns: repeat(var(--cols), var(--ancho-dia)); height: 22px; align-items: center; }
 .mes, .semana { font-size: .68rem; color: var(--tenue); text-align: center; overflow: hidden; white-space: nowrap; border-left: 1px solid var(--borde); }
 .mes { text-transform: uppercase; letter-spacing: .06em; }
