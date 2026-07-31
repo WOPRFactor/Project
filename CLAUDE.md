@@ -16,7 +16,7 @@ entorno y dependencias con `uv`.
 
 ```bash
 uv sync                                # instalar dependencias
-uv run uvicorn app.main:app --reload   # levantar en http://127.0.0.1:8000
+uv run python -m app                   # levantar en http://127.0.0.1:1983 (WOPR_PORT lo cambia)
 uv run pytest                          # correr tests
 ```
 
@@ -110,6 +110,13 @@ en el lugar y cada cambio recalcula el cronograma entero. No hay formularios apa
   el usuario por KPI o impacto, y es la que pinta la barra en rojo. La ruta crítica
   del motor (holgura cero) es otra cosa y se expone como `Fila.sin_holgura` y como
   la holgura en días. Nunca se pisan entre sí.
+- La **mirada** (detalle, etapa, color, columnas, etapas plegadas ▾/▸ y flechas del
+  timeline) viaja en la URL y **persiste por proyecto** (`Project.vista`): salir y
+  volver la retoma; un link con parámetros la pisa. Plegar etapas es orden visual,
+  nunca filtra los totales.
+- El árbol se lee **por color**: etapas en azul de acento (negrita, fondo azulado),
+  críticas en el mismo rojo que su barra (título, WBS y filo izquierdo), terminadas
+  en gris tachado.
 - Arriba de la grilla, el **resumen** muestra inicio, fin, próximo hito y avance; abajo,
   un bloque por ámbito con su **ventana** (calendario, se superponen entre sí) y su
   **esfuerzo** (suma de duraciones, es trabajo). Dos unidades distintas, nunca juntas.

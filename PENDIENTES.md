@@ -10,17 +10,50 @@ En PowerShell, desde la carpeta del proyecto (acordate: `;` y no `&&`):
 ```powershell
 git pull
 uv sync
-uv run uvicorn app.main:app --reload
+uv run python -m app
 ```
 
-Después, `http://127.0.0.1:8000`.
+Después, `http://127.0.0.1:1983` (el puerto es fijo — el año de WarGames — y se
+cambia con `WOPR_PORT`).
+
+**Ojo (30/07/2026):** el Control de Aplicaciones de Windows está bloqueando cada vez
+más ejecutables de desarrollo: primero `uv.exe`, después también el `python.exe`
+del `.venv` («una directiva bloqueó este archivo»). El intérprete base de uv sí
+corre; mientras tanto la app levanta así (PowerShell):
+
+```powershell
+$env:PYTHONPATH = ".venv\Lib\site-packages"
+& "$env:APPDATA\uv\python\cpython-3.14-windows-x86_64-none\python.exe" -m app
+```
+
+La solución de fondo es tuya: permitir estos binarios en Seguridad de Windows
+(Control de aplicaciones y navegador) o revisar por qué la directiva se activó.
 
 ## Dónde quedó
 
-Todo lo que funciona con un solo usuario está hecho: **465 tests en verde**. El ciclo
+Todo lo que funciona con un solo usuario está hecho: **471 tests en verde**. El ciclo
 cierra de punta a punta — cargás o importás, planificás, congelás lo aprobado, medís
 el desvío y emitís el informe. Las etapas ahora se **pliegan y despliegan** con el
 chevron (▾/▸) de la fila: es orden visual, viaja en la mirada y no toca los totales.
+
+De la pasada de experiencia de usuario (pedida por Ariel):
+
+- **La vista se recuerda por proyecto** (columnas, detalle, color, plegadas, flechas):
+  salir y volver ya no la resetea. Se guarda en `Project.vista`; un link con
+  parámetros la pisa y queda guardada.
+- **El árbol se lee por color**: etapas en azul de acento (negrita, letra más grande,
+  fondo azulado), críticas en el mismo rojo que su barra (título, WBS y filo
+  izquierdo), tareas comunes en blanco, terminadas en gris tachado.
+- **Las flechas de dependencias se apagan** con el tilde «Flechas» de la barra de
+  vista (punto 4 de esta lista): con muchas dependencias eran ruido.
+- **El scroll ya no salta**: borrar una fila o editar una celda conserva la posición
+  vertical de la página y la horizontal del timeline y de la grilla.
+- **Las cabeceras quedan a la vista al bajar** (punto 1 de esta lista): fijadas por
+  JS con translateY — sticky puro no puede porque viven dentro de dos contenedores
+  con scroll horizontal, y cualquier overflow ≠ visible se captura el sticky.
+- Verificado todo con navegador real (Playwright + Chrome del sistema, efímero):
+  clics en la barra de vista, chevron, borrado midiendo scroll, todas las páginas y
+  los exports en 200, cero errores de consola.
 
 Lo último de la sesión fue una **revisión de código del repo entero con arreglos**.
 Los que importan:
@@ -38,10 +71,10 @@ Los que importan:
 
 ## Lo que marcó Ariel para mañana
 
-**1. Se pierden los nombres de las columnas al bajar** (bug). El encabezado de la
-grilla se va con el scroll vertical. Falta `position: sticky` en la cabecera, en las
-dos mitades — la de la grilla y la del timeline (meses y semanas), o al bajar tampoco
-se sabe qué semana es cada barra.
+**1. Se pierden los nombres de las columnas al bajar** — **RESUELTO.** No fue con
+`position: sticky` como decía esta nota (los contenedores con scroll horizontal lo
+capturan), sino con translateY desde `grilla.js`, clavado al scroll de la página.
+Verificado con navegador real.
 
 **2. Riesgos: revisar la sección más a fondo** (a definir con Ariel). Hoy tiene
 registro, cuadrante 5×5 y el tilde en la grilla. Falta charlar qué le falta: puede ser
@@ -54,13 +87,12 @@ fecha de revisión, o vincular el riesgo a una tarea de mitigación del cronogra
 movió afuera del contenedor con `hx-vals` (que pisaba sus valores en htmx 2.0.7), con
 un hidden de `columnas` para que «ninguna tildada» siga siendo una elección válida.
 De paso, el form de «Inicio del proyecto» —que también estaba afuera del contenedor y
-perdía la mirada al usarlo— ahora la lleva consigo. **Pendiente de verificar en el
-navegador** (la causa se confirmó leyendo el htmx vendoreado, pero el clic real sigue
-sin test — la razón para sumar tests con navegador sigue en pie).
+perdía la mirada al usarlo— ahora la lleva consigo. Verificado con clics reales
+(Playwright): Detalle filtra, Color aplica, Columnas prende y apaga.
 
-**4. Poder apagar las flechas de dependencias** (pedido). Van como un control más de
-la mirada, al lado de Detalle / Etapa / Color, viajando en la URL igual que el resto.
-Chico: las flechas ya se calculan aparte en `vista._flechas`.
+**4. Poder apagar las flechas de dependencias** — **RESUELTO.** Tilde «Flechas» en la
+barra de vista, un control más de la mirada: viaja en la URL, persiste con la vista
+del proyecto y por default están prendidas.
 
 ## Lo primero que conviene mirar
 
@@ -69,9 +101,19 @@ Chico: las flechas ya se calculan aparte en `vista._flechas`.
 2. **Probá el selector de Columnas** (arriba de la grilla, dice «Columnas (6 de 13)»)
    y **arrastrá el borde de la columna Tarea**. Los anchos se guardan por proyecto.
 3. **Decidí las columnas por defecto.** Hoy vienen Resp., Predec., Días, Inicio, Fin y
-   Avance. Con esas, en 1600px al título le quedan ~295px y se corta en 33 de tus 41
-   tareas. Si me decís cuáles usás de verdad, achico el default y el título se
-   ensancha solo. Es cambiar una línea.
+   Avance. Los títulos ya no se cortan (la columna Tarea no se encoge por debajo de su
+   ancho calculado), pero con todas esas prendidas las columnas de la derecha pueden
+   quedar detrás del scroll del panel. Si me decís cuáles usás de verdad, achico el
+   default. Es cambiar una línea.
+
+## Lo que viene: bloque E (plan de mejoras)
+
+Las mejoras chicas que pediste quedaron planificadas como **fases 26-28 del bloque E** en
+`PLAN-DE-MEJORAS.md`. La **27 ya está hecha**: `python -m app` levanta en el puerto fijo
+**1983** (`WOPR_PORT` lo cambia, un valor roto frena con mensaje claro, y el 127.0.0.1
+quedó clavado en el código). Quedan la **26** (hoja «Gantt» pintada en el export a Excel)
+y la **28** (tests con navegador formalizados). Dato tuyo que sigue faltando: **qué
+columnas querés por defecto** en la grilla.
 
 ## Decisiones que están esperándote
 

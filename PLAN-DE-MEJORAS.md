@@ -395,6 +395,53 @@ y revocable, que muestra el informe sin cuenta. Es comodidad real y superficie n
 se hace solo si lo pedís, con token de alta entropía, expiración corta por default, revocación
 desde la app, `noindex`, sin exponer más que ese informe, y cada acceso registrado.
 
+### Bloque E — Mejoras monousuario (2026-07)
+
+Pedidos de Ariel que no dependen del bloque A ni tocan la postura de seguridad: se pueden
+hacer ya, en cualquier orden. Salen de las sesiones de julio 2026, después de la pasada de
+UX (vista persistida, scroll estable, cabeceras fijas, colores del árbol, flechas apagables).
+
+**Fase 26 — Export a Excel: hoja «Gantt» pintada.** El Gantt de la app es HTML+CSS y no se
+puede incrustar en un `.xlsx`; lo que sí: **reconstruirlo con celdas rellenas** en una
+segunda hoja del mismo export, como exporta MS Project. Columnas fijas (WBS, Tarea con
+sangría, Inicio, Fin) + una columna angosta por día hábil con cabecera de meses y semanas,
+igual que el timeline. Colores consistentes con la app: azul tarea, rojo crítica, gris la
+envolvente de etapa (en negrita), ◆ el hito; la columna de hoy marcada si cae en rango.
+Archivo nuevo `services/exportar_gantt_excel.py` que **reusa la geometría ya testeada de
+`engine/timeline.construir_grilla`** — la misma que pinta la pantalla, así Excel y app nunca
+difieren; `exportar_excel.py` solo le suma la hoja al workbook. Un proyecto largo pinta
+**por semana** en vez de por día pasado un umbral de columnas, como ya hace la app con el
+ancho de columna.
+*Hecho cuando:* un test abre el workbook generado y verifica que las celdas pintadas de una
+tarea, un hito y una etapa coinciden con el cronograma calculado; la ida y vuelta de la
+Fase 23 sigue intacta (la hoja nueva no rompe el reimport); el archivo abre en Excel real
+sin advertencias; un proyecto de un año sale en la variante semanal.
+
+**Fase 27 — Arranque propio: puerto fijo y host clavado. ✔** `app/__main__.py` chico que llama
+`uvicorn.run("app.main:app", host="127.0.0.1", port=settings.port, reload=True)`. El puerto
+vuelve a `config.py` (`WOPR_PORT`, default **1983** — el año de WarGames) pero esta vez
+**conectado de verdad al arranque** — lo que se eliminó en la revisión era config muerta. El
+host queda clavado en `127.0.0.1` **desde el código**, no por el default de uvicorn: la regla
+de seguridad de CLAUDE.md pasa de convención a hecho. Levantar la app queda en
+`python -m app` (funciona igual con o sin `uv`, que hoy Windows bloquea).
+*Hecho cuando:* `python -m app` levanta en el puerto elegido bindeando solo 127.0.0.1; un
+`WOPR_PORT` no numérico frena el arranque con mensaje claro, no con traceback; README y
+PENDIENTES muestran el comando nuevo; `uvicorn app.main:app` a mano sigue andando igual.
+
+**Fase 28 — Tests con navegador, formalizados.** Salda la deuda técnica anotada («hoy el
+repo no tiene tests con navegador») y la lección del bug 3: *la lógica estaba bien y con
+tests; lo que nunca se probó fue el control*. Carpeta `tests/navegador/` con Playwright
+usando el Chrome del sistema (`channel="chrome"`, sin descargar navegador): fixture que
+levanta uvicorn en un puerto libre con DB temporal sembrada desde la planilla fixture, y los
+casos que ya corrieron a mano en julio: barra de vista con clics, chevron de plegado, scroll
+al borrar/editar, cabeceras fijas, vista persistida al salir y volver, todas las páginas y
+exports en 200 sin errores de consola. **La suite normal no se toca:** sin Playwright
+instalado, `pytest` saltea la carpeta (`importorskip`); Playwright entra como grupo opcional
+de dev en `pyproject.toml`.
+*Hecho cuando:* `pytest tests/navegador` corre en verde con el Chrome local; `pytest` sin
+Playwright instalado sigue en verde sin tocar esos tests; la barra de vista (el bug 3) tiene
+su test de clic real, que fue la razón concreta de todo esto.
+
 ## Camino corto
 
 Cuatro fases de infraestructura antes de ver algo nuevo en pantalla es mucho pedir. Estas se
@@ -413,7 +460,10 @@ y 24, marcadas con ✔ arriba). La Fase 14 entró sin la parte de cuentas: `Cont
 cliente— tiene que poder ser responsable sin tener acceso.
 Ariel decidió seguir monousuario por ahora, así que el bloque A sigue pendiente y la app
 no salió de `127.0.0.1`. Cuando entre el equipo, se retoma por la Fase 10 y el orden del
-plan vuelve a mandar.
+plan vuelve a mandar. Mientras tanto, el **bloque E** (fases 26-28) junta las mejoras
+monousuario pedidas en julio 2026: hoja Gantt en el Excel, arranque con puerto fijo y tests
+con navegador. Decisiones que esperan a Ariel antes de arrancarlo: **el número de puerto**
+(Fase 27) y **las columnas por defecto de la grilla** (una línea, fuera de fase).
 
 ## Lo que este plan deja explícitamente afuera
 
@@ -562,6 +612,32 @@ qué se movió según la auditoría, y el Gantt en vista de etapas. Plantillas e
 coincidencia; el PDF entra en A4 sin cortar barras ni tablas; `informe.py` no genera HTML; no
 se emite con los pesos abiertos.
 
+**Fase 26** — `services/exportar_gantt_excel.py`: recibe filas del cronograma y devuelve una
+hoja openpyxl con el Gantt pintado. Reusá `engine/timeline.construir_grilla` para los días
+hábiles y la cabecera de meses/semanas; una columna angosta por día (PatternFill para las
+barras: azul tarea, rojo `critica`, gris resumen, ◆ hito como texto), por semana si el
+proyecto pasa el umbral que ya usa `ancho_columna`. `exportar_excel.py` solo agrega la hoja
+al workbook existente — la hoja 1 no cambia ni un byte.
+*Aceptación:* test que abre el workbook y verifica las celdas pintadas de una tarea, un hito
+y una etapa contra el cronograma; la ida y vuelta de la Fase 23 sigue en verde; proyecto de
+un año sale en variante semanal.
+
+**Fase 27** — `app/__main__.py` con `uvicorn.run("app.main:app", host="127.0.0.1",
+port=settings.port, reload=True)`. `Settings.port` desde `WOPR_PORT` con default fijo,
+validado con mensaje claro si no es un entero. Actualizá README y PENDIENTES con
+`python -m app`.
+*Aceptación:* levanta en el puerto elegido solo en 127.0.0.1; `WOPR_PORT=abc` frena con
+mensaje claro; el arranque viejo con uvicorn CLI sigue andando.
+
+**Fase 28** — `tests/navegador/` con Playwright sobre el Chrome del sistema
+(`channel="chrome"`): fixture de server (uvicorn en puerto libre, DB temporal sembrada con
+`tests/fixtures/gantt-traspaso.xlsx`) y los casos de la verificación manual de julio: barra
+de vista, chevron, scroll al borrar/editar, cabeceras fijas, vista persistida, páginas y
+exports sin errores. `pytest.importorskip("playwright")` para que la suite normal no cambie;
+Playwright como grupo opcional en `pyproject.toml`.
+*Aceptación:* `pytest tests/navegador` en verde con Chrome local; `pytest` sin Playwright
+sigue en verde; el bug 3 tiene test de clic real.
+
 ## Cambios a CLAUDE.md
 
 La sección **Seguridad** de CLAUDE.md dice hoy que la app bindea solo `127.0.0.1` y que
@@ -585,6 +661,12 @@ la Fase 13**, y ahí se reescribe así (texto a aplicar en esa fase, no antes):
 
 También se suma a *Reglas del motor* que **el peso es % del padre y el avance es ponderado**,
 y a *La grilla* las columnas nuevas (Peso, Desvío, Avance, Riesgo).
+
+Pendiente además (no espera a la Fase 13): la sección *La grilla* quedó un paso atrás de la
+realidad de julio 2026 — falta el plegado de etapas (▾/▸), la **vista persistida por
+proyecto** (`Project.vista`), el tilde de flechas, y el árbol por color (etapas azul,
+críticas rojo, terminadas gris tachado). Se actualiza junto con la primera fase del bloque E
+que se implemente.
 
 ## Riesgos
 
