@@ -17,10 +17,12 @@ uv sync
 ## Uso
 
 ```bash
-uv run uvicorn app.main:app --reload      # http://127.0.0.1:8000
+uv run python -m app                      # http://127.0.0.1:1983 (con --reload incluido)
 uv run python scripts/seed.py             # carga un proyecto de ejemplo
-uv run pytest                             # 125 tests
+uv run pytest                             # correr la suite
 ```
+
+(`uvicorn app.main:app --reload` a mano sigue funcionando, en el puerto que le pases.)
 
 Flujo: creás un proyecto con su fecha de inicio, cargás tareas (indentándolas como
 subtareas si querés), y vinculás las que dependen entre sí. Cada cambio recalcula todo
@@ -152,10 +154,10 @@ Todo por variables de entorno, con defaults pensados para uso local:
 |---|---|---|
 | `WOPR_DB` | `./wopr-proyectos.db` | Ruta del archivo SQLite |
 | `WOPR_DEBUG` | `false` | Modo debug; apagado por default |
+| `WOPR_PORT` | `1983` | Puerto del arranque propio (`python -m app`). Un valor inválido frena el arranque con mensaje claro |
 
-El host y el puerto se pasan a `uvicorn` en la línea de comandos (`--host`,
-`--port`); el default de uvicorn ya es `127.0.0.1`. **Exponer la app fuera de
-localhost exige auth + HTTPS antes.**
+El host **no es configurable**: `python -m app` bindea `127.0.0.1` desde el código.
+**Exponer la app fuera de localhost exige auth + HTTPS antes.**
 
 ## Arquitectura
 
