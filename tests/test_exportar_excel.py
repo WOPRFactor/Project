@@ -58,7 +58,7 @@ def test_el_libro_se_genera_y_abre(session: Session, proyecto):
     contenido = exportar_excel.a_excel(session, proyecto.id)
 
     libro = load_workbook(BytesIO(contenido))
-    assert libro.sheetnames == ["Plan"]
+    assert libro.sheetnames == ["Plan", "Gantt"]
     cabeceras = [c.value for c in libro["Plan"][1]]
     assert cabeceras[:5] == ["WBS", "Tarea", "Resp.", "Predec.", "Días"]
 
