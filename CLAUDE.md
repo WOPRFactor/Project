@@ -81,7 +81,9 @@ Dirección de dependencias única: `routers → services → engine | models/db`
 - Un archivo, una responsabilidad. Capacidad nueva = archivo nuevo que respeta el
   contrato, no crecimiento del existente.
 - Todo cambio de lógica llega con su test; los del engine no tocan la DB; los de
-  services no levantan el server.
+  services no levantan el server. Los de `tests/navegador/` son opcionales: corren
+  solo con Playwright instalado (`uv sync --group navegador`) sobre el Chrome del
+  sistema; sin él, pytest saltea la carpeta.
 - UI en castellano.
 
 ## Seguridad

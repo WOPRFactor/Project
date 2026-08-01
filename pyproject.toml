@@ -10,12 +10,18 @@ dependencies = [
     "jinja2==3.1.6",
     "python-multipart==0.0.20",
     "openpyxl==3.1.5",
+    # El asistente (Fase 29) llama a Groq; también lo usa el TestClient de dev.
+    "httpx==0.28.1",
 ]
 
 [dependency-groups]
 dev = [
     "pytest==8.4.2",
-    "httpx==0.28.1",
+]
+# Tests de navegador (tests/navegador/), opcionales: `uv sync --group navegador`.
+# Usan el Chrome del sistema; sin este grupo, pytest saltea la carpeta.
+navegador = [
+    "playwright==1.61.0",
 ]
 
 [tool.pytest.ini_options]
