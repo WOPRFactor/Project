@@ -18,8 +18,8 @@ from pydantic import ValidationError
 from .config import RAIZ, settings
 from .db import init_db
 from .routers import (
-    carga, equipo, estados, export, importar, informe, linea_base, projects,
-    riesgos, tasks,
+    asistente, carga, equipo, estados, export, importar, informe, linea_base,
+    projects, riesgos, tasks,
 )
 from .templating import templates
 
@@ -49,6 +49,7 @@ app.include_router(carga.router)
 app.include_router(linea_base.router)
 app.include_router(informe.router)
 app.include_router(equipo.router)
+app.include_router(asistente.router)
 
 
 @app.get("/salud", include_in_schema=False)

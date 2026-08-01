@@ -193,6 +193,26 @@
   <button class="boton" type="button" data-alterna="pegar-bloque">
     Pegar lista de tareas
   </button>
+  <button class="boton" type="button" data-alterna="asistente-bloque"
+          title="Análisis y recomendaciones con IA. Solo lectura: no cambia nada.">
+    Asistente IA
+  </button>
+</div>
+
+<div id="asistente-bloque" class="oculto">
+  <form class="tarjeta" hx-post="/proyectos/{{ proyecto.id }}/asistente"
+        hx-target="#asistente-respuesta" hx-swap="innerHTML"
+        hx-disabled-elt="find button">
+    <p class="tenue pie">
+      Le manda el cronograma a Groq y devuelve análisis y recomendaciones.
+      <strong>Solo lectura: no cambia nada del proyecto.</strong> Los datos del
+      proyecto viajan a Groq para el análisis.
+    </p>
+    <textarea name="pregunta" rows="3"
+              placeholder="Analizá el proyecto y dame recomendaciones. (Vacío también vale: hace el análisis general.)"></textarea>
+    <button class="boton primario" type="submit">Preguntar</button>
+  </form>
+  <div id="asistente-respuesta"></div>
 </div>
 
 <div id="importar-bloque" class="oculto">

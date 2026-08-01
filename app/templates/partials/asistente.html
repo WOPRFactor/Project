@@ -1,0 +1,6 @@
+{# La respuesta del asistente (o su error). Texto plano escapado: nada de |safe. #}
+{% if error %}
+  <p class="aviso">{{ error }}</p>
+{% elif respuesta %}
+  <div class="asistente-respuesta tarjeta">{{ respuesta }}</div>
+{% endif %}

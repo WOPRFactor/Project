@@ -9,6 +9,27 @@ from pathlib import Path
 RAIZ = Path(__file__).resolve().parent.parent
 
 
+def _cargar_env() -> None:
+    """Carga `RAIZ/.env` al entorno, sin pisar lo ya definido afuera.
+
+    Sin dependencia externa a propósito: el formato es `CLAVE=valor` por línea,
+    `#` comenta. Acá viven los secretos (GROQ_API_KEY) — el archivo está en
+    .gitignore y jamás se commitea.
+    """
+    archivo = RAIZ / ".env"
+    if not archivo.exists():
+        return
+    for linea in archivo.read_text(encoding="utf-8").splitlines():
+        linea = linea.strip()
+        if not linea or linea.startswith("#") or "=" not in linea:
+            continue
+        clave, valor = linea.split("=", 1)
+        os.environ.setdefault(clave.strip(), valor.strip().strip('"').strip("'"))
+
+
+_cargar_env()
+
+
 def _bool_env(nombre: str, default: bool = False) -> bool:
     valor = os.getenv(nombre)
     if valor is None:
@@ -18,6 +39,19 @@ def _bool_env(nombre: str, default: bool = False) -> bool:
 
 # El año de WarGames: distintivo, fácil de acordarse y ningún software lo pisa.
 PUERTO_POR_DEFECTO = 1983
+
+# El modelo de Groq para el asistente. Configurable porque el catálogo de Groq
+# rota seguido; este default es sólido y de capa gratuita.
+MODELO_IA_POR_DEFECTO = "llama-3.3-70b-versatile"
+
+
+def groq_api_key() -> str:
+    """Perezosa a propósito: los tests la cambian por entorno sin re-importar."""
+    return os.getenv("GROQ_API_KEY", "").strip()
+
+
+def ia_modelo() -> str:
+    return os.getenv("WOPR_IA_MODELO", "").strip() or MODELO_IA_POR_DEFECTO
 
 
 def puerto() -> int:

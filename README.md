@@ -155,6 +155,11 @@ Todo por variables de entorno, con defaults pensados para uso local:
 | `WOPR_DB` | `./wopr-proyectos.db` | Ruta del archivo SQLite |
 | `WOPR_DEBUG` | `false` | Modo debug; apagado por default |
 | `WOPR_PORT` | `1983` | Puerto del arranque propio (`python -m app`). Un valor inválido frena el arranque con mensaje claro |
+| `GROQ_API_KEY` | — | Habilita el **Asistente IA** (análisis del cronograma). Se crea gratis en console.groq.com. Sin key, el panel avisa y el resto de la app funciona igual |
+| `WOPR_IA_MODELO` | `llama-3.3-70b-versatile` | Modelo de Groq para el asistente |
+
+Las variables se pueden dejar en un archivo **`.env`** en la raíz (formato
+`CLAVE=valor`, está en `.gitignore`): ahí van los secretos, nunca al código ni a git.
 
 El host **no es configurable**: `python -m app` bindea `127.0.0.1` desde el código.
 **Exponer la app fuera de localhost exige auth + HTTPS antes.**

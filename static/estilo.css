@@ -217,7 +217,10 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 .c-crit select.celda { font-size: .78rem; padding: 2px; }
 .c-crit select.es-critica { color: var(--critico); font-weight: 600; }
 
-.barra-grilla { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; }
+.barra-grilla { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+
+/* La respuesta del asistente: texto plano del modelo, con sus saltos de línea. */
+.asistente-respuesta { white-space: pre-wrap; font-size: .88rem; line-height: 1.5; margin-top: 10px; }
 .oculto { display: none; }
 #pegar-bloque textarea { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; }
 
