@@ -109,11 +109,28 @@ del proyecto y por default están prendidas.
 ## Lo que viene: bloque E (plan de mejoras)
 
 Las mejoras chicas que pediste quedaron planificadas como **fases 26-28 del bloque E** en
-`PLAN-DE-MEJORAS.md`. La **27 ya está hecha**: `python -m app` levanta en el puerto fijo
-**1983** (`WOPR_PORT` lo cambia, un valor roto frena con mensaje claro, y el 127.0.0.1
-quedó clavado en el código). Quedan la **26** (hoja «Gantt» pintada en el export a Excel)
-y la **28** (tests con navegador formalizados). Dato tuyo que sigue faltando: **qué
-columnas querés por defecto** en la grilla.
+`PLAN-DE-MEJORAS.md`, y **el bloque está completo**:
+
+- **26** — el export a Excel trae una segunda hoja «Gantt» con el timeline pintado (por
+  día hábil, o por semana si el proyecto es largo), mismos colores que la app, sin tocar
+  la ida y vuelta del import (la hoja usa «Código» y no «WBS» a propósito, para que el
+  importador no la confunda con el plan). Hay una muestra en tu carpeta de Descargas:
+  `wopr-gantt-demo.xlsx` — falta que la abras en Excel y confirmes que abre limpia.
+- **27** — `python -m app` en el puerto fijo **1983**, 127.0.0.1 clavado en el código.
+- **28** — la verificación manual con navegador pasó a `tests/navegador/` (Playwright
+  sobre tu Chrome, `uv sync --group navegador`); sin Playwright la suite normal ni se
+  entera. El bug 3 ya tiene su test de clic real.
+
+Dato tuyo que sigue faltando: **qué columnas querés por defecto** en la grilla.
+
+Se sumó la **Fase 29 — Asistente con IA** (recomendaciones, análisis y cambios sobre el
+cronograma, siempre con tu OK), con **Groq** como proveedor (capa gratuita, API
+compatible con OpenAI). La **29a ya está hecha**: botón «Asistente IA» arriba de la
+grilla, solo lectura, con tu key en el `.env` de la raíz (fuera de git) y el modelo
+configurable vía `WOPR_IA_MODELO`. Verificada con llamadas reales: analiza el proyecto
+y responde coherente sobre riesgos, hitos y dependencias. Queda la **29b** (acciones
+propuestas con previsualización y OK). Ojo: la key se pegó en el chat de trabajo — si
+querés máxima higiene, rotala en console.groq.com y actualizá el `.env`.
 
 ## Decisiones que están esperándote
 
@@ -137,8 +154,9 @@ Afuera del plan: el import desde Word y el asistente con IA que dejaste para des
 
 ## Deudas técnicas conocidas
 
-- El ancho de las columnas es CSS y **no lo cubre ningún test**: se verificó a mano en
-  el navegador, en 1600px y en 1366px. Blindarlo pediría tests con navegador, que hoy
-  el repo no tiene.
+- ~~El repo no tiene tests con navegador~~ — **saldada** con la Fase 28:
+  `tests/navegador/` cubre la barra de vista, el plegado, el scroll, las cabeceras y la
+  vista persistida con clics reales. Lo que sigue sin test propio es el detalle fino del
+  ancho de columnas en distintas resoluciones (verificado a mano en 1600px y 1366px).
 - Las tres deudas de JS inline que la Fase 13 iba a tener que pagar para poner una CSP
   estricta **ya están saldadas** (todo vive en `static/grilla.js`, vendoreado).

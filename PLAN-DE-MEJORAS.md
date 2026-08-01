@@ -401,7 +401,7 @@ Pedidos de Ariel que no dependen del bloque A ni tocan la postura de seguridad: 
 hacer ya, en cualquier orden. Salen de las sesiones de julio 2026, después de la pasada de
 UX (vista persistida, scroll estable, cabeceras fijas, colores del árbol, flechas apagables).
 
-**Fase 26 — Export a Excel: hoja «Gantt» pintada.** El Gantt de la app es HTML+CSS y no se
+**Fase 26 — Export a Excel: hoja «Gantt» pintada. ✔** El Gantt de la app es HTML+CSS y no se
 puede incrustar en un `.xlsx`; lo que sí: **reconstruirlo con celdas rellenas** en una
 segunda hoja del mismo export, como exporta MS Project. Columnas fijas (WBS, Tarea con
 sangría, Inicio, Fin) + una columna angosta por día hábil con cabecera de meses y semanas,
@@ -428,7 +428,7 @@ de seguridad de CLAUDE.md pasa de convención a hecho. Levantar la app queda en
 `WOPR_PORT` no numérico frena el arranque con mensaje claro, no con traceback; README y
 PENDIENTES muestran el comando nuevo; `uvicorn app.main:app` a mano sigue andando igual.
 
-**Fase 28 — Tests con navegador, formalizados.** Salda la deuda técnica anotada («hoy el
+**Fase 28 — Tests con navegador, formalizados. ✔** Salda la deuda técnica anotada («hoy el
 repo no tiene tests con navegador») y la lección del bug 3: *la lógica estaba bien y con
 tests; lo que nunca se probó fue el control*. Carpeta `tests/navegador/` con Playwright
 usando el Chrome del sistema (`channel="chrome"`, sin descargar navegador): fixture que
@@ -441,6 +441,35 @@ de dev en `pyproject.toml`.
 *Hecho cuando:* `pytest tests/navegador` corre en verde con el Chrome local; `pytest` sin
 Playwright instalado sigue en verde sin tocar esos tests; la barra de vista (el bug 3) tiene
 su test de clic real, que fue la razón concreta de todo esto.
+
+**Fase 29 — Asistente con IA: recomendaciones, análisis y cambios con OK.** Un panel
+«Asistente» donde Ariel pide en lenguaje natural («analizame el proyecto», «agregá una
+etapa de pruebas después de la 2»). La app manda el cronograma serializado (el export
+JSON/markdown que ya existe) a **Groq** (API compatible con OpenAI, capa gratuita;
+`GROQ_API_KEY` por variable de entorno — **el primer secreto de la vida de la app**,
+jamás al repo; modelo configurable vía `WOPR_IA_MODELO`) y recibe análisis en texto y,
+si se pidieron cambios, **acciones propuestas** en un contrato JSON cerrado (crear
+tarea, modificar duración/título, vincular/desvincular predecesoras por WBS — nada
+más en v1). Las acciones **jamás se aplican solas**: se previsualizan como hace el
+import y recién con el OK se ejecutan **vía los services existentes** (`tasks`,
+`arbol`, `predecesoras`), que ya rechazan ciclos, WBS inexistentes y lags fuera de
+rango — un modelo flojo degrada la calidad de las sugerencias, nunca la integridad de
+los datos. Todo lo que llega del modelo se valida con Pydantic en el borde, como
+cualquier input externo; lo que no valida se descarta con aviso, nunca un 500. Sin
+key o sin internet, el panel avisa y el resto de la app ni se entera.
+
+Se parte en dos mitades que se entregan por separado:
+
+- **29a — Analista (solo lectura). ✔** El panel, la llamada y el análisis. Sin riesgo:
+  no escribe nada. *Hecho cuando:* el panel responde análisis sobre el proyecto real;
+  sin `GROQ_API_KEY` avisa claro en vez de romper; hay un test de que el service arma
+  el contexto desde el export y de que una respuesta malformada del modelo termina en
+  aviso, no en excepción (la llamada de red se testea con un doble, sin pegarle a Groq).
+- **29b — Acciones con OK.** El contrato de acciones, la previsualización y el aplicar.
+  *Hecho cuando:* hay un test que exige que **ninguna acción se aplique sin
+  confirmación explícita**; una acción inválida (ciclo, WBS colgante, duración
+  negativa) rebota con el aviso del service; el aplicar no toca la DB directo — solo
+  services; el flujo entero corre también en `tests/navegador/`.
 
 ## Camino corto
 
