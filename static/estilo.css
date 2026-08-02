@@ -221,6 +221,9 @@ input[type=date].celda::-webkit-calendar-picker-indicator { filter: invert(.6); 
 
 /* La respuesta del asistente: texto plano del modelo, con sus saltos de línea. */
 .asistente-respuesta { white-space: pre-wrap; font-size: .88rem; line-height: 1.5; margin-top: 10px; }
+.asistente-acciones { margin-top: 10px; font-size: .88rem; }
+.asistente-acciones ul { margin: 8px 0 12px; padding-left: 22px; }
+.asistente-acciones li { margin-bottom: 4px; }
 .oculto { display: none; }
 #pegar-bloque textarea { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .82rem; }
 

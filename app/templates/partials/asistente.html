@@ -1,6 +1,28 @@
-{# La respuesta del asistente (o su error). Texto plano escapado: nada de |safe. #}
+{# La respuesta del asistente: análisis, y si propuso cambios, la previsualización.
+   Texto plano escapado, nada de |safe. Las acciones NUNCA se aplican solas: viajan
+   en el hidden y recién el botón de confirmación las manda a /asistente/aplicar. #}
 {% if error %}
   <p class="aviso">{{ error }}</p>
-{% elif respuesta %}
-  <div class="asistente-respuesta tarjeta">{{ respuesta }}</div>
+{% else %}
+  {% if respuesta %}<div class="asistente-respuesta tarjeta">{{ respuesta }}</div>{% endif %}
+  {% for aviso in avisos %}<p class="aviso">{{ aviso }}</p>{% endfor %}
+  {% if acciones %}
+    <div class="tarjeta asistente-acciones">
+      <p>
+        <strong>El asistente propone {{ acciones | length }}
+        {{ 'cambio' if acciones | length == 1 else 'cambios' }}.</strong>
+        Nada se aplica hasta que confirmes:
+      </p>
+      <ul>
+        {% for accion in acciones %}<li>{{ accion.descripcion }}</li>{% endfor %}
+      </ul>
+      <form hx-post="/proyectos/{{ proyecto_id }}/asistente/aplicar"
+            hx-target="#tablero" hx-swap="innerHTML" hx-disabled-elt="find button">
+        <input type="hidden" name="carga" value="{{ acciones_json }}">
+        <button class="boton primario" type="submit">
+          Aplicar {{ 'el cambio' if acciones | length == 1 else 'los cambios' }}
+        </button>
+      </form>
+    </div>
+  {% endif %}
 {% endif %}

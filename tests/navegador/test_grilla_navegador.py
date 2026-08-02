@@ -86,6 +86,29 @@ def test_las_cabeceras_quedan_a_la_vista_al_bajar(pagina):
     assert pagina.errores == []
 
 
+def test_aplicar_del_asistente_solo_escribe_con_confirmacion(pagina):
+    """El flujo de confirmación de la fase 29b contra el server real. La parte de
+    proponer necesita a Groq (no determinista); acá se ejercita el aplicar."""
+    pagina.goto(f"{pagina.base}/proyectos/1?detalle=todo&colapsadas=")
+    pagina.wait_for_selector(".fila")
+    assert pagina.locator("button[data-alterna='asistente-bloque']").count() == 1
+    antes = pagina.locator(".fila").count()
+
+    carga = (
+        '[{"tipo": "crear_tarea", "titulo": "Confirmada en navegador",'
+        ' "padre_wbs": "", "duracion": 2, "predecesoras": "", "critica": false}]'
+    )
+    respuesta = pagina.request.post(
+        f"{pagina.base}/proyectos/1/asistente/aplicar", form={"carga": carga}
+    )
+    assert respuesta.status == 200
+
+    pagina.goto(f"{pagina.base}/proyectos/1?detalle=todo&colapsadas=")
+    pagina.wait_for_selector(".fila")
+    assert pagina.locator(".fila").count() == antes + 1
+    assert pagina.errores == []
+
+
 def test_todas_las_paginas_y_exports_responden_sin_errores(pagina):
     paginas = [
         "/", "/proyectos/1", "/proyectos/1/equipo", "/proyectos/1/estados",

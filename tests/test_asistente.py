@@ -24,17 +24,17 @@ def key_de_prueba(monkeypatch):
 def test_sin_key_avisa_claro(session: Session, proyecto, monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     with pytest.raises(AsistenteNoDisponible) as error:
-        asistente.analizar(session, proyecto.id, "analizá")
+        asistente.consultar(session, proyecto.id, "analizá")
     assert "GROQ_API_KEY" in str(error.value)
 
 
 def test_un_proyecto_inexistente_avisa(session: Session):
     with pytest.raises(AsistenteNoDisponible):
-        asistente.analizar(session, 9999, "analizá")
+        asistente.consultar(session, 9999, "analizá")
 
 
 def test_el_contexto_lleva_el_cronograma_y_la_pregunta(session: Session, proyecto, monkeypatch):
-    arbol_service.agregar_al_final(
+    tarea = arbol_service.agregar_al_final(
         session, proyecto.id, TareaIn(titulo="Relevamiento inicial", duracion=5)
     )
     capturado = {}
@@ -42,16 +42,43 @@ def test_el_contexto_lleva_el_cronograma_y_la_pregunta(session: Session, proyect
     def doble(key, mensajes):
         capturado["key"] = key
         capturado["mensajes"] = mensajes
-        return "Análisis de prueba."
+        return '{"analisis": "Análisis de prueba.", "acciones": []}'
 
     monkeypatch.setattr(asistente, "_completar", doble)
-    respuesta = asistente.analizar(session, proyecto.id, "¿qué riesgos ves?")
+    consulta = asistente.consultar(session, proyecto.id, "¿qué riesgos ves?")
 
-    assert respuesta == "Análisis de prueba."
+    assert consulta.analisis == "Análisis de prueba."
+    assert consulta.acciones == []
     assert capturado["key"] == "gsk_de_prueba"
     contenido = capturado["mensajes"][-1]["content"]
     assert "Relevamiento inicial" in contenido  # viaja el cronograma real
+    assert tarea.codigo in contenido            # y los códigos WBS para referenciar
     assert "¿qué riesgos ves?" in contenido
+
+
+def test_un_texto_plano_del_modelo_es_solo_analisis(session: Session, proyecto, monkeypatch):
+    """Si el modelo no respeta el JSON pedido, se muestra igual, sin acciones."""
+    monkeypatch.setattr(asistente, "_completar", lambda k, m: "Respuesta suelta sin JSON")
+    consulta = asistente.consultar(session, proyecto.id, "hola")
+    assert consulta.analisis == "Respuesta suelta sin JSON"
+    assert consulta.acciones == []
+
+
+def test_las_acciones_propuestas_se_validan_y_las_rotas_se_descartan(
+    session: Session, proyecto, monkeypatch
+):
+    crudo = (
+        '{"analisis": "Propongo cambios.", "acciones": ['
+        '{"tipo": "crear_tarea", "titulo": "Pruebas integrales", "duracion": 5},'
+        '{"tipo": "volar_todo"},'
+        '{"tipo": "modificar_tarea", "wbs": "1", "duracion": 99999}]}'
+    )
+    monkeypatch.setattr(asistente, "_completar", lambda k, m: crudo)
+    consulta = asistente.consultar(session, proyecto.id, "sumá pruebas")
+
+    assert len(consulta.acciones) == 1  # solo la válida
+    assert consulta.acciones[0].titulo == "Pruebas integrales"
+    assert len(consulta.avisos) == 2  # el tipo inventado y la duración imposible
 
 
 class _Respuesta:
