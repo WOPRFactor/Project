@@ -29,6 +29,32 @@ $env:PYTHONPATH = ".venv\Lib\site-packages"
 La solución de fondo es tuya: permitir estos binarios en Seguridad de Windows
 (Control de aplicaciones y navegador) o revisar por qué la directiva se activó.
 
+## La lista de pendientes (al 30/07/2026)
+
+Todo lo accionable del plan está **hecho y commiteado** (bloque E + fase 29 completos,
+513 tests en verde). Lo que queda depende de Ariel:
+
+**Decisiones e insumos:**
+
+- [ ] **Columnas por defecto de la grilla** — decir cuáles se usan de verdad; es un
+      cambio de una línea.
+- [ ] **Riesgos a fondo** — definir el alcance charlando (plan de respuesta, riesgo
+      residual, disparadores, vínculo con tareas de mitigación). No arrancar sin eso.
+- [ ] **El ejemplo de Word** para diseñar ese import (quedó de pasarlo).
+- [ ] **¿Entra el equipo?** — la decisión que destraba las 6 fases de multiusuario
+      (bloque A + comentarios + adjuntos) y la 25 opcional.
+
+**Mantenimiento / higiene:**
+
+- [ ] Destrabar el **Control de Aplicaciones de Windows** que bloquea `uv.exe` y el
+      Python del venv (mientras tanto: el workaround de «Levantar la app»).
+- [ ] **Rotar la GROQ_API_KEY** (quedó pegada en el chat de trabajo) y actualizar
+      el `.env` — un minuto en console.groq.com.
+- [ ] Abrir **`wopr-gantt-demo.xlsx`** (en Descargas) y confirmar que Excel lo abre
+      sin advertencias.
+- [ ] Decidir si **pushear la rama** — hoy todos los commits viven solo en esta
+      máquina, sin respaldo remoto.
+
 ## Dónde quedó
 
 Todo lo que funciona con un solo usuario está hecho: **471 tests en verde**. El ciclo
