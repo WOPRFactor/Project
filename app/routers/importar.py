@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlmodel import Session
 
+from ..auth.dependencias import exige_usuario
 from ..db import get_session
 from ..services import importar as importar_service
 from ..services import importar_aplicar
@@ -21,7 +22,7 @@ from ..services import importar_excel, importar_texto
 from ..services import plantilla as plantilla_service
 from ..templating import templates
 
-router = APIRouter(prefix="/importar")
+router = APIRouter(prefix="/importar", dependencies=[Depends(exige_usuario)])
 
 MAX_BYTES = 5 * 1024 * 1024
 EXTENSIONES = (".xlsx", ".xlsm")

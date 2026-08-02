@@ -29,18 +29,24 @@ from playwright.sync_api import sync_playwright  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parents[2]
 
-_SEMILLA = """
+CUENTA = "navegador@wopr.local"
+CLAVE = "clave-de-prueba-1983"
+
+_SEMILLA = f"""
 from datetime import date
 from pathlib import Path
 from sqlmodel import Session
 from app.db import engine, init_db
-from app.services import importar_aplicar, importar_excel
+from app.services import importar_aplicar, importar_excel, usuarios
 
 init_db()
 contenido = (Path("tests") / "fixtures" / "gantt-traspaso.xlsx").read_bytes()
 importacion = importar_excel.leer(contenido)
 with Session(engine) as session:
     importar_aplicar.aplicar(session, "Navegador", date(2026, 10, 5), importacion)
+    usuarios.crear(
+        session, "{CUENTA}", "{CLAVE}", es_admin=True, debe_cambiar=False
+    )
 """
 
 
@@ -54,7 +60,12 @@ def _puerto_libre() -> int:
 def servidor(tmp_path_factory):
     """La app en un subproceso, con una DB temporal sembrada. Devuelve la URL base."""
     db = tmp_path_factory.mktemp("navegador") / "prueba.db"
-    entorno = os.environ | {"WOPR_DB": str(db)}
+    entorno = os.environ | {
+        "WOPR_DB": str(db),
+        # Sobre HTTP la cookie no puede ir con `Secure` (el navegador la tira).
+        "WOPR_COOKIE_SEGURA": "0",
+        "WOPR_SECRET_KEY": "secreto-solo-para-tests",
+    }
     subprocess.run(
         [sys.executable, "-c", _SEMILLA],
         cwd=RAIZ, env=entorno, check=True, capture_output=True,
@@ -103,14 +114,24 @@ def navegador():
 
 @pytest.fixture
 def pagina(navegador, servidor):
-    """Una página nueva por test, con la URL base y recolector de errores.
+    """Una página nueva por test, **ya autenticada**, con recolector de errores.
 
-    `pagina.errores` junta errores de consola, excepciones JS y respuestas >= 400:
-    cada test afirma al final que quedó vacío.
+    Desde la Fase 10 la app tiene puerta: el fixture hace login de verdad por el
+    formulario, así el flujo real queda ejercitado en cada test. `pagina.errores`
+    junta errores de consola, excepciones JS y respuestas >= 400 — cada test
+    afirma al final que quedó vacío (el 401 del login previo no cuenta: se
+    engancha el recolector después de entrar).
     """
     contexto = navegador.new_context(viewport={"width": 1600, "height": 900})
     page = contexto.new_page()
     page.base = servidor
+
+    page.goto(f"{servidor}/ingresar")
+    page.fill("input[name='mail']", CUENTA)
+    page.fill("input[name='password']", CLAVE)
+    page.click("button[type=submit]")
+    page.wait_for_url(f"{servidor}/", timeout=15000)
+
     page.errores = []
     page.on(
         "console",

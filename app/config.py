@@ -45,9 +45,27 @@ PUERTO_POR_DEFECTO = 1983
 MODELO_IA_POR_DEFECTO = "llama-3.3-70b-versatile"
 
 
+# Solo para desarrollo local: en modo no-debug la app se niega a arrancar con esto.
+_SECRET_DE_DESARROLLO = "wopr-desarrollo-inseguro"
+
+
 def groq_api_key() -> str:
     """Perezosa a propósito: los tests la cambian por entorno sin re-importar."""
     return os.getenv("GROQ_API_KEY", "").strip()
+
+
+def secret_key() -> str:
+    """Secreto que firma los tokens CSRF. Obligatorio fuera de modo debug."""
+    valor = os.getenv("WOPR_SECRET_KEY", "").strip()
+    if valor and valor != _SECRET_DE_DESARROLLO:
+        return valor
+    if settings.debug:
+        return _SECRET_DE_DESARROLLO
+    raise SystemExit(
+        "Falta WOPR_SECRET_KEY (o es el valor de desarrollo). Generá uno con:\n"
+        "  python -c \"import secrets; print(secrets.token_urlsafe(32))\"\n"
+        "y cargalo en el .env de la raíz. Sin eso la app no arranca fuera de debug."
+    )
 
 
 def ia_modelo() -> str:
@@ -77,6 +95,11 @@ class Settings:
     # El host no es configurable a propósito: 127.0.0.1 está clavado en __main__.py.
     db_path: str = os.getenv("WOPR_DB", str(RAIZ / "wopr-proyectos.db"))
     debug: bool = _bool_env("WOPR_DEBUG", False)
+    # Cookie de sesión con el flag `Secure`. En localhost sobre HTTP tiene que ir
+    # apagada (el navegador la descartaría); detrás del proxy TLS de la Fase 13 va
+    # prendida, y ahí la app ve http porque el TLS lo termina el proxy — por eso es
+    # una variable explícita y no algo deducido del esquema del request.
+    cookie_segura: bool = _bool_env("WOPR_COOKIE_SEGURA", False)
 
     @property
     def db_url(self) -> str:

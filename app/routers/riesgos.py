@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import ValidationError
 from sqlmodel import Session
 
+from ..auth.dependencias import exige_usuario
 from ..db import get_session
 from ..models import ETIQUETA_ESTADO_RIESGO
 from ..schemas import RiesgoIn
@@ -18,7 +19,7 @@ from ..services import riesgos as riesgos_service
 from ..services.riesgos import RiesgoInvalido
 from ..templating import templates
 
-router = APIRouter(prefix="/proyectos/{project_id}/riesgos")
+router = APIRouter(prefix="/proyectos/{project_id}/riesgos", dependencies=[Depends(exige_usuario)])
 
 
 @router.get("", response_class=HTMLResponse)

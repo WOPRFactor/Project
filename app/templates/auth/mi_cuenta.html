@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block titulo %}Mi cuenta · WOPR Proyectos{% endblock %}
+
+{% block contenido %}
+<section class="tarjeta entrada">
+  <h1>Mi cuenta</h1>
+  <p class="tenue">{{ usuario.mail }}{% if usuario.es_admin %} · administrador{% endif %}</p>
+  {% if usuario.debe_cambiar_password %}
+    <p class="aviso">
+      Estás usando la contraseña de un solo uso que te dieron: cambiala ahora.
+    </p>
+  {% endif %}
+  {% if error %}<p class="aviso">{{ error }}</p>{% endif %}
+
+  <h2>Cambiar la contraseña</h2>
+  <form method="post" action="/mi-cuenta" class="formulario">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <label>Contraseña actual
+      <input name="actual" type="password"
+             autocomplete="current-password" required>
+    </label>
+    <label>Nueva <span class="tenue">(mínimo 10 caracteres)</span>
+      <input name="nueva" type="password"
+             autocomplete="new-password" required minlength="10">
+    </label>
+    <label>Repetir la nueva
+      <input name="repetida" type="password"
+             autocomplete="new-password" required minlength="10">
+    </label>
+    <button class="boton primario" type="submit">Cambiar</button>
+  </form>
+  <p class="tenue pie">
+    Cambiarla cierra todas tus sesiones —incluida esta—, así que vas a tener que
+    volver a entrar. Es a propósito: si alguien te la robó, se queda afuera.
+  </p>
+</section>
+{% endblock %}

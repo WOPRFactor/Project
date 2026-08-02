@@ -237,7 +237,7 @@ autenticar en internet es peor que una app sin autenticar en localhost.
 
 ### Bloque A — Multiusuario (la puerta)
 
-**Fase 10 — Identidad: usuarios, sesión y CSRF.** Alembic reemplaza a `migraciones.py`.
+**Fase 10 — Identidad: usuarios, sesión y CSRF. ✔** Alembic reemplaza a `migraciones.py`.
 Modelos `Usuario` (mail único, hash argon2id, activo, `es_admin`, `debe_cambiar_password`) y
 `Sesion`. Login con throttling progresivo. Cambio de contraseña obligatorio al primer
 ingreso. Alta solo para el admin global. Token CSRF por sesión exigido en todo POST. **No se

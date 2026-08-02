@@ -27,6 +27,8 @@ Dirección de dependencias única: `routers → services → engine | models/db`
 - `app/engine/` — **el corazón**: motor de scheduling en Python puro. No importa FastAPI
   ni SQLModel; entra y sale por las dataclasses de `engine/types.py`. Se testea sin DB y
   sin server, y es el módulo con mayor densidad de tests del repo.
+- `app/auth/` — identidad y permisos, sin lógica de negocio: hash, sesiones, CSRF y
+  las dependencias que los routers usan para exigir cuenta.
 - `app/routers/` — HTTP puro: parsear request, llamar al service, renderizar. Sin lógica.
 - `app/services/` — lógica de negocio; `services/schedule.py` puentea models → engine.
   No importan FastAPI ni templates.
@@ -90,6 +92,13 @@ Dirección de dependencias única: `routers → services → engine | models/db`
 
 - La app bindea **solo `127.0.0.1`**. Si alguna vez se expone fuera de localhost,
   auth + HTTPS son requisito previo, no deuda técnica.
+- **Desde la Fase 10 la app tiene puerta** (`app/auth/`): contraseñas con argon2id
+  (el hash no sale nunca de `auth/hash.py`), sesiones como fila revocable con token
+  opaco en cookie `HttpOnly`, y **token CSRF exigido por middleware en todo verbo
+  que no sea GET** — una ruta nueva nace protegida sin que nadie se acuerde. Las
+  cuentas las crea el admin: no hay auto-registro. `WOPR_SECRET_KEY` es obligatoria
+  fuera de modo debug.
+- El esquema lo versiona **Alembic** (`migrations/`), no un script aditivo.
 - Todo input externo se valida con Pydantic en el borde: tipos, longitudes, enums
   cerrados, duración entera > 0, fechas parseadas estricto.
 - El grafo de dependencias también es input: se valida (ciclos, referencias colgantes,

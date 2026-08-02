@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block titulo %}Cuentas · WOPR Proyectos{% endblock %}
+
+{% block contenido %}
+<section>
+  <h1>Cuentas</h1>
+  {% if aviso %}<p class="aviso">{{ aviso }}</p>{% endif %}
+
+  <div class="lista-estados">
+    {% for cuenta in usuarios %}
+      <div class="fila-estado {{ 'sin-asignar' if not cuenta.activo }}">
+        <span class="e-nombre">
+          <strong>{{ cuenta.mail }}</strong>
+          {% if cuenta.nombre %} · {{ cuenta.nombre }}{% endif %}
+          {% if cuenta.es_admin %}<i class="chip">admin</i>{% endif %}
+          {% if not cuenta.activo %}<i class="chip">desactivada</i>{% endif %}
+          {% if cuenta.debe_cambiar_password %}<i class="chip">contraseña de un solo uso</i>{% endif %}
+        </span>
+        <span class="e-color tenue">
+          {% if cuenta.ultimo_ingreso %}último ingreso {{ cuenta.ultimo_ingreso.date() | fecha }}
+          {% else %}nunca ingresó{% endif %}
+        </span>
+        <span class="e-ops">
+          <form method="post" action="/admin/usuarios/{{ cuenta.id }}/password" class="en-linea"
+                data-confirmar="¿Resetear la contraseña de {{ cuenta.mail }}? Se cierran sus sesiones.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="boton" type="submit">Resetear contraseña</button>
+          </form>
+          <form method="post" action="/admin/usuarios/{{ cuenta.id }}/activo" class="en-linea"
+                data-confirmar="¿{{ 'Activar' if not cuenta.activo else 'Desactivar' }} a {{ cuenta.mail }}?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="activo" value="{{ '1' if not cuenta.activo else '0' }}">
+            <button class="boton {{ 'peligro' if cuenta.activo }}" type="submit">
+              {{ 'Activar' if not cuenta.activo else 'Desactivar' }}
+            </button>
+          </form>
+        </span>
+      </div>
+    {% endfor %}
+  </div>
+
+  <h2>Dar de alta una cuenta</h2>
+  <form method="post" action="/admin/usuarios" class="tarjeta en-fila">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input name="mail" type="email" placeholder="mail@ejemplo.com" required>
+    <input name="nombre" placeholder="Nombre (opcional)" maxlength="120">
+    <label class="en-linea">
+      <input type="checkbox" name="es_admin" value="1"> Administrador
+    </label>
+    <button class="boton primario" type="submit">Crear</button>
+  </form>
+  <p class="tenue pie">
+    La contraseña la genera la app y se muestra <strong>una sola vez</strong> al
+    crear la cuenta: pasásela por un canal seguro. Quien la reciba la cambia al
+    primer ingreso.
+  </p>
+</section>
+{% endblock %}

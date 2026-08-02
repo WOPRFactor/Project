@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session
 
+from ..auth.dependencias import exige_usuario
 from ..db import get_session
 from ..services import linea_base as linea_base_service
 from ..services import projects as projects_service
@@ -16,7 +17,7 @@ from ..services.linea_base import LineaBaseInvalida
 from ..templating import templates
 from ._tablero import Mirada, mirada_form, render
 
-router = APIRouter(prefix="/proyectos/{project_id}/base")
+router = APIRouter(prefix="/proyectos/{project_id}/base", dependencies=[Depends(exige_usuario)])
 
 
 @router.get("", response_class=HTMLResponse)

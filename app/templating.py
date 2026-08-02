@@ -32,3 +32,14 @@ def etiqueta_ambito_texto(valor: str) -> str:
 
 
 templates.env.globals["etiqueta_ambito_texto"] = etiqueta_ambito_texto
+
+
+def _contexto_de_sesion(request):
+    """`usuario` y `csrf_token` disponibles en toda plantilla, sin pasarlos a mano."""
+    return {
+        "usuario": getattr(request.state, "usuario", None),
+        "csrf_token": getattr(request.state, "csrf_token", ""),
+    }
+
+
+templates.context_processors.append(_contexto_de_sesion)

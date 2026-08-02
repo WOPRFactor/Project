@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}Primer usuario · WOPR Proyectos{% endblock %}
+
+{% block contenido %}
+<section class="tarjeta entrada">
+  <h1>Crear el primer usuario</h1>
+  <p class="tenue">
+    Todavía no hay ninguna cuenta. Esta primera es <strong>administradora</strong>:
+    desde ella se dan de alta las demás.
+  </p>
+  {% if error %}<p class="aviso">{{ error }}</p>{% endif %}
+  <form method="post" action="/primer-usuario" class="formulario">
+    <label>Mail
+      <input name="mail" type="email" autocomplete="username" required autofocus>
+    </label>
+    <label>Nombre <span class="tenue">(opcional)</span>
+      <input name="nombre" maxlength="120" autocomplete="name">
+    </label>
+    <label>Contraseña <span class="tenue">(mínimo 10 caracteres)</span>
+      <input name="password" type="password"
+             autocomplete="new-password" required minlength="10">
+    </label>
+    <button class="boton primario" type="submit">Crear y entrar</button>
+  </form>
+</section>
+{% endblock %}

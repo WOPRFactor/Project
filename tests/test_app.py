@@ -7,12 +7,25 @@ from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
+from app.auth import csrf as csrf_service
+from app.auth import sesion as sesion_service
 from app.db import get_session
 from app.main import app
+from app.services import usuarios as usuarios_service
+
+
+CUENTA = "tester@wopr.local"
+CLAVE = "clave-de-prueba-1983"
 
 
 @pytest.fixture(name="cliente")
 def cliente_fixture():
+    """Cliente **ya autenticado**: desde la Fase 10 la app tiene puerta.
+
+    Crea la cuenta admin, hace login de verdad (así se ejercita el flujo real) y
+    deja el token CSRF en las cabeceras por defecto, como hace `grilla.js` en el
+    navegador. Para probar el acceso sin sesión está `cliente_anonimo`.
+    """
     engine = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
@@ -24,6 +37,35 @@ def cliente_fixture():
 
     app.dependency_overrides[get_session] = sesion_de_prueba
     with TestClient(app) as cliente:
+        with Session(engine) as session:
+            usuarios_service.crear(
+                session, CUENTA, CLAVE, es_admin=True, debe_cambiar=False
+            )
+        cliente.post("/ingresar", data={"mail": CUENTA, "password": CLAVE})
+        token = cliente.cookies.get(sesion_service.COOKIE, "")
+        cliente.headers.update({csrf_service.CABECERA: csrf_service.token_de(token)})
+        yield cliente
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture(name="cliente_anonimo")
+def cliente_anonimo_fixture():
+    """Sin sesión: para verificar que la puerta rechaza de verdad."""
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def sesion_de_prueba():
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = sesion_de_prueba
+    with TestClient(app, follow_redirects=False) as cliente:
+        with Session(engine) as session:
+            usuarios_service.crear(
+                session, CUENTA, CLAVE, es_admin=True, debe_cambiar=False
+            )
         yield cliente
     app.dependency_overrides.clear()
 

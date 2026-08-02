@@ -130,6 +130,15 @@
     }
   });
 
+  /* CSRF: toda mutación por HTMX lleva el token del <meta>. Se engancha acá y no
+     en cada plantilla para que una ruta nueva nazca protegida. */
+  document.addEventListener('htmx:configRequest', function (evento) {
+    var meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) {
+      evento.detail.headers['X-CSRF-Token'] = meta.content;
+    }
+  });
+
   /* Confirmación de formularios de borrado. El texto viene entero del servidor en
      data-confirmar: un nombre interpolado dentro de JS inline es XSS aunque el HTML
      esté escapado (el navegador decodifica las entidades antes de evaluar). */

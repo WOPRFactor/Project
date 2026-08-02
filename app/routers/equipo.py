@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session
 
+from ..auth.dependencias import exige_usuario
 from ..db import get_session
 from ..services import contactos as contactos_service
 from ..services import equipo as equipo_service
@@ -18,7 +19,7 @@ from ..services import vista as vista_service
 from ..services.contactos import ContactoInvalido
 from ..templating import templates
 
-router = APIRouter(prefix="/proyectos/{project_id}/equipo")
+router = APIRouter(prefix="/proyectos/{project_id}/equipo", dependencies=[Depends(exige_usuario)])
 
 
 @router.get("", response_class=HTMLResponse)

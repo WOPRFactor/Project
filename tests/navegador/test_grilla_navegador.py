@@ -98,8 +98,12 @@ def test_aplicar_del_asistente_solo_escribe_con_confirmacion(pagina):
         '[{"tipo": "crear_tarea", "titulo": "Confirmada en navegador",'
         ' "padre_wbs": "", "duracion": 2, "predecesoras": "", "critica": false}]'
     )
+    # El token CSRF que la app expone en el <meta>, igual que hace grilla.js.
+    token = pagina.eval_on_selector("meta[name='csrf-token']", "e => e.content")
     respuesta = pagina.request.post(
-        f"{pagina.base}/proyectos/1/asistente/aplicar", form={"carga": carga}
+        f"{pagina.base}/proyectos/1/asistente/aplicar",
+        form={"carga": carga},
+        headers={"X-CSRF-Token": token},
     )
     assert respuesta.status == 200
 

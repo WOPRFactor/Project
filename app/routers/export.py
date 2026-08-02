@@ -8,13 +8,14 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
 from sqlmodel import Session
 
+from ..auth.dependencias import exige_usuario
 from ..db import get_session
 from ..services import export as export_service
 from ..services import exportar_excel
 from ..services import projects as projects_service
 from ..templating import templates
 
-router = APIRouter(prefix="/proyectos/{project_id}/export")
+router = APIRouter(prefix="/proyectos/{project_id}/export", dependencies=[Depends(exige_usuario)])
 
 
 @router.get("/json")

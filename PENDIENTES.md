@@ -29,23 +29,41 @@ $env:PYTHONPATH = ".venv\Lib\site-packages"
 La solución de fondo es tuya: permitir estos binarios en Seguridad de Windows
 (Control de aplicaciones y navegador) o revisar por qué la directiva se activó.
 
-## La lista de pendientes (al 30/07/2026)
+## La lista de pendientes (al 02/08/2026)
 
-Todo lo accionable del plan está **hecho y commiteado** (bloque E + fase 29 completos,
-513 tests en verde). Lo que queda depende de Ariel:
+**Ariel decidió abrir la app al equipo**, así que arrancó el bloque A. La **Fase 10
+(identidad) está hecha**: la app ahora tiene puerta — login con argon2id, sesiones
+revocables en tabla, CSRF en toda mutación, alta de cuentas solo por el admin y
+Alembic versionando el esquema. 550 tests en verde.
 
-**Decisiones e insumos:**
+**Lo que sigue en el bloque A** (en este orden, y **nada se expone hasta cerrar la 13**):
+
+- [ ] **Fase 11 — Autorización**: dueño + miembros (dueño/editor/lector), ninguna ruta
+      parte de un id crudo, 404 al ajeno, modo lectura real.
+- [ ] **Fase 12 — Trabajo simultáneo**: WAL, versión por tarea con 409 visible, y
+      tabla de cambios con historial.
+- [ ] **Fase 13 — Exposición segura**: proxy adelante, CSP y headers duros, backup con
+      restauración probada. **Acá se decide Tailscale (solo el equipo) o Caddy (si un
+      cliente tiene que entrar).** Recién con esto cerrado se comparte la URL.
+
+**Decisiones e insumos que siguen tuyos:**
 
 - [ ] **Columnas por defecto de la grilla** — decir cuáles se usan de verdad; es un
       cambio de una línea.
 - [ ] **Riesgos a fondo** — definir el alcance charlando (plan de respuesta, riesgo
       residual, disparadores, vínculo con tareas de mitigación). No arrancar sin eso.
 - [ ] **El ejemplo de Word** para diseñar ese import (quedó de pasarlo).
-- [ ] **¿Entra el equipo?** — la decisión que destraba las 6 fases de multiusuario
-      (bloque A + comentarios + adjuntos) y la 25 opcional.
+- [ ] **Con multiusuario, revisar el asistente IA**: pasará a exigir rol editor, y
+      mandar proyectos con datos de terceros a Groq es una decisión por proyecto.
 
 **Mantenimiento / higiene:**
 
+- [ ] **Generar tu `WOPR_SECRET_KEY`** y ponerla en el `.env` — la app no arranca
+      fuera de modo debug sin ella:
+      `python -c "import secrets; print(secrets.token_urlsafe(32))"`
+- [ ] La primera vez que abras la app te va a pedir **crear el usuario admin**
+      (pantalla «Crear el primer usuario»). Tu backup previo quedó en
+      `wopr-proyectos.backup-20260802-0824.db`.
 - [ ] Destrabar el **Control de Aplicaciones de Windows** que bloquea `uv.exe` y el
       Python del venv (mientras tanto: el workaround de «Levantar la app»).
 - [ ] **Rotar la GROQ_API_KEY** (quedó pegada en el chat de trabajo) y actualizar

@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}WOPR Proyectos{% endblock %}</title>
+  {# El token CSRF viaja en un meta y HTMX lo manda en cada mutación (ver grilla.js).
+     Los formularios sin HTMX lo llevan en un input oculto. #}
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%234c8dff'/%3E%3Crect x='3' y='4' width='7' height='2' fill='%2308101f'/%3E%3Crect x='5' y='7' width='8' height='2' fill='%2308101f'/%3E%3Crect x='3' y='10' width='5' height='2' fill='%2308101f'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="/static/estilo.css">
   <script src="/static/htmx.min.js" defer></script>
@@ -13,6 +16,16 @@
   <header class="barra">
     <a class="marca" href="/">WOPR <span>Proyectos</span></a>
     {% block acciones %}{% endblock %}
+    {% if usuario %}
+      <span class="sesion">
+        {% if usuario.es_admin %}<a class="icono" href="/admin/usuarios" title="Administrar cuentas">⚙</a>{% endif %}
+        <a href="/mi-cuenta" title="Cambiar mi contraseña">{{ usuario.nombre or usuario.mail }}</a>
+        <form method="post" action="/salir" class="en-linea">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button class="boton" type="submit">Salir</button>
+        </form>
+      </span>
+    {% endif %}
   </header>
   <main>
     {% block contenido %}{% endblock %}

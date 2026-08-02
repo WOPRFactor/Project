@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titulo %}Ingresar · WOPR Proyectos{% endblock %}
+
+{% block contenido %}
+<section class="tarjeta entrada">
+  <h1>Ingresar</h1>
+  {% if error %}<p class="aviso">{{ error }}</p>{% endif %}
+  <form method="post" action="/ingresar" class="formulario">
+    <input type="hidden" name="siguiente" value="{{ siguiente }}">
+    <label>Mail
+      <input name="mail" type="email" autocomplete="username" required autofocus>
+    </label>
+    <label>Contraseña
+      <input name="password" type="password"
+             autocomplete="current-password" required>
+    </label>
+    <button class="boton primario" type="submit">Entrar</button>
+  </form>
+  <p class="tenue pie">
+    Las cuentas las crea el administrador: no hay registro público.
+  </p>
+</section>
+{% endblock %}

@@ -12,6 +12,9 @@ dependencies = [
     "openpyxl==3.1.5",
     # El asistente (Fase 29) llama a Groq; también lo usa el TestClient de dev.
     "httpx==0.28.1",
+    # Multiusuario (bloque A): migraciones versionadas y hash de contraseñas.
+    "alembic==1.18.5",
+    "argon2-cffi==25.1.0",
 ]
 
 [dependency-groups]

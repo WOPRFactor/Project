@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 from sqlmodel import Session
 
+from ..auth.dependencias import exige_usuario
 from ..db import get_session
 from ..services import asistente as asistente_service
 from ..services import asistente_acciones
@@ -19,7 +20,7 @@ from ..services.asistente import AsistenteNoDisponible
 from ..templating import templates
 from ._tablero import Mirada, mirada_form, render
 
-router = APIRouter(prefix="/proyectos/{project_id}")
+router = APIRouter(prefix="/proyectos/{project_id}", dependencies=[Depends(exige_usuario)])
 
 
 @router.post("/asistente", response_class=HTMLResponse)

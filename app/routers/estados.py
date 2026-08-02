@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import ValidationError
 from sqlmodel import Session
 
+from ..auth.dependencias import exige_usuario
 from ..db import get_session
 from ..models import ETIQUETA_COLOR
 from ..schemas import EstadoIn
@@ -17,7 +18,7 @@ from ..services import projects as projects_service
 from ..services.estados import EstadoInvalido
 from ..templating import templates
 
-router = APIRouter(prefix="/proyectos/{project_id}/estados")
+router = APIRouter(prefix="/proyectos/{project_id}/estados", dependencies=[Depends(exige_usuario)])
 
 
 @router.get("", response_class=HTMLResponse)

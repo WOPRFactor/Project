@@ -155,6 +155,8 @@ Todo por variables de entorno, con defaults pensados para uso local:
 | `WOPR_DB` | `./wopr-proyectos.db` | Ruta del archivo SQLite |
 | `WOPR_DEBUG` | `false` | Modo debug; apagado por default |
 | `WOPR_PORT` | `1983` | Puerto del arranque propio (`python -m app`). Un valor inválido frena el arranque con mensaje claro |
+| `WOPR_SECRET_KEY` | — | **Obligatoria fuera de modo debug**: firma los tokens CSRF. Generala con `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
+| `WOPR_COOKIE_SEGURA` | `false` | Flag `Secure` en la cookie de sesión. En localhost sobre HTTP va apagada; detrás del proxy TLS (Fase 13) se prende |
 | `GROQ_API_KEY` | — | Habilita el **Asistente IA** (análisis del cronograma). Se crea gratis en console.groq.com. Sin key, el panel avisa y el resto de la app funciona igual |
 | `WOPR_IA_MODELO` | `llama-3.3-70b-versatile` | Modelo de Groq para el asistente |
 
