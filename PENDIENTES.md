@@ -123,14 +123,20 @@ Las mejoras chicas que pediste quedaron planificadas como **fases 26-28 del bloq
 
 Dato tuyo que sigue faltando: **qué columnas querés por defecto** en la grilla.
 
-Se sumó la **Fase 29 — Asistente con IA** (recomendaciones, análisis y cambios sobre el
-cronograma, siempre con tu OK), con **Groq** como proveedor (capa gratuita, API
-compatible con OpenAI). La **29a ya está hecha**: botón «Asistente IA» arriba de la
-grilla, solo lectura, con tu key en el `.env` de la raíz (fuera de git) y el modelo
-configurable vía `WOPR_IA_MODELO`. Verificada con llamadas reales: analiza el proyecto
-y responde coherente sobre riesgos, hitos y dependencias. Queda la **29b** (acciones
-propuestas con previsualización y OK). Ojo: la key se pegó en el chat de trabajo — si
-querés máxima higiene, rotala en console.groq.com y actualizá el `.env`.
+La **Fase 29 — Asistente con IA está completa** (Groq, capa gratuita, key en el `.env`
+de la raíz — fuera de git —, modelo configurable vía `WOPR_IA_MODELO`):
+
+- **29a** — botón «Asistente IA» arriba de la grilla: análisis y recomendaciones,
+  solo lectura.
+- **29b** — le pedís cambios en lenguaje natural («agregá una tarea de 3 días en la
+  Etapa 3 después del handover»), te muestra las acciones propuestas y **nada se
+  aplica hasta que confirmás**. Contrato cerrado (crear / modificar / cambiar
+  predecesoras), validado con Pydantic, aplicado solo vía services — un ciclo o un
+  WBS inexistente rebota con aviso. Verificado con el modelo real de punta a punta:
+  propuso `Crear «Prueba de estrés» bajo 3 (3d, después de 3.5)` y la aplicó bien.
+
+Ojo: la key se pegó en el chat de trabajo — si querés máxima higiene, rotala en
+console.groq.com y actualizá el `.env`.
 
 ## Decisiones que están esperándote
 

@@ -465,11 +465,13 @@ Se parte en dos mitades que se entregan por separado:
   sin `GROQ_API_KEY` avisa claro en vez de romper; hay un test de que el service arma
   el contexto desde el export y de que una respuesta malformada del modelo termina en
   aviso, no en excepción (la llamada de red se testea con un doble, sin pegarle a Groq).
-- **29b — Acciones con OK.** El contrato de acciones, la previsualización y el aplicar.
-  *Hecho cuando:* hay un test que exige que **ninguna acción se aplique sin
+- **29b — Acciones con OK. ✔** El contrato de acciones, la previsualización y el
+  aplicar. *Hecho cuando:* hay un test que exige que **ninguna acción se aplique sin
   confirmación explícita**; una acción inválida (ciclo, WBS colgante, duración
   negativa) rebota con el aviso del service; el aplicar no toca la DB directo — solo
-  services; el flujo entero corre también en `tests/navegador/`.
+  services; el flujo de confirmación corre también en `tests/navegador/` (la parte de
+  *proponer* usa a Groq y es no determinista: se verificó a mano con el modelo real,
+  y en la suite queda cubierta con dobles).
 
 ## Camino corto
 
