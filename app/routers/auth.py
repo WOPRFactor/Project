@@ -10,6 +10,7 @@ from ..auth import sesion as sesion_service
 from ..auth.dependencias import exige_usuario
 from ..config import settings
 from ..db import get_session
+from ..migraciones_datos import adoptar_proyectos_sin_duenio
 from ..models_auth import Usuario
 from ..services import usuarios as usuarios_service
 from ..services.usuarios import CredencialesInvalidas, CuentaInvalida
@@ -100,6 +101,10 @@ def crear_primer_usuario(
         return templates.TemplateResponse(
             request, "auth/primer_usuario.html", {"error": str(error)}, status_code=400
         )
+
+    # Los proyectos de la etapa monousuario se adoptan **acá** y no solo al arrancar:
+    # al arrancar todavía no existía ninguna cuenta a la cual dárselos.
+    adoptar_proyectos_sin_duenio(session)
 
     abierta = sesion_service.abrir(session, usuario)
     respuesta = RedirectResponse("/", status_code=303)

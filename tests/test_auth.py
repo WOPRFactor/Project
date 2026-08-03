@@ -5,16 +5,21 @@ Lo que se cuida acá no es que el login "ande", sino que **no se pueda pasar sin
 un intento de fuerza bruta se frena solo.
 """
 
+from datetime import date
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, SQLModel, create_engine, select
 
 from app.auth import csrf as csrf_service
 from app.auth import hash as hash_service
 from app.auth import sesion as sesion_service
 from app.db import get_session
 from app.main import app
+from app.models_auth import Miembro, Rol, Usuario
+from app.schemas import ProyectoIn
+from app.services import projects as projects_service
 from app.services import usuarios as usuarios_service
 from app.services.usuarios import CredencialesInvalidas, CuentaInvalida
 
@@ -323,3 +328,40 @@ def test_el_primer_usuario_se_crea_cuando_no_hay_ninguno():
         # Con una cuenta ya creada, la pantalla no se puede volver a usar.
         assert cliente.get("/primer-usuario").headers["location"] == "/ingresar"
     app.dependency_overrides.clear()
+
+
+def test_el_primer_usuario_adopta_los_proyectos_que_ya_estaban():
+    """Los proyectos de la etapa monousuario tienen que quedar con dueño.
+
+    La adopción del arranque no alcanza: cuando la app arranca sobre una base sin
+    cuentas todavía no hay a quién dárselos, y el proyecto quedaba sin fila de dueño.
+    """
+    engine = create_engine(
+        "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
+    )
+    SQLModel.metadata.create_all(engine)
+    with Session(engine) as session:
+        proyecto = projects_service.crear(
+            session, ProyectoIn(nombre="De antes", fecha_inicio=date(2026, 1, 5))
+        )
+        proyecto_id = proyecto.id
+
+    def sesion_de_prueba():
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = sesion_de_prueba
+    with TestClient(app, follow_redirects=False) as cliente:
+        cliente.post(
+            "/primer-usuario",
+            data={"mail": "primero@wopr.local", "nombre": "Ariel",
+                  "password": "clave-de-prueba-123"},
+        )
+    app.dependency_overrides.clear()
+
+    with Session(engine) as session:
+        usuario = session.exec(select(Usuario)).one()
+        miembro = session.exec(select(Miembro)).one()
+        assert miembro.project_id == proyecto_id
+        assert miembro.usuario_id == usuario.id
+        assert miembro.rol == Rol.duenio
