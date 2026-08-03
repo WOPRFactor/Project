@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session
 
-from ..auth.dependencias import exige_usuario
+from ..auth.dependencias import Acceso, exige_duenio, exige_lector
 from ..db import get_session
 from ..services import linea_base as linea_base_service
 from ..services import projects as projects_service
@@ -17,7 +17,7 @@ from ..services.linea_base import LineaBaseInvalida
 from ..templating import templates
 from ._tablero import Mirada, mirada_form, render
 
-router = APIRouter(prefix="/proyectos/{project_id}/base", dependencies=[Depends(exige_usuario)])
+router = APIRouter(prefix="/proyectos/{project_id}/base", dependencies=[Depends(exige_lector)])
 
 
 @router.get("", response_class=HTMLResponse)
@@ -40,7 +40,7 @@ def panel(
     })
 
 
-@router.post("/congelar", response_class=HTMLResponse)
+@router.post("/congelar", response_class=HTMLResponse, dependencies=[Depends(exige_duenio)])
 def congelar(
     project_id: int,
     request: Request,
@@ -60,7 +60,7 @@ def congelar(
     )
 
 
-@router.post("/{linea_id}/vigente")
+@router.post("/{linea_id}/vigente", dependencies=[Depends(exige_duenio)])
 def marcar_vigente(
     project_id: int, linea_id: int, session: Session = Depends(get_session)
 ) -> RedirectResponse:
@@ -70,7 +70,7 @@ def marcar_vigente(
     return _volver(project_id, "")
 
 
-@router.post("/{linea_id}/eliminar")
+@router.post("/{linea_id}/eliminar", dependencies=[Depends(exige_duenio)])
 def eliminar(
     project_id: int, linea_id: int, session: Session = Depends(get_session)
 ) -> RedirectResponse:

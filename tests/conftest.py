@@ -17,9 +17,29 @@ os.environ.setdefault("WOPR_SECRET_KEY", "secreto-solo-para-tests")
 # la base real del usuario: cada TestClient la abriría y migraría. Los tests usan
 # SQLite en memoria para sus datos; este archivo temporal es solo para que el
 # arranque tenga dónde escribir.
-_DB_DE_PRUEBA = Path(tempfile.gettempdir()) / "wopr-tests-arranque.db"
+#
+# El PID va en el nombre a propósito: con una ruta fija, dos corridas simultáneas
+# de la suite se pelean el lock de ese SQLite y las dos se arrastran durante horas.
+_DB_DE_PRUEBA = Path(tempfile.gettempdir()) / f"wopr-tests-arranque-{os.getpid()}.db"
 _DB_DE_PRUEBA.unlink(missing_ok=True)
 os.environ.setdefault("WOPR_DB", str(_DB_DE_PRUEBA))
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """No dejar archivos sueltos en el temp del sistema.
+
+    Windows no borra un archivo que todavía está abierto, así que primero se cierra
+    el engine; si igual no se puede, se deja — es un temporal con el PID en el
+    nombre y no molesta a nadie.
+    """
+    from app.db import engine
+
+    engine.dispose()
+    for sufijo in ("", "-journal", "-wal", "-shm"):
+        try:
+            Path(str(_DB_DE_PRUEBA) + sufijo).unlink(missing_ok=True)
+        except OSError:
+            pass
 
 from app.models import Project  # noqa: E402
 from app.schemas import ProyectoIn  # noqa: E402

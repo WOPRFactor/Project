@@ -66,7 +66,12 @@ def mirada_query(
     return _armar(detalle, etapa, color, columnas, colapsadas, flechas)
 
 
-def contexto(session: Session, project_id: int, mirada: Mirada | None = None) -> dict:
+def contexto(
+    session: Session,
+    project_id: int,
+    mirada: Mirada | None = None,
+    acceso=None,
+) -> dict:
     proyecto = projects_service.obtener(session, project_id)
     if mirada is not None and proyecto is not None:
         # La mirada explícita se recuerda: al volver al proyecto se retoma.
@@ -76,6 +81,11 @@ def contexto(session: Session, project_id: int, mirada: Mirada | None = None) ->
     datos = vista_service.armar(session, project_id, mirada=mirada, base=base)
     return {
         "proyecto": proyecto,
+        # Sin acceso resuelto (llamadas internas), la plantilla asume solo lectura:
+        # que la UI muestre de más es peor que mostrar de menos.
+        "acceso": acceso,
+        "puede_editar": bool(acceso and acceso.puede_editar),
+        "es_duenio": bool(acceso and acceso.es_duenio),
         "linea_base": linea_base_service.vigente(session, project_id),
         "desvio_ambito": linea_base_service.desvio_por_ambito(session, project_id, datos),
         "avance_planificado": linea_base_service.avance_planificado(session, project_id),
@@ -114,7 +124,11 @@ def render(
     aviso: str | None = None,
     mirada: Mirada | None = None,
 ) -> HTMLResponse:
-    datos = contexto(session, project_id, mirada)
+    """El acceso ya lo resolvió la dependencia del router: se lee de request.state
+    en vez de pedírselo a cada llamador (son decenas y se olvidaría alguno)."""
+    datos = contexto(
+        session, project_id, mirada, acceso=getattr(request.state, "acceso", None)
+    )
     datos["aviso"] = aviso
     return templates.TemplateResponse(request, "partials/tablero.html", datos)
 

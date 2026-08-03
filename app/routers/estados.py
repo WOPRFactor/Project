@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import ValidationError
 from sqlmodel import Session
 
-from ..auth.dependencias import exige_usuario
+from ..auth.dependencias import Acceso, exige_duenio, exige_lector
 from ..db import get_session
 from ..models import ETIQUETA_COLOR
 from ..schemas import EstadoIn
@@ -18,7 +18,7 @@ from ..services import projects as projects_service
 from ..services.estados import EstadoInvalido
 from ..templating import templates
 
-router = APIRouter(prefix="/proyectos/{project_id}/estados", dependencies=[Depends(exige_usuario)])
+router = APIRouter(prefix="/proyectos/{project_id}/estados", dependencies=[Depends(exige_lector)])
 
 
 @router.get("", response_class=HTMLResponse)
@@ -38,7 +38,7 @@ def pantalla(
     })
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(exige_duenio)])
 def crear(
     project_id: int,
     nombre: str = Form(...),
@@ -57,7 +57,7 @@ def crear(
     )
 
 
-@router.post("/{estado_id}")
+@router.post("/{estado_id}", dependencies=[Depends(exige_duenio)])
 def actualizar(
     project_id: int,
     estado_id: int,
@@ -80,7 +80,7 @@ def actualizar(
     )
 
 
-@router.post("/{estado_id}/eliminar")
+@router.post("/{estado_id}/eliminar", dependencies=[Depends(exige_duenio)])
 def eliminar(
     project_id: int,
     estado_id: int,

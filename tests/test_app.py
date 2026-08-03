@@ -278,12 +278,16 @@ def test_las_flechas_del_timeline_se_pueden_apagar(cliente):
     assert 'class="conexiones"' not in de_vuelta.text
 
 
-def test_agregar_a_un_proyecto_borrado_avisa_sin_crear_huerfanas(cliente):
+def test_agregar_a_un_proyecto_borrado_da_404_sin_crear_huerfanas(cliente):
+    """Desde la Fase 11 la puerta corta antes: sin proyecto no hay acceso que
+    resolver, así que es un 404 y no un tablero con aviso. La tarea huérfana
+    tampoco se crea — que era el punto original de este test."""
     crear_proyecto(cliente)
     cliente.post("/proyectos/1/eliminar")
+
     respuesta = cliente.post("/proyectos/1/tareas/agregar")
-    assert respuesta.status_code == 200
-    assert "ya no existe" in respuesta.text
+    assert respuesta.status_code == 404
+    assert "Traceback" not in respuesta.text
 
 
 def test_indentar_y_desindentar(cliente):

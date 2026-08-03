@@ -1,4 +1,9 @@
-"""Rutas de proyectos."""
+"""Rutas de proyectos.
+
+Desde la Fase 11 **ninguna ruta parte de un `project_id` crudo**: la dependencia
+`exige_lector/editor/dueño` resuelve la entidad y el permiso en un solo paso y
+devuelve un `Acceso`. Si lo tenés en la mano, el chequeo ya pasó.
+"""
 
 from __future__ import annotations
 
@@ -8,10 +13,12 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session
 
-from ..auth.dependencias import exige_usuario
+from ..auth.dependencias import Acceso, exige_duenio, exige_lector, exige_usuario
 from ..db import get_session
 from ..models import EstadoProyecto
+from ..models_auth import Rol, Usuario
 from ..schemas import ProyectoIn
+from ..services import miembros as miembros_service
 from ..services import projects as projects_service
 from ..templating import templates
 from ._tablero import Mirada, contexto, mirada_query
@@ -23,9 +30,16 @@ router = APIRouter(dependencies=[Depends(exige_usuario)])
 def home(
     request: Request,
     archivados: bool = False,
+    usuario: Usuario = Depends(exige_usuario),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    proyectos = projects_service.listar(session, incluir_archivados=archivados)
+    """Solo tus proyectos: el listado se filtra por membresía, no por la UI."""
+    visibles = set(miembros_service.proyectos_de(session, usuario))
+    proyectos = [
+        p
+        for p in projects_service.listar(session, incluir_archivados=archivados)
+        if p.id in visibles
+    ]
     return templates.TemplateResponse(
         request,
         "proyectos/lista.html",
@@ -46,12 +60,15 @@ def crear(
     descripcion: str = Form(""),
     fecha_inicio: date = Form(...),
     estado: EstadoProyecto = Form(EstadoProyecto.activo),
+    usuario: Usuario = Depends(exige_usuario),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     datos = ProyectoIn(
         nombre=nombre, descripcion=descripcion, fecha_inicio=fecha_inicio, estado=estado
     )
     proyecto = projects_service.crear(session, datos)
+    # Quien lo crea es su dueño: un proyecto nunca nace huérfano.
+    miembros_service.agregar(session, proyecto.id or 0, usuario.id or 0, Rol.duenio)
     return RedirectResponse(f"/proyectos/{proyecto.id}", status_code=303)
 
 
@@ -61,6 +78,7 @@ def detalle(
     request: Request,
     aviso: str = "",
     mirada: Mirada = Depends(mirada_query),
+    acceso: Acceso = Depends(exige_lector),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     # Sin parámetros de vista en la URL (venir de la home, de Equipo…), se retoma
@@ -69,11 +87,7 @@ def detalle(
     if not any(k in request.query_params for k in de_mirada):
         mirada = projects_service.vista_guardada(session, project_id)
 
-    datos = contexto(session, project_id, mirada)
-    if datos["proyecto"] is None:
-        return templates.TemplateResponse(
-            request, "error.html", {"mensaje": "Ese proyecto no existe"}, status_code=404
-        )
+    datos = contexto(session, project_id, mirada, acceso=acceso)
     # El import de proyecto nuevo redirige acá con sus avisos en la URL.
     datos["aviso"] = aviso.strip()[:1500] or None
     return templates.TemplateResponse(request, "proyectos/detalle.html", datos)
@@ -81,15 +95,12 @@ def detalle(
 
 @router.get("/proyectos/{project_id}/editar", response_class=HTMLResponse)
 def editar(
-    project_id: int, request: Request, session: Session = Depends(get_session)
+    project_id: int,
+    request: Request,
+    acceso: Acceso = Depends(exige_duenio),
 ) -> HTMLResponse:
-    proyecto = projects_service.obtener(session, project_id)
-    if proyecto is None:
-        return templates.TemplateResponse(
-            request, "error.html", {"mensaje": "Ese proyecto no existe"}, status_code=404
-        )
     return templates.TemplateResponse(
-        request, "proyectos/form.html", {"proyecto": proyecto, "hoy": date.today()}
+        request, "proyectos/form.html", {"proyecto": acceso.proyecto, "hoy": date.today()}
     )
 
 
@@ -100,6 +111,7 @@ def actualizar(
     descripcion: str = Form(""),
     fecha_inicio: date = Form(...),
     estado: EstadoProyecto = Form(EstadoProyecto.activo),
+    acceso: Acceso = Depends(exige_duenio),
     session: Session = Depends(get_session),
 ) -> RedirectResponse:
     datos = ProyectoIn(
@@ -110,6 +122,10 @@ def actualizar(
 
 
 @router.post("/proyectos/{project_id}/eliminar")
-def eliminar(project_id: int, session: Session = Depends(get_session)) -> RedirectResponse:
+def eliminar(
+    project_id: int,
+    acceso: Acceso = Depends(exige_duenio),
+    session: Session = Depends(get_session),
+) -> RedirectResponse:
     projects_service.eliminar(session, project_id)
     return RedirectResponse("/", status_code=303)

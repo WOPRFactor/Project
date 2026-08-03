@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import ValidationError
 from sqlmodel import Session
 
-from ..auth.dependencias import exige_usuario
+from ..auth.dependencias import Acceso, exige_editor, exige_lector
 from ..db import get_session
 from ..schemas import ProyectoIn, TareaIn
 from ..services import arbol as arbol_service
@@ -23,7 +23,7 @@ from ..services.tasks import TareaInvalida
 from . import _celda
 from ._tablero import Mirada, mirada_form, render
 
-router = APIRouter(prefix="/proyectos/{project_id}", dependencies=[Depends(exige_usuario)])
+router = APIRouter(prefix="/proyectos/{project_id}", dependencies=[Depends(exige_editor)])
 
 
 @router.post("/tareas/agregar", response_class=HTMLResponse)

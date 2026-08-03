@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from sqlmodel import Session
 
-from ..auth.dependencias import exige_usuario
+from ..auth.dependencias import Acceso, exige_editor, exige_lector
 from ..db import get_session
 from ..services import importar as importar_service
 from ..services import importar_aplicar
@@ -31,7 +31,7 @@ from ..services.tasks import TareaInvalida
 from ..templating import templates
 from ._tablero import Mirada, mirada_form, render
 
-router = APIRouter(prefix="/proyectos/{project_id}", dependencies=[Depends(exige_usuario)])
+router = APIRouter(prefix="/proyectos/{project_id}", dependencies=[Depends(exige_editor)])
 
 _MAXIMO_PLANILLA = 5 * 1024 * 1024
 _MAXIMO_PEGADO = 200_000

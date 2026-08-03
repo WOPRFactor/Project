@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import ValidationError
 from sqlmodel import Session
 
-from ..auth.dependencias import exige_usuario
+from ..auth.dependencias import Acceso, exige_editor, exige_lector
 from ..db import get_session
 from ..models import ETIQUETA_ESTADO_RIESGO
 from ..schemas import RiesgoIn
@@ -19,7 +19,7 @@ from ..services import riesgos as riesgos_service
 from ..services.riesgos import RiesgoInvalido
 from ..templating import templates
 
-router = APIRouter(prefix="/proyectos/{project_id}/riesgos", dependencies=[Depends(exige_usuario)])
+router = APIRouter(prefix="/proyectos/{project_id}/riesgos", dependencies=[Depends(exige_lector)])
 
 
 @router.get("", response_class=HTMLResponse)
@@ -42,7 +42,7 @@ def panel(
     })
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(exige_editor)])
 def crear(
     project_id: int,
     descripcion: str = Form(""),
@@ -67,7 +67,7 @@ def crear(
     return _volver(project_id, "")
 
 
-@router.post("/{riesgo_id}")
+@router.post("/{riesgo_id}", dependencies=[Depends(exige_editor)])
 def actualizar(
     project_id: int,
     riesgo_id: int,
@@ -91,7 +91,7 @@ def actualizar(
     return _volver(project_id, "")
 
 
-@router.post("/{riesgo_id}/eliminar")
+@router.post("/{riesgo_id}/eliminar", dependencies=[Depends(exige_editor)])
 def eliminar(
     project_id: int, riesgo_id: int, session: Session = Depends(get_session)
 ) -> RedirectResponse:

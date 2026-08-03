@@ -16,6 +16,7 @@ Dos decisiones que se explican solas al leerlas:
 from __future__ import annotations
 
 from datetime import datetime
+from enum import Enum
 
 from sqlmodel import Field, SQLModel
 
@@ -35,6 +36,46 @@ class Usuario(SQLModel, table=True):
     debe_cambiar_password: bool = Field(default=True)
     creado_el: datetime = Field(default_factory=datetime.now)
     ultimo_ingreso: datetime | None = Field(default=None)
+
+
+class Rol(str, Enum):
+    """Qué puede hacer alguien **en un proyecto**. Tres, y no más (Fase 11).
+
+    Permisos por tarea o por columna quedan explícitamente afuera del plan: la
+    complejidad no se paga sola y vuelve imposible razonar sobre quién ve qué.
+    """
+
+    duenio = "dueño"
+    editor = "editor"
+    lector = "lector"
+
+
+ETIQUETA_ROL = {
+    Rol.duenio: "Dueño",
+    Rol.editor: "Editor",
+    Rol.lector: "Lector",
+}
+
+DESCRIPCION_ROL = {
+    Rol.duenio: "Administra miembros, pesos y línea base. Puede borrar el proyecto.",
+    Rol.editor: "Carga y edita el cronograma. No toca miembros ni línea base.",
+    Rol.lector: "Solo mira. No puede modificar nada.",
+}
+
+
+class Miembro(SQLModel, table=True):
+    """Quién participa de un proyecto y con qué rol.
+
+    El **dueño es un permiso**; el responsable (`Project.responsable_id`, un
+    `Contacto`) es una rendición de cuentas. No son lo mismo y no tienen por qué
+    ser la misma persona: el dueño administra, el responsable rinde.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    project_id: int = Field(foreign_key="project.id", index=True)
+    usuario_id: int = Field(foreign_key="usuario.id", index=True)
+    rol: Rol = Field(default=Rol.editor)
+    creado_el: datetime = Field(default_factory=datetime.now)
 
 
 class Sesion(SQLModel, table=True):

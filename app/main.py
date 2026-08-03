@@ -18,13 +18,13 @@ from pydantic import ValidationError
 
 from .auth import csrf as csrf_service
 from .auth import sesion as sesion_service
-from .auth.dependencias import RedirigirALogin, respuesta_sin_sesion
+from .auth.dependencias import RedirigirALogin, SinAcceso, respuesta_sin_sesion
 from .auth.middleware import ExigeCsrf
 from .config import RAIZ, settings
 from .db import init_db
 from .routers import (
     admin, asistente, auth, carga, equipo, estados, export, importar, informe,
-    linea_base, projects, riesgos, tasks,
+    linea_base, miembros, projects, riesgos, tasks,
 )
 from .templating import templates
 
@@ -58,6 +58,7 @@ app.include_router(linea_base.router)
 app.include_router(informe.router)
 app.include_router(equipo.router)
 app.include_router(asistente.router)
+app.include_router(miembros.router)
 
 
 @app.middleware("http")
@@ -76,6 +77,12 @@ def salud() -> dict[str, str]:
 @app.exception_handler(RedirigirALogin)
 async def sin_sesion(request: Request, exc: RedirigirALogin):
     return respuesta_sin_sesion(request, exc.destino)
+
+
+@app.exception_handler(SinAcceso)
+async def sin_acceso(request: Request, exc: SinAcceso) -> HTMLResponse:
+    """404 y no 403: un 403 confirmaría que el proyecto existe."""
+    return _pagina_error(request, "Ese proyecto no existe", 404)
 
 
 @app.exception_handler(ValidationError)

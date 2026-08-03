@@ -247,7 +247,7 @@ login; la app no arranca en modo no-debug sin `SECRET_KEY`; el hash nunca aparec
 ni en una respuesta; `alembic upgrade head` reproduce la base desde cero **y** actualiza una
 base v1 existente sin perder datos.
 
-**Fase 11 — Autorización: dueño y miembros.** `Project` gana dueño; tabla `Miembro` (rol
+**Fase 11 — Autorización: dueño y miembros. ✔** `Project` gana dueño; tabla `Miembro` (rol
 dueño/editor/lector). Las dependencias `exige_lector/editor/dueño` resuelven proyecto y
 permiso en un solo paso y **ninguna ruta vuelve a partir de un id crudo**. El home lista solo
 tus proyectos. Modo lectura real: sin celdas editables y con el endpoint rechazando la

@@ -69,7 +69,43 @@ def poner_al_dia(engine: Engine) -> list[str]:
     if not _corrida(engine, _SIEMBRA_AVANCE):
         with Session(engine) as session:
             aplicadas += _avance_desde_estado(session)
+    with Session(engine) as session:
+        aplicadas += adoptar_proyectos_sin_duenio(session)
     return aplicadas
+
+
+def adoptar_proyectos_sin_duenio(session: Session) -> list[str]:
+    """Todo proyecto necesita dueño; los de la etapa monousuario no tienen ninguno.
+
+    Se le asignan al primer admin. Corre en cada arranque a propósito: un
+    proyecto puede quedar sin dueño si se borra la cuenta que lo era, y esta es
+    la red que evita que se vuelva inalcanzable. Sin ningún admin todavía (base
+    recién creada, antes del primer usuario) no hace nada y se reintenta después.
+    """
+    from .models_auth import Miembro, Rol, Usuario
+
+    admin = session.exec(
+        select(Usuario).where(Usuario.es_admin == True, Usuario.activo == True)  # noqa: E712
+    ).first()
+    if admin is None:
+        return []
+
+    con_duenio = {
+        m.project_id
+        for m in session.exec(select(Miembro).where(Miembro.rol == Rol.duenio))
+    }
+    adoptados = 0
+    for proyecto in session.exec(select(Project)):
+        if proyecto.id in con_duenio:
+            continue
+        session.add(
+            Miembro(project_id=proyecto.id or 0, usuario_id=admin.id or 0, rol=Rol.duenio)
+        )
+        adoptados += 1
+    if adoptados:
+        session.commit()
+        log.info("%s proyectos sin dueño adoptados por %s", adoptados, admin.mail)
+    return [f"{adoptados} proyectos adoptados por {admin.mail}"] if adoptados else []
 
 
 def _corrida(engine: Engine, nombre: str) -> bool:

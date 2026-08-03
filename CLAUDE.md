@@ -92,6 +92,11 @@ Dirección de dependencias única: `routers → services → engine | models/db`
 
 - La app bindea **solo `127.0.0.1`**. Si alguna vez se expone fuera de localhost,
   auth + HTTPS son requisito previo, no deuda técnica.
+- **Ninguna consulta parte de un id crudo** (Fase 11). Toda ruta de proyecto pasa por
+  `exige_lector/editor/duenio`, que resuelven entidad **y** permiso juntos y devuelven
+  un `Acceso`; al no-miembro le responden **404 y no 403** (un 403 confirmaría que el
+  proyecto existe). Tres roles por proyecto y nada más: dueño / editor / lector.
+  Esconder el botón en la UI **no** es un control — el endpoint rechaza igual.
 - **Desde la Fase 10 la app tiene puerta** (`app/auth/`): contraseñas con argon2id
   (el hash no sale nunca de `auth/hash.py`), sesiones como fila revocable con token
   opaco en cookie `HttpOnly`, y **token CSRF exigido por middleware en todo verbo

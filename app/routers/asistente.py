@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse
 from sqlmodel import Session
 
-from ..auth.dependencias import exige_usuario
+from ..auth.dependencias import Acceso, exige_editor, exige_lector
 from ..db import get_session
 from ..services import asistente as asistente_service
 from ..services import asistente_acciones
@@ -20,7 +20,7 @@ from ..services.asistente import AsistenteNoDisponible
 from ..templating import templates
 from ._tablero import Mirada, mirada_form, render
 
-router = APIRouter(prefix="/proyectos/{project_id}", dependencies=[Depends(exige_usuario)])
+router = APIRouter(prefix="/proyectos/{project_id}", dependencies=[Depends(exige_lector)])
 
 
 @router.post("/asistente", response_class=HTMLResponse)
@@ -48,7 +48,13 @@ def preguntar(
     return templates.TemplateResponse(request, "partials/asistente.html", contexto)
 
 
-@router.post("/asistente/aplicar", response_class=HTMLResponse)
+@router.post(
+    "/asistente/aplicar",
+    response_class=HTMLResponse,
+    # Preguntar es solo lectura y lo puede hacer cualquier miembro; **aplicar**
+    # escribe el cronograma, así que exige editor.
+    dependencies=[Depends(exige_editor)],
+)
 def aplicar(
     project_id: int,
     request: Request,

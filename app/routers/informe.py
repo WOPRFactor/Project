@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from sqlmodel import Session
 
-from ..auth.dependencias import exige_usuario
+from ..auth.dependencias import Acceso, exige_editor, exige_lector
 from ..db import get_session
 from ..models import ETIQUETA_ESTADO_RIESGO
 from ..services import informe as informe_service
@@ -17,7 +17,7 @@ from ..services import projects as projects_service
 from ..services.informe import InformeInvalido
 from ..templating import templates
 
-router = APIRouter(prefix="/proyectos/{project_id}", dependencies=[Depends(exige_usuario)])
+router = APIRouter(prefix="/proyectos/{project_id}", dependencies=[Depends(exige_lector)])
 
 
 @router.get("/informe", response_class=HTMLResponse)

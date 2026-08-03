@@ -36,10 +36,14 @@ La solución de fondo es tuya: permitir estos binarios en Seguridad de Windows
 revocables en tabla, CSRF en toda mutación, alta de cuentas solo por el admin y
 Alembic versionando el esquema. 550 tests en verde.
 
+La **Fase 11 (autorización) también está hecha**: tres roles por proyecto
+(dueño/editor/lector), ninguna ruta parte de un id crudo, al ajeno le responde 404
+(no 403: un 403 confirmaría que el proyecto existe), la home lista solo tus
+proyectos y el modo lectura es real — las celdas no se editan **y** el endpoint
+rechaza aunque armes el POST a mano. Hay pantalla de **Miembros** por proyecto.
+
 **Lo que sigue en el bloque A** (en este orden, y **nada se expone hasta cerrar la 13**):
 
-- [ ] **Fase 11 — Autorización**: dueño + miembros (dueño/editor/lector), ninguna ruta
-      parte de un id crudo, 404 al ajeno, modo lectura real.
 - [ ] **Fase 12 — Trabajo simultáneo**: WAL, versión por tarea con 409 visible, y
       tabla de cambios con historial.
 - [ ] **Fase 13 — Exposición segura**: proxy adelante, CSP y headers duros, backup con

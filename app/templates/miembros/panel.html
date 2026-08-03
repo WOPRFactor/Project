@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block titulo %}Miembros · {{ proyecto.nombre }}{% endblock %}
+
+{% block contenido %}
+<section>
+  <h1>Miembros de «{{ proyecto.nombre }}»</h1>
+  <p class="tenue">
+    <a href="/proyectos/{{ proyecto.id }}">← Volver al proyecto</a>
+  </p>
+  {% if aviso %}<p class="aviso">{{ aviso }}</p>{% endif %}
+  {% if not acceso.es_duenio %}
+    <p class="tenue">
+      Tenés acceso de <strong>{{ roles[acceso.rol] | lower }}</strong> en este
+      proyecto: podés ver quiénes participan, pero administrarlos es del dueño.
+    </p>
+  {% endif %}
+
+  <div class="lista-estados">
+    {% for miembro, cuenta in miembros %}
+      <div class="fila-estado">
+        <span class="e-nombre">
+          <strong>{{ cuenta.nombre or cuenta.mail }}</strong>
+          {% if cuenta.nombre %} · <span class="tenue">{{ cuenta.mail }}</span>{% endif %}
+          <i class="chip">{{ roles[miembro.rol] }}</i>
+          {% if cuenta.id == acceso.usuario.id %}<i class="chip">vos</i>{% endif %}
+        </span>
+        {% if acceso.es_duenio %}
+          <span class="ops-miembro">
+            <form method="post" action="/proyectos/{{ proyecto.id }}/miembros/{{ cuenta.id }}/rol">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <select name="rol" class="celda" aria-label="Rol de {{ cuenta.mail }}">
+                {% for valor, etiqueta in roles.items() %}
+                  <option value="{{ valor.value }}" {{ 'selected' if miembro.rol == valor }}>{{ etiqueta }}</option>
+                {% endfor %}
+              </select>
+              <button class="boton" type="submit">Cambiar rol</button>
+            </form>
+            <form method="post" action="/proyectos/{{ proyecto.id }}/miembros/{{ cuenta.id }}/quitar"
+                  data-confirmar="¿Sacar a {{ cuenta.mail }} del proyecto?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button class="boton peligro" type="submit">Quitar</button>
+            </form>
+          </span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+
+  {% if acceso.es_duenio %}
+    <h2>Sumar a alguien</h2>
+    {% if candidatos %}
+      <form method="post" action="/proyectos/{{ proyecto.id }}/miembros" class="tarjeta en-fila">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <select name="usuario_id" class="celda" required>
+          <option value="">Elegí una cuenta…</option>
+          {% for cuenta in candidatos %}
+            <option value="{{ cuenta.id }}">{{ cuenta.nombre or cuenta.mail }} ({{ cuenta.mail }})</option>
+          {% endfor %}
+        </select>
+        <select name="rol" class="celda">
+          {% for valor, etiqueta in roles.items() %}
+            <option value="{{ valor.value }}" {{ 'selected' if valor.value == 'editor' }}>{{ etiqueta }}</option>
+          {% endfor %}
+        </select>
+        <button class="boton primario" type="submit">Sumar</button>
+      </form>
+    {% else %}
+      <p class="tenue">
+        No quedan cuentas para sumar. Las crea el administrador desde
+        <a href="/admin/usuarios">Cuentas</a>.
+      </p>
+    {% endif %}
+
+    <p class="tenue pie">
+      {% for valor, etiqueta in roles.items() %}
+        <strong>{{ etiqueta }}:</strong> {{ descripcion_rol[valor] }}<br>
+      {% endfor %}
+    </p>
+  {% endif %}
+</section>
+{% endblock %}

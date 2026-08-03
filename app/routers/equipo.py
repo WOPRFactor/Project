@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlmodel import Session
 
-from ..auth.dependencias import exige_usuario
+from ..auth.dependencias import Acceso, exige_editor, exige_lector
 from ..db import get_session
 from ..services import contactos as contactos_service
 from ..services import equipo as equipo_service
@@ -19,7 +19,7 @@ from ..services import vista as vista_service
 from ..services.contactos import ContactoInvalido
 from ..templating import templates
 
-router = APIRouter(prefix="/proyectos/{project_id}/equipo", dependencies=[Depends(exige_usuario)])
+router = APIRouter(prefix="/proyectos/{project_id}/equipo", dependencies=[Depends(exige_lector)])
 
 
 @router.get("", response_class=HTMLResponse)
@@ -45,7 +45,7 @@ def panel(
     })
 
 
-@router.post("")
+@router.post("", dependencies=[Depends(exige_editor)])
 def crear(
     project_id: int,
     nombre: str = Form(...),
@@ -56,7 +56,7 @@ def crear(
     return _volver(project_id, "")
 
 
-@router.post("/{contacto_id}")
+@router.post("/{contacto_id}", dependencies=[Depends(exige_editor)])
 def renombrar(
     project_id: int,
     contacto_id: int,
@@ -73,7 +73,7 @@ def renombrar(
     return _volver(project_id, "")
 
 
-@router.post("/{contacto_id}/unir")
+@router.post("/{contacto_id}/unir", dependencies=[Depends(exige_editor)])
 def unir(
     project_id: int,
     contacto_id: int,
@@ -91,7 +91,7 @@ def unir(
     return _volver(project_id, f"Unidas: {movidas} tareas cambiaron de responsable")
 
 
-@router.post("/{contacto_id}/eliminar")
+@router.post("/{contacto_id}/eliminar", dependencies=[Depends(exige_editor)])
 def eliminar(
     project_id: int, contacto_id: int, session: Session = Depends(get_session)
 ) -> RedirectResponse:
