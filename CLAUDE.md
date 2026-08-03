@@ -103,7 +103,30 @@ Dirección de dependencias única: `routers → services → engine | models/db`
   que no sea GET** — una ruta nueva nace protegida sin que nadie se acuerde. Las
   cuentas las crea el admin: no hay auto-registro. `WOPR_SECRET_KEY` es obligatoria
   fuera de modo debug.
+- **Nadie pisa el trabajo de otro en silencio** (Fase 12). La base va en **WAL** con
+  espera por lock, y cada `Task` tiene `version`: la celda manda la que leyó y una
+  vencida se rechaza con **409** más la fila recargada. La versión la sube un listener
+  de `before_flush` en `app/concurrencia.py`, **no cada service a mano** — una tarea se
+  guarda desde el árbol, las predecesoras, los pesos y el import, y el que se olvidara
+  abriría justo el agujero que esto tapa. HTMX no pinta respuestas que no sean 2xx: el
+  swap del 409 se habilita explícitamente en `static/grilla.js`.
+- La tabla `cambio` es **de solo agregar**: la escriben los services (foto antes / foto
+  después) y ninguna ruta la edita ni la borra. Guarda texto ya legible y no ids —un id
+  de estado borrado no se puede resolver tres meses después—, y sobrevive al borrado de
+  la tarea, que es justo cuando más importa.
 - El esquema lo versiona **Alembic** (`migrations/`), no un script aditivo.
+- **Los documentos (PDF y Word) no rearman nada** (Fase 30). El PDF lo imprime el Chrome
+  del sistema sobre la **misma plantilla** que la pantalla, porque el Gantt ya es HTML y
+  CSS: redibujarlo en otra librería sería garantizar que papel y pantalla se separen. Por
+  eso el informe vive en `informe/cuerpo.html`, incluido por la pantalla y por el PDF. El
+  HTML del documento va **autocontenido** (CSS embebido con `css_embebido`): se imprime
+  desde un `file://` donde `/static/...` no resuelve. Word es la excepción declarada: va
+  sin Gantt, porque ahí sí habría que redibujarlo.
+- Un documento **no depende de la mirada**: sale con todas las tareas, aunque en pantalla
+  tengas etapas plegadas y columnas apagadas. Y el Gantt se **comprime** al ancho de la
+  hoja (`documento.ancho_de_dia`, truncando centésimos hacia abajo): Chrome corta lo que
+  se pasa del ancho **sin avisar**, y perder los últimos meses del cronograma es peor que
+  un Gantt apretado.
 - Todo input externo se valida con Pydantic en el borde: tipos, longitudes, enums
   cerrados, duración entera > 0, fechas parseadas estricto.
 - El grafo de dependencias también es input: se valida (ciclos, referencias colgantes,

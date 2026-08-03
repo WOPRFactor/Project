@@ -256,7 +256,7 @@ escritura aunque armes el POST a mano.
 403 para un lector — la UI escondida no cuenta como control; un proyecto no queda huérfano;
 borrar un usuario no borra sus proyectos.
 
-**Fase 12 — Trabajo simultáneo sin pisarse.** SQLite en WAL con `busy_timeout`. `Task` gana
+**Fase 12 — Trabajo simultáneo sin pisarse. ✔** SQLite en WAL con `busy_timeout`. `Task` gana
 `version`: la celda manda la versión que leyó y, si no coincide, devuelve 409 con la fila
 recargada y un aviso claro — **nunca un guardado silencioso encima**. Tabla `Cambio` (quién,
 cuándo, tarea, campo, de → a) escrita desde los services. Vista de historial.
@@ -442,7 +442,7 @@ de dev en `pyproject.toml`.
 Playwright instalado sigue en verde sin tocar esos tests; la barra de vista (el bug 3) tiene
 su test de clic real, que fue la razón concreta de todo esto.
 
-**Fase 29 — Asistente con IA: recomendaciones, análisis y cambios con OK.** Un panel
+**Fase 29 — Asistente con IA: recomendaciones, análisis y cambios con OK. ✔** Un panel
 «Asistente» donde Ariel pide en lenguaje natural («analizame el proyecto», «agregá una
 etapa de pruebas después de la 2»). La app manda el cronograma serializado (el export
 JSON/markdown que ya existe) a **Groq** (API compatible con OpenAI, capa gratuita;
@@ -472,6 +472,29 @@ Se parte en dos mitades que se entregan por separado:
   services; el flujo de confirmación corre también en `tests/navegador/` (la parte de
   *proponer* usa a Groq y es no determinista: se verificó a mano con el modelo real,
   y en la suite queda cubierta con dobles).
+
+**Fase 30 — El plan y el informe como documento: PDF y Word. ✔** Hasta acá lo único que
+salía de la app era Excel (la grilla, para reimportar) y el informe por `Ctrl+P`. Faltaba
+poder **mandar** el plan. Cuatro descargas: **plan** e **informe**, cada uno en PDF y en
+Word. El PDF lo imprime el **Chrome del sistema** (`--headless --print-to-pdf`) sobre la
+misma plantilla que la pantalla, con el CSS embebido porque se imprime desde un `file://`;
+se eligió así y no con una librería de PDF porque el Gantt ya es HTML y CSS, y redibujarlo
+sería garantizar que el papel y la pantalla se separen con el tiempo. Sin Chrome, el botón
+avisa en castellano. El Word usa `python-docx` y va **sin Gantt** a propósito: es el
+formato para retocar, y dibujar el timeline con formas de Word abriría justo esa brecha. El
+documento sale **completo siempre**, sin depender de las etapas plegadas ni de las columnas
+apagadas —un PDF que cambia según cómo quedó tu sesión es una trampa cuando lo mandás por
+mail—, y el Gantt se **comprime** al ancho de la hoja. El informe reusa un partial nuevo
+(`informe/cuerpo.html`) que comparten la pantalla y el PDF.
+*Hecho cuando:* las cuatro descargas responden con un archivo válido; el Gantt entra en el
+ancho de la hoja (test sobre el cálculo, no a ojo); el Word relee con `python-docx` y trae
+las tareas; sin Chrome el mensaje es claro y no una excepción; y un informe que no se puede
+emitir (pesos abiertos) contesta 400 con su motivo en vez de bajar un archivo roto.
+
+De paso saldó un defecto que ya estaba: al imprimir, el Gantt salía **en tema oscuro y
+cortado**. La paleta de la app son variables de `:root` y el `@media print` solo aclaraba
+`html` y `body`, así que el panel quedaba ilegible; y un proyecto de 415 columnas a 6px por
+día son ~2000px de timeline en una hoja de 1050, que Chrome recorta sin avisar.
 
 ## Camino corto
 
@@ -531,7 +554,7 @@ Pantalla de miembros.
 *Aceptación:* un test por verbo mutante con 404 para ajeno y 403 para lector; un proyecto no
 queda sin dueño; borrar un usuario no borra sus proyectos.
 
-**Fase 12** — SQLite en WAL con `busy_timeout`. `Task.version` incremental; las celdas mandan
+**Fase 12 ✔** — SQLite en WAL con `busy_timeout`. `Task.version` incremental; las celdas mandan
 la versión leída y una versión vieja da 409 con la fila recargada y aviso claro, nunca
 guardado encima. Tabla `Cambio` escrita desde los services. Historial por proyecto, paginado.
 *Aceptación:* test de dos ediciones concurrentes donde la segunda se rechaza y no se aplica;

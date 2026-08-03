@@ -42,9 +42,30 @@ La **Fase 11 (autorización) también está hecha**: tres roles por proyecto
 proyectos y el modo lectura es real — las celdas no se editan **y** el endpoint
 rechaza aunque armes el POST a mano. Hay pantalla de **Miembros** por proyecto.
 
-**Lo que sigue en el bloque A** (en este orden, y **nada se expone hasta cerrar la 13**):
+La **Fase 12 (trabajo simultáneo) está hecha** (03/08/2026): la base pasó a **WAL** con
+espera por lock, cada `Task` tiene **versión** y la celda manda la que leyó — si otro
+la editó mientras tanto, el guardado se **rechaza con 409** y la grilla se recarga con
+un aviso claro, nunca se pisa en silencio. Todo cambio queda anotado en la tabla
+`cambio` (quién, cuándo, campo, de → a) y hay pantalla de **Historial** por proyecto,
+filtrable por tarea y paginada. La auditoría es de solo agregar: no hay ruta que la
+edite ni la borre, y sobrevive al borrado de la tarea. Lo que aplica el **asistente IA**
+también queda firmado por quien lo confirmó. **656 tests en verde** (648 del núcleo en
+~64s, más 8 de navegador; conviene correrlos en dos tandas). La migración se probó antes sobre una copia de tu
+base real: 41 tareas intactas y los títulos idénticos byte a byte.
 
-- [ ] **Fase 12 — Trabajo simultáneo**: WAL, versión por tarea con 409 visible, y
+La **Fase 30 (export a PDF y Word) está hecha** (03/08/2026). Cuatro descargas: el
+**plan** (qué hay que hacer) y el **informe** (cómo venimos a una fecha de corte), cada
+uno en PDF y en Word. El PDF lo imprime el Chrome del sistema sobre la misma plantilla que
+la pantalla, así que sale idéntico y con el Gantt; el Word es editable y va sin Gantt a
+propósito. Los botones del plan están en la barra del proyecto y los del informe en la
+pantalla del informe (se llevan el corte que estés viendo). De paso se arregló un defecto
+que ya existía: al imprimir, **el Gantt salía en tema oscuro y cortado** —tu proyecto son
+415 columnas a 6px, casi 2000px en una hoja de 1050—; ahora se comprime para entrar y usa
+paleta de papel. **675 tests en verde** (667 del núcleo, más 8 de navegador).
+
+**Lo que sigue en el bloque A** (y **nada se expone hasta cerrar la 13**):
+
+- [x] **Fase 12 — Trabajo simultáneo**: WAL, versión por tarea con 409 visible, y
       tabla de cambios con historial.
 - [ ] **Fase 13 — Exposición segura**: proxy adelante, CSP y headers duros, backup con
       restauración probada. **Acá se decide Tailscale (solo el equipo) o Caddy (si un
@@ -52,26 +73,27 @@ rechaza aunque armes el POST a mano. Hay pantalla de **Miembros** por proyecto.
 
 **Decisiones e insumos que siguen tuyos:**
 
+- [ ] **Cerrar los pesos de «Traspaso tareas Macro».** El nivel principal ya está
+      repartido al 100 y quedan tareas sin peso, así que **el informe no se emite** —ni en
+      pantalla ni en PDF ni en Word— porque su avance no significaría nada. El plan sí
+      sale, avisando. Se arregla con «Pesos por duración» o ajustando a mano.
 - [ ] **Columnas por defecto de la grilla** — decir cuáles se usan de verdad; es un
       cambio de una línea.
 - [ ] **Riesgos a fondo** — definir el alcance charlando (plan de respuesta, riesgo
       residual, disparadores, vínculo con tareas de mitigación). No arrancar sin eso.
 - [ ] **El ejemplo de Word** para diseñar ese import (quedó de pasarlo).
-- [ ] **Con multiusuario, revisar el asistente IA**: pasará a exigir rol editor, y
-      mandar proyectos con datos de terceros a Groq es una decisión por proyecto.
+- [ ] **Con multiusuario, el asistente IA manda datos del proyecto a Groq**: es una
+      decisión **por proyecto** si ahí hay datos de un cliente. (Los permisos ya están:
+      preguntar exige lector, aplicar exige editor, y lo aplicado queda firmado.)
 
 **Mantenimiento / higiene:**
 
-- [ ] **Generar tu `WOPR_SECRET_KEY`** y ponerla en el `.env` — la app no arranca
-      fuera de modo debug sin ella:
-      `python -c "import secrets; print(secrets.token_urlsafe(32))"`
-- [ ] La primera vez que abras la app te va a pedir **crear el usuario admin**
-      (pantalla «Crear el primer usuario»). Tu backup previo quedó en
-      `wopr-proyectos.backup-20260802-0824.db`.
+- [x] **`WOPR_SECRET_KEY`** generada y cargada en el `.env` (02/08/2026).
+- [x] **Usuario admin creado** (03/08/2026). Backups previos:
+      `wopr-proyectos.backup-20260802-0824.db` y
+      `wopr-proyectos.backup-20260803-antes-adopcion.db`.
 - [ ] Destrabar el **Control de Aplicaciones de Windows** que bloquea `uv.exe` y el
       Python del venv (mientras tanto: el workaround de «Levantar la app»).
-- [ ] **Rotar la GROQ_API_KEY** (quedó pegada en el chat de trabajo) y actualizar
-      el `.env` — un minuto en console.groq.com.
 - [ ] Abrir **`wopr-gantt-demo.xlsx`** (en Descargas) y confirmar que Excel lo abre
       sin advertencias.
 - [ ] Decidir si **pushear la rama** — hoy todos los commits viven solo en esta
@@ -183,8 +205,8 @@ de la raíz — fuera de git —, modelo configurable vía `WOPR_IA_MODELO`):
   WBS inexistente rebota con aviso. Verificado con el modelo real de punta a punta:
   propuso `Crear «Prueba de estrés» bajo 3 (3d, después de 3.5)` y la aplicó bien.
 
-Ojo: la key se pegó en el chat de trabajo — si querés máxima higiene, rotala en
-console.groq.com y actualizá el `.env`.
+La key se pegó en el chat de trabajo. **Ariel decidió no rotarla** (03/08/2026): queda
+así a propósito, no es un pendiente.
 
 ## Decisiones que están esperándote
 
@@ -197,9 +219,9 @@ console.groq.com y actualizá el `.env`.
 
 ## Lo que queda del plan (todo necesita usuarios)
 
-- **Bloque A — la puerta de seguridad:** Fase 10 identidad · 11 autorización ·
-  12 trabajo simultáneo · 13 exposición segura. **En ese orden y entero** antes de que
-  la app salga de localhost.
+- **Bloque A — la puerta de seguridad:** Fase 10 identidad ✔ · 11 autorización ✔ ·
+  12 trabajo simultáneo ✔ · **13 exposición segura** (la única que queda). **En ese orden
+  y entero** antes de que la app salga de localhost.
 - **Contenido:** Fase 20 comentarios con categoría y tags · 21 adjuntos.
 - **Opcional:** Fase 25, link de solo lectura para que el cliente vea el informe sin
   cuenta.
