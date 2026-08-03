@@ -146,6 +146,10 @@ class Task(SQLModel, table=True):
     fin_real: date | None = Field(default=None)
     estado_id: int | None = Field(default=None, foreign_key="estado.id", index=True)
     orden: int = Field(default=0)
+    # Bloqueo optimista (Fase 12): sube en cada guardado con cambios reales. La celda
+    # manda la versión que leyó y una vencida se rechaza con 409 en vez de pisar el
+    # trabajo de otro. La sube `concurrencia._subir_version`, no cada service.
+    version: int = Field(default=1, sa_column_kwargs={"server_default": "1"})
 
 
 class Contacto(SQLModel, table=True):

@@ -139,6 +139,17 @@
     }
   });
 
+  /* Conflicto de edición (Fase 12). El server contesta 409 cuando otra persona tocó
+     la fila primero, y el cuerpo trae el tablero recargado. HTMX por default no pinta
+     nada que no sea 2xx, así que habilitamos el swap solo para ese código: el estado
+     HTTP queda siendo el correcto y el usuario igual ve con qué se chocó. */
+  document.addEventListener('htmx:beforeSwap', function (evento) {
+    if (evento.detail.xhr && evento.detail.xhr.status === 409) {
+      evento.detail.shouldSwap = true;
+      evento.detail.isError = false;
+    }
+  });
+
   /* Confirmación de formularios de borrado. El texto viene entero del servidor en
      data-confirmar: un nombre interpolado dentro de JS inline es XSS aunque el HTML
      esté escapado (el navegador decodifica las entidades antes de evaluar). */

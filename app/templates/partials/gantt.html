@@ -28,6 +28,9 @@
       <form class="fila {{ 'resumen' if fila.es_resumen }} {{ 'terminada' if fila.estado and fila.estado.es_final }} {{ 'critica' if t.critica }}"
             hx-post="/proyectos/{{ proyecto.id }}/tareas/{{ t.id }}/celda"
             hx-trigger="change" hx-target="#tablero" hx-swap="innerHTML">
+        {# Bloqueo optimista (Fase 12): la fila viaja con la versión que leyó. Si
+           mientras tanto otro la editó, el server contesta 409 y no guarda encima. #}
+        <input type="hidden" name="version" value="{{ t.version }}">
         <span class="c-cod">
           <input id="cod-{{ t.id }}" name="codigo" value="{{ t.codigo }}" maxlength="40"
                  class="celda mono" autocomplete="off"

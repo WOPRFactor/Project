@@ -12,6 +12,7 @@ from sqlmodel import Session, select
 
 from ..models import Dependency, Project, Task
 from ..schemas import TareaIn
+from . import cambios as cambios_service
 from . import contactos as contactos_service
 from . import estados as estados_service
 from . import riesgos as riesgos_service
@@ -70,7 +71,9 @@ def ids_descendientes(session: Session, project_id: int, task_id: int) -> set[in
     return encontrados
 
 
-def crear(session: Session, project_id: int, datos: TareaIn) -> Task:
+def crear(
+    session: Session, project_id: int, datos: TareaIn, usuario_id: int | None = None
+) -> Task:
     # Un tablero HTMX viejo puede seguir apuntando a un proyecto borrado: sin este
     # chequeo se crean tareas huérfanas (SQLite no exige las FK) y hasta estados
     # sembrados para un proyecto que no existe.
@@ -92,13 +95,19 @@ def crear(session: Session, project_id: int, datos: TareaIn) -> Task:
     session.add(tarea)
     session.commit()
     session.refresh(tarea)
+    cambios_service.registrar(
+        session, tarea, cambios_service.CAMPO_TAREA, "", cambios_service.ALTA, usuario_id
+    )
     return tarea
 
 
-def actualizar(session: Session, task_id: int, datos: TareaIn) -> Task | None:
+def actualizar(
+    session: Session, task_id: int, datos: TareaIn, usuario_id: int | None = None
+) -> Task | None:
     tarea = session.get(Task, task_id)
     if tarea is None:
         return None
+    antes = cambios_service.foto(session, tarea)
     anterior = tarea.estado_id
     valores = datos.model_dump(
         exclude={"parent_id", "estado_id", "avance", "responsable"}
@@ -116,10 +125,16 @@ def actualizar(session: Session, task_id: int, datos: TareaIn) -> Task | None:
     session.add(tarea)
     session.commit()
     session.refresh(tarea)
+    cambios_service.registrar_diferencias(session, tarea, antes, usuario_id)
     return tarea
 
 
-def mover(session: Session, task_id: int, nuevo_padre_id: int | None) -> Task:
+def mover(
+    session: Session,
+    task_id: int,
+    nuevo_padre_id: int | None,
+    usuario_id: int | None = None,
+) -> Task:
     tarea = session.get(Task, task_id)
     if tarea is None:
         raise TareaInvalida("La tarea no existe")
@@ -133,17 +148,25 @@ def mover(session: Session, task_id: int, nuevo_padre_id: int | None) -> Task:
         if nuevo_padre_id in ids_descendientes(session, tarea.project_id, task_id):
             raise TareaInvalida("No podés colgar una tarea de una de sus subtareas")
 
+    antes = cambios_service.foto(session, tarea)
     tarea.parent_id = nuevo_padre_id
     session.add(tarea)
     session.commit()
     session.refresh(tarea)
+    cambios_service.registrar_diferencias(session, tarea, antes, usuario_id)
     return tarea
 
 
-def cambiar_estado(session: Session, task_id: int, estado_id: int | None) -> Task | None:
+def cambiar_estado(
+    session: Session,
+    task_id: int,
+    estado_id: int | None,
+    usuario_id: int | None = None,
+) -> Task | None:
     tarea = session.get(Task, task_id)
     if tarea is None:
         return None
+    antes = cambios_service.foto(session, tarea)
     anterior = tarea.estado_id
     tarea.estado_id = _estado_valido(session, tarea.project_id, estado_id)
     tarea.avance = _avance(session, tarea, anterior, tarea.avance)
@@ -151,6 +174,7 @@ def cambiar_estado(session: Session, task_id: int, estado_id: int | None) -> Tas
     session.add(tarea)
     session.commit()
     session.refresh(tarea)
+    cambios_service.registrar_diferencias(session, tarea, antes, usuario_id)
     return tarea
 
 
@@ -197,7 +221,12 @@ def _estado_valido(session: Session, project_id: int, estado_id: int | None) -> 
     return estados_service.inicial(session, project_id).id
 
 
-def eliminar(session: Session, task_id: int, promover_hijas: bool = False) -> bool:
+def eliminar(
+    session: Session,
+    task_id: int,
+    promover_hijas: bool = False,
+    usuario_id: int | None = None,
+) -> bool:
     """Borra la tarea. Sus hijas se borran también, salvo que se pidan promover."""
     tarea = session.get(Task, task_id)
     if tarea is None:
@@ -218,6 +247,16 @@ def eliminar(session: Session, task_id: int, promover_hijas: bool = False) -> bo
     for identificador in a_borrar:
         objetivo = session.get(Task, identificador)
         if objetivo is not None:
+            # La baja se anota **antes** de borrar: después no quedaría de dónde
+            # sacar el código ni el título con que llamarla en el historial.
+            cambios_service.anotar(
+                session,
+                objetivo,
+                cambios_service.CAMPO_TAREA,
+                cambios_service.EXISTIA,
+                cambios_service.BAJA,
+                usuario_id,
+            )
             session.delete(objetivo)
     session.commit()
     return True

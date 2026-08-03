@@ -23,8 +23,8 @@ from .auth.middleware import ExigeCsrf
 from .config import RAIZ, settings
 from .db import init_db
 from .routers import (
-    admin, asistente, auth, carga, equipo, estados, export, importar, informe,
-    linea_base, miembros, projects, riesgos, tasks,
+    admin, asistente, auth, carga, equipo, estados, export, historial, importar,
+    informe, linea_base, miembros, projects, riesgos, tasks,
 )
 from .templating import templates
 
@@ -59,6 +59,7 @@ app.include_router(informe.router)
 app.include_router(equipo.router)
 app.include_router(asistente.router)
 app.include_router(miembros.router)
+app.include_router(historial.router)
 
 
 @app.middleware("http")

@@ -15,6 +15,8 @@ from sqlmodel import Session, SQLModel, create_engine
 from . import models  # noqa: F401  — registra las tablas en el metadata
 from . import models_auth  # noqa: F401  — usuarios y sesiones
 from . import models_base  # noqa: F401  — línea base
+from . import models_cambio  # noqa: F401  — auditoría de cambios
+from .concurrencia import preparar_engine
 from .config import RAIZ, settings
 from .migraciones import poner_al_dia as columnas_al_dia
 from .migraciones_datos import poner_al_dia as poner_al_dia_datos
@@ -25,6 +27,9 @@ engine = create_engine(
     echo=False,
     connect_args={"check_same_thread": False},
 )
+# WAL y espera por lock: sin esto, dos personas guardando a la vez se cruzan con
+# «database is locked» en vez de esperarse un instante (Fase 12).
+preparar_engine(engine)
 
 
 def init_db() -> None:

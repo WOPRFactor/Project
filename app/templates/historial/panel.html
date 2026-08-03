@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block titulo %}Historial · {{ proyecto.nombre }}{% endblock %}
+
+{% block contenido %}
+<section>
+  <h1>
+    {% if nombre_tarea %}Historial de «{{ nombre_tarea }}»
+    {% else %}Historial de «{{ proyecto.nombre }}»{% endif %}
+  </h1>
+  <p class="tenue">
+    <a href="/proyectos/{{ proyecto.id }}">← Volver al proyecto</a>
+    {% if tarea_id %}
+      · <a href="/proyectos/{{ proyecto.id }}/historial">Ver todo el proyecto</a>
+    {% endif %}
+  </p>
+  <p class="tenue">
+    {{ total }} cambio{{ '' if total == 1 else 's' }} registrado{{ '' if total == 1 else 's' }}.
+    Es un registro de solo lectura: se escribe al guardar y no se puede editar ni borrar.
+  </p>
+
+  {% if cambios %}
+    <table class="tabla-informe">
+      <thead>
+        <tr>
+          <th>Cuándo</th>
+          <th>Quién</th>
+          {% if not tarea_id %}<th>Tarea</th>{% endif %}
+          <th>Campo</th>
+          <th>Antes</th>
+          <th>Después</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in cambios %}
+          <tr>
+            <td class="mono">{{ c.cuando | momento }}</td>
+            <td>{{ quienes.get(c.usuario_id, '—') }}</td>
+            {% if not tarea_id %}
+              <td>
+                {% if c.task_id %}
+                  <a href="/proyectos/{{ proyecto.id }}/historial?tarea={{ c.task_id }}"
+                     title="Ver toda la vida de esta tarea">{{ c.etiqueta }}</a>
+                {% else %}{{ c.etiqueta }}{% endif %}
+              </td>
+            {% endif %}
+            <td>{{ c.campo }}</td>
+            <td class="tenue">{{ c.antes }}</td>
+            <td>{{ c.despues }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if ultima > 1 %}
+      <p class="tenue pie">
+        {% set base = "/proyectos/" ~ proyecto.id ~ "/historial?" ~ ("tarea=" ~ tarea_id ~ "&" if tarea_id else "") %}
+        {% if pagina > 1 %}<a href="{{ base }}pagina={{ pagina - 1 }}">← Anteriores</a> · {% endif %}
+        Página {{ pagina }} de {{ ultima }}
+        {% if pagina < ultima %} · <a href="{{ base }}pagina={{ pagina + 1 }}">Siguientes →</a>{% endif %}
+      </p>
+    {% endif %}
+  {% else %}
+    <p class="tenue">
+      Todavía no hay cambios registrados{% if tarea_id %} para esta tarea{% endif %}.
+    </p>
+  {% endif %}
+</section>
+{% endblock %}

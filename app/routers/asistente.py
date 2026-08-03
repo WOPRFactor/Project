@@ -65,7 +65,10 @@ def aplicar(
     """La confirmación. La carga vuelve del navegador: se re-valida desde cero."""
     acciones, avisos = asistente_acciones.desde_json(carga)
     if acciones:
-        avisos += asistente_acciones.aplicar(session, project_id, acciones)
+        acceso = getattr(request.state, "acceso", None)
+        avisos += asistente_acciones.aplicar(
+            session, project_id, acciones, acceso.usuario.id if acceso else None
+        )
         partes = [f"{len(acciones)} cambios del asistente aplicados"] + avisos
         aviso = "; ".join(partes)
     else:

@@ -123,14 +123,22 @@ def render(
     project_id: int,
     aviso: str | None = None,
     mirada: Mirada | None = None,
+    estado: int = 200,
 ) -> HTMLResponse:
     """El acceso ya lo resolvió la dependencia del router: se lee de request.state
-    en vez de pedírselo a cada llamador (son decenas y se olvidaría alguno)."""
+    en vez de pedírselo a cada llamador (son decenas y se olvidaría alguno).
+
+    `estado` existe para el conflicto de edición (Fase 12): la respuesta tiene que
+    ser un 409 de verdad y a la vez traer el tablero recargado para que el usuario
+    vea con qué se chocó. `static/grilla.js` habilita el swap para ese código.
+    """
     datos = contexto(
         session, project_id, mirada, acceso=getattr(request.state, "acceso", None)
     )
     datos["aviso"] = aviso
-    return templates.TemplateResponse(request, "partials/tablero.html", datos)
+    return templates.TemplateResponse(
+        request, "partials/tablero.html", datos, status_code=estado
+    )
 
 
 __all__ = ["Depends", "Mirada", "contexto", "mirada_form", "mirada_query", "render"]

@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import ValidationError
 from sqlmodel import Session
 
+from .. import concurrencia
 from ..auth.dependencias import Acceso, exige_editor, exige_lector
 from ..db import get_session
 from ..schemas import ProyectoIn, TareaIn
@@ -25,6 +26,19 @@ from ._tablero import Mirada, mirada_form, render
 
 router = APIRouter(prefix="/proyectos/{project_id}", dependencies=[Depends(exige_editor)])
 
+# Lo que se le dice al que perdió la carrera. Explica **por qué** no se guardó y qué
+# hacer: un «error 409» a secas se lee como una falla de la app.
+CONFLICTO = (
+    "Alguien editó esta fila mientras la tenías abierta. No guardé tu cambio para no "
+    "pisarle el suyo: abajo está la fila como quedó. Revisala y volvé a escribir lo tuyo."
+)
+
+
+def _quien(request: Request) -> int | None:
+    """Quién firma el cambio en el historial. El acceso lo dejó `exige_editor`."""
+    acceso = getattr(request.state, "acceso", None)
+    return acceso.usuario.id if acceso else None
+
 
 @router.post("/tareas/agregar", response_class=HTMLResponse)
 def agregar(
@@ -34,7 +48,9 @@ def agregar(
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
     try:
-        arbol_service.agregar_al_final(session, project_id, TareaIn(titulo="Tarea nueva"))
+        arbol_service.agregar_al_final(
+            session, project_id, TareaIn(titulo="Tarea nueva"), _quien(request)
+        )
     except TareaInvalida as error:
         return render(request, session, project_id, aviso=str(error), mirada=mirada)
     return render(request, session, project_id, mirada=mirada)
@@ -58,6 +74,7 @@ def guardar_celda(
     avance: str = Form(""),
     duracion_optimista: str | None = Form(None),
     duracion_pesimista: str | None = Form(None),
+    version: str = Form(""),
     mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
@@ -66,6 +83,14 @@ def guardar_celda(
     tarea = tasks_service.obtener(session, task_id)
     if tarea is None or tarea.project_id != project_id:
         return render(request, session, project_id, aviso="Esa tarea ya no existe", mirada=mirada)
+
+    leida = int(version) if version.strip().isdigit() else None
+    if concurrencia.esta_vencida(tarea, leida):
+        # 409 y no 200: el guardado **no** se aplicó, y el estado tiene que decirlo
+        # aunque el cuerpo traiga el tablero para mostrar contra qué se chocó.
+        return render(
+            request, session, project_id, aviso=CONFLICTO, mirada=mirada, estado=409
+        )
 
     fila = _celda.FilaCruda(
         titulo=titulo, responsable=responsable, duracion=duracion, inicio=inicio,
@@ -77,15 +102,18 @@ def guardar_celda(
     except (ValidationError, ValueError) as error:
         return render(request, session, project_id, aviso=_mensaje(error), mirada=mirada)
 
-    tasks_service.actualizar(session, task_id, datos)
+    quien = _quien(request)
+    tasks_service.actualizar(session, task_id, datos, quien)
 
     avisos: list[str] = []
     if codigo is not None:
-        aviso_codigo = arbol_service.guardar_codigo(session, task_id, codigo)
+        aviso_codigo = arbol_service.guardar_codigo(session, task_id, codigo, quien)
         if aviso_codigo:
             avisos.append(aviso_codigo)
     if predecesoras is not None and not tasks_service.tiene_hijas(session, task_id):
-        avisos += predecesoras_service.guardar(session, project_id, task_id, predecesoras)
+        avisos += predecesoras_service.guardar(
+            session, project_id, task_id, predecesoras, quien
+        )
     return render(request, session, project_id, aviso="; ".join(avisos) or None, mirada=mirada)
 
 
@@ -131,7 +159,7 @@ def cambiar_estado(
     mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    tasks_service.cambiar_estado(session, task_id, estado_id)
+    tasks_service.cambiar_estado(session, task_id, estado_id, _quien(request))
     return render(request, session, project_id, mirada=mirada)
 
 
@@ -144,7 +172,9 @@ def eliminar(
     mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    tasks_service.eliminar(session, task_id, promover_hijas=promover)
+    tasks_service.eliminar(
+        session, task_id, promover_hijas=promover, usuario_id=_quien(request)
+    )
     return render(request, session, project_id, mirada=mirada)
 
 
@@ -234,13 +264,13 @@ def renumerar(
     mirada: Mirada = Depends(mirada_form),
     session: Session = Depends(get_session),
 ) -> HTMLResponse:
-    cambiados = arbol_service.renumerar(session, project_id)
+    cambiados = arbol_service.renumerar(session, project_id, _quien(request))
     return render(request, session, project_id, aviso=f"{cambiados} códigos reasignados", mirada=mirada)
 
 
 def _mover(request: Request, session: Session, project_id: int, operacion, task_id: int, mirada):
     try:
-        operacion(session, task_id)
+        operacion(session, task_id, _quien(request))
     except TareaInvalida as error:
         return render(request, session, project_id, aviso=str(error), mirada=mirada)
     return render(request, session, project_id, mirada=mirada)

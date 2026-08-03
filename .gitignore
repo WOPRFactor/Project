@@ -9,6 +9,9 @@ __pycache__/
 # Datos locales — la DB no va a git
 *.db
 *.db-journal
+# En modo WAL, SQLite escribe dos archivos más al lado de la base (Fase 12).
+*.db-wal
+*.db-shm
 *.sqlite3
 
 # Entorno

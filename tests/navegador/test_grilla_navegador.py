@@ -113,10 +113,36 @@ def test_aplicar_del_asistente_solo_escribe_con_confirmacion(pagina):
     assert pagina.errores == []
 
 
+def test_el_conflicto_de_edicion_se_ve_en_pantalla(pagina):
+    """Fase 12. Un 409 no lo pinta HTMX por default: sin el `htmx:beforeSwap` de
+    `grilla.js`, el guardado se rechazaría **en silencio** y la pantalla quedaría
+    mostrando lo que el usuario escribió como si se hubiera guardado."""
+    pagina.goto(f"{pagina.base}/proyectos/1?detalle=todo&colapsadas=")
+    pagina.wait_for_selector(".fila")
+
+    fila = pagina.locator(".fila").first
+    titulo_real = fila.locator("input[name='titulo']").input_value()
+    # Una pantalla atrasada es exactamente esto: la versión que manda no es la actual.
+    fila.locator("input[name='version']").evaluate("e => e.value = '99999'")
+    fila.locator("input[name='titulo']").fill("Pisado por el que llegó tarde")
+    fila.locator("input[name='titulo']").dispatch_event("change")
+    pagina.wait_for_timeout(900)
+
+    assert "Alguien editó esta fila" in pagina.locator("#tablero").inner_text()
+    # Y la grilla volvió a mostrar el valor real, no lo que se quiso escribir.
+    assert (
+        pagina.locator(".fila").first.locator("input[name='titulo']").input_value()
+        == titulo_real
+    )
+    # El 409 es el resultado esperado acá; cualquier otro error no.
+    assert [e for e in pagina.errores if "409" not in e] == []
+
+
 def test_todas_las_paginas_y_exports_responden_sin_errores(pagina):
     paginas = [
         "/", "/proyectos/1", "/proyectos/1/equipo", "/proyectos/1/estados",
         "/proyectos/1/riesgos", "/proyectos/1/base", "/proyectos/1/informe",
+        "/proyectos/1/historial", "/proyectos/1/miembros",
         "/importar", "/proyectos/nuevo", "/proyectos/1/editar",
     ]
     for ruta in paginas:

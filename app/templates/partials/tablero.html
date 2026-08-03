@@ -184,6 +184,8 @@
      title="Congelar el cronograma aprobado y medir el desvío contra él">Línea base</a>
   <a class="boton" href="/proyectos/{{ proyecto.id }}/miembros"
      title="Quién participa del proyecto y con qué rol">Miembros</a>
+  <a class="boton" href="/proyectos/{{ proyecto.id }}/historial"
+     title="Qué cambió, quién lo cambió y cuándo">Historial</a>
   {% if es_duenio %}
     <button class="boton" hx-post="/proyectos/{{ proyecto.id }}/pesos/repartir"
             hx-vals='{"criterio": "duracion"}' hx-target="#tablero" hx-swap="innerHTML"

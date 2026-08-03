@@ -117,30 +117,44 @@ def a_json(acciones: list[Accion]) -> str:
     return json.dumps([a.model_dump() for a in acciones], ensure_ascii=False)
 
 
-def aplicar(session: Session, project_id: int, acciones: list[Accion]) -> list[str]:
-    """Ejecuta las acciones ya confirmadas, cada una vía su service. Devuelve avisos."""
+def aplicar(
+    session: Session,
+    project_id: int,
+    acciones: list[Accion],
+    usuario_id: int | None = None,
+) -> list[str]:
+    """Ejecuta las acciones ya confirmadas, cada una vía su service. Devuelve avisos.
+
+    `usuario_id` es quién **confirmó**, y va al historial: lo propuso el modelo, pero
+    lo aplicó una persona. Sin esto, los cambios del asistente serían los únicos sin
+    firma en la auditoría (Fase 12).
+    """
     avisos: list[str] = []
     for accion in acciones:
         try:
-            avisos += _aplicar_una(session, project_id, accion)
+            avisos += _aplicar_una(session, project_id, accion, usuario_id)
         except TareaInvalida as error:
             avisos.append(f"{accion.descripcion}: {error}")
     return avisos
 
 
-def _aplicar_una(session: Session, project_id: int, accion: Accion) -> list[str]:
+def _aplicar_una(
+    session: Session, project_id: int, accion: Accion, usuario_id: int | None
+) -> list[str]:
     if isinstance(accion, CrearTarea):
-        return _crear(session, project_id, accion)
+        return _crear(session, project_id, accion, usuario_id)
     if isinstance(accion, ModificarTarea):
-        return _modificar(session, project_id, accion)
-    return _cambiar_predecesoras(session, project_id, accion)
+        return _modificar(session, project_id, accion, usuario_id)
+    return _cambiar_predecesoras(session, project_id, accion, usuario_id)
 
 
 def _por_wbs(session: Session, project_id: int) -> dict[str, Task]:
     return {t.codigo: t for t in tasks_service.listar(session, project_id) if t.codigo}
 
 
-def _crear(session: Session, project_id: int, accion: CrearTarea) -> list[str]:
+def _crear(
+    session: Session, project_id: int, accion: CrearTarea, usuario_id: int | None = None
+) -> list[str]:
     avisos: list[str] = []
     padre_id = None
     if accion.padre_wbs:
@@ -161,15 +175,21 @@ def _crear(session: Session, project_id: int, accion: CrearTarea) -> list[str]:
             critica=accion.critica,
             parent_id=padre_id,
         ),
+        usuario_id,
     )
     if accion.predecesoras:
         avisos += predecesoras_service.guardar(
-            session, project_id, tarea.id or 0, accion.predecesoras
+            session, project_id, tarea.id or 0, accion.predecesoras, usuario_id
         )
     return avisos
 
 
-def _modificar(session: Session, project_id: int, accion: ModificarTarea) -> list[str]:
+def _modificar(
+    session: Session,
+    project_id: int,
+    accion: ModificarTarea,
+    usuario_id: int | None = None,
+) -> list[str]:
     tarea = _por_wbs(session, project_id).get(accion.wbs)
     if tarea is None:
         return [f"No existe ninguna tarea con código {accion.wbs}: no se modificó nada"]
@@ -193,12 +213,15 @@ def _modificar(session: Session, project_id: int, accion: ModificarTarea) -> lis
         snet=tarea.snet,
         estado_id=tarea.estado_id,
     )
-    tasks_service.actualizar(session, tarea.id or 0, datos)
+    tasks_service.actualizar(session, tarea.id or 0, datos, usuario_id)
     return []
 
 
 def _cambiar_predecesoras(
-    session: Session, project_id: int, accion: CambiarPredecesoras
+    session: Session,
+    project_id: int,
+    accion: CambiarPredecesoras,
+    usuario_id: int | None = None,
 ) -> list[str]:
     tarea = _por_wbs(session, project_id).get(accion.wbs)
     if tarea is None:
@@ -206,5 +229,5 @@ def _cambiar_predecesoras(
     if tasks_service.tiene_hijas(session, tarea.id or 0):
         return [f"{accion.wbs} tiene subtareas: las dependencias van en las tareas hoja"]
     return predecesoras_service.guardar(
-        session, project_id, tarea.id or 0, accion.predecesoras
+        session, project_id, tarea.id or 0, accion.predecesoras, usuario_id
     )

@@ -17,6 +17,7 @@ from sqlmodel import Session, select
 
 from ..engine import CycleError, ScheduleError
 from ..models import Dependency, Task, TipoDependencia
+from . import cambios as cambios_service
 from . import schedule as schedule_service
 from .tasks import TareaInvalida
 
@@ -69,11 +70,20 @@ def texto_de(session: Session, project_id: int, task_id: int) -> str:
     return ", ".join(sorted(partes))
 
 
-def guardar(session: Session, project_id: int, task_id: int, texto: str) -> list[str]:
+def guardar(
+    session: Session,
+    project_id: int,
+    task_id: int,
+    texto: str,
+    usuario_id: int | None = None,
+) -> list[str]:
     """Deja las predecesoras de la tarea igual a lo escrito. Devuelve los avisos."""
     tareas = list(session.exec(select(Task).where(Task.project_id == project_id)))
     por_codigo = {t.codigo: t for t in tareas if t.codigo}
     avisos: list[str] = []
+    # Lo escrito no es lo que queda: una dependencia que arma un ciclo se rechaza. El
+    # historial anota el resultado real, comparando el antes contra el después.
+    antes = texto_de(session, project_id, task_id)
 
     pedidas: dict[int, tuple[int, TipoDependencia]] = {}
     for crudo in texto.replace(";", ",").split(","):
@@ -99,7 +109,14 @@ def guardar(session: Session, project_id: int, task_id: int, texto: str) -> list
             continue
         pedidas[predecesora.id] = (lag, tipo)
 
-    return _sincronizar(session, project_id, task_id, pedidas, avisos)
+    avisos = _sincronizar(session, project_id, task_id, pedidas, avisos)
+    tarea = session.get(Task, task_id)
+    if tarea is not None:
+        cambios_service.registrar(
+            session, tarea, "Predec.", antes,
+            texto_de(session, project_id, task_id), usuario_id,
+        )
+    return avisos
 
 
 def _sincronizar(

@@ -11,6 +11,7 @@ from sqlmodel import Session, select
 
 from ..models import Task
 from ..schemas import TareaIn
+from . import cambios as cambios_service
 from .tasks import TareaInvalida, ids_descendientes
 
 
@@ -45,7 +46,7 @@ def codigo_sugerido(session: Session, project_id: int, parent_id: int | None) ->
     return f"{prefijo}{siguiente}"
 
 
-def insertar_debajo(session: Session, task_id: int) -> Task:
+def insertar_debajo(session: Session, task_id: int, usuario_id: int | None = None) -> Task:
     """Fila nueva y vacía justo debajo de la actual, al mismo nivel."""
     referencia = session.get(Task, task_id)
     if referencia is None:
@@ -73,14 +74,21 @@ def insertar_debajo(session: Session, task_id: int) -> Task:
     session.commit()
     session.refresh(nueva)
     _compactar(session, referencia.project_id, referencia.parent_id)
+    # El alta se anota recién acá, con el código ya asignado: si no, el historial
+    # nombraría la fila nueva sin su WBS, que es justo con lo que uno la busca.
+    cambios_service.registrar(
+        session, nueva, cambios_service.CAMPO_TAREA, "", cambios_service.ALTA, usuario_id
+    )
     return nueva
 
 
-def agregar_al_final(session: Session, project_id: int, datos: TareaIn) -> Task:
+def agregar_al_final(
+    session: Session, project_id: int, datos: TareaIn, usuario_id: int | None = None
+) -> Task:
     """Alta normal, pero asignando el código que corresponde al nivel."""
     from . import tasks as tasks_service
 
-    tarea = tasks_service.crear(session, project_id, datos)
+    tarea = tasks_service.crear(session, project_id, datos, usuario_id)
     if not tarea.codigo:
         tarea.codigo = codigo_sugerido(session, project_id, tarea.parent_id)
         session.add(tarea)
@@ -89,12 +97,13 @@ def agregar_al_final(session: Session, project_id: int, datos: TareaIn) -> Task:
     return tarea
 
 
-def indentar(session: Session, task_id: int) -> Task:
+def indentar(session: Session, task_id: int, usuario_id: int | None = None) -> Task:
     """La tarea pasa a ser hija de la hermana que tiene arriba."""
     tarea = session.get(Task, task_id)
     if tarea is None:
         raise TareaInvalida("La tarea no existe")
 
+    antes = cambios_service.foto(session, tarea)
     grupo = hermanas(session, tarea.project_id, tarea.parent_id)
     posicion = [h.id for h in grupo].index(tarea.id)
     if posicion == 0:
@@ -112,10 +121,11 @@ def indentar(session: Session, task_id: int) -> Task:
     session.add(tarea)
     session.commit()
     session.refresh(tarea)
+    cambios_service.registrar_diferencias(session, tarea, antes, usuario_id)
     return tarea
 
 
-def desindentar(session: Session, task_id: int) -> Task:
+def desindentar(session: Session, task_id: int, usuario_id: int | None = None) -> Task:
     """La tarea sube un nivel y queda justo después de su ex-padre."""
     tarea = session.get(Task, task_id)
     if tarea is None:
@@ -123,6 +133,7 @@ def desindentar(session: Session, task_id: int) -> Task:
     if tarea.parent_id is None:
         raise TareaInvalida("La tarea ya está en el primer nivel")
 
+    antes = cambios_service.foto(session, tarea)
     padre = session.get(Task, tarea.parent_id)
     abuelo_id = padre.parent_id
 
@@ -143,10 +154,13 @@ def desindentar(session: Session, task_id: int) -> Task:
     session.commit()
     session.refresh(tarea)
     _compactar(session, tarea.project_id, abuelo_id)
+    cambios_service.registrar_diferencias(session, tarea, antes, usuario_id)
     return tarea
 
 
-def guardar_codigo(session: Session, task_id: int, codigo: str) -> str | None:
+def guardar_codigo(
+    session: Session, task_id: int, codigo: str, usuario_id: int | None = None
+) -> str | None:
     """Cambia el WBS escrito a mano. Devuelve un aviso si se rechaza.
 
     El código es único en todo el proyecto: las predecesoras escritas a mano se
@@ -168,13 +182,15 @@ def guardar_codigo(session: Session, task_id: int, codigo: str) -> str | None:
         ).first()
         if duenio is not None:
             return f"El código {limpio} ya lo usa «{duenio.titulo}»: no lo cambié"
+    viejo = tarea.codigo
     tarea.codigo = limpio
     session.add(tarea)
     session.commit()
+    cambios_service.registrar(session, tarea, "WBS", viejo, limpio, usuario_id)
     return None
 
 
-def renumerar(session: Session, project_id: int) -> int:
+def renumerar(session: Session, project_id: int, usuario_id: int | None = None) -> int:
     """Reasigna todos los códigos según la posición actual en el árbol.
 
     Rompe a propósito las referencias escritas a mano que ya no correspondan: por
@@ -187,6 +203,9 @@ def renumerar(session: Session, project_id: int) -> int:
         for indice, tarea in enumerate(hermanas(session, project_id, parent_id), start=1):
             nuevo = f"{prefijo}{indice}"
             if tarea.codigo != nuevo:
+                # `anotar` y no `registrar`: renumerar toca decenas de filas y un
+                # commit por cada una convertiría una acción en decenas.
+                cambios_service.anotar(session, tarea, "WBS", tarea.codigo, nuevo, usuario_id)
                 tarea.codigo = nuevo
                 session.add(tarea)
                 cambiados += 1
