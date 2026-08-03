@@ -1,0 +1,89 @@
+/* Lo que necesitan los documentos impresos (PDF) y la pantalla no.
+
+   Se carga **embebido** dentro del HTML del documento, no por link: el PDF se imprime
+   desde un archivo temporal con `file://`, donde `/static/...` no resuelve.
+
+   El resto —esconder barras y botones, A4 vertical, evitar que los bloques se partan—
+   ya está en el `@media print` de `estilo.css`, que Chrome aplica solo al imprimir. */
+
+/* Paleta de papel. La app es de tema oscuro y su paleta son variables de `:root`; el
+   `@media print` de estilo.css solo aclara `html` y `body`, así que el Gantt —que toma
+   sus fondos de las variables— salía **oscuro y con el texto ilegible** en el PDF.
+   Redefinir las variables acá arregla el documento entero de una sola vez, en vez de ir
+   pisando selector por selector.
+
+   Los colores de estado se oscurecen apenas: tienen que verse sobre blanco y a la vez
+   dejar leer el rótulo blanco que llevan encima las barras. */
+.documento {
+  --fondo: #ffffff;
+  --panel: #ffffff;
+  --panel-alto: #f4f6fa;
+  --borde: #d3d8e2;
+  --texto: #111111;
+  --tenue: #555555;
+  --acento: #2f6fd0;
+  --critico: #c0392b;
+  --hecho: #1a7f52;
+  --curso: #b07f10;
+  --c-gris: #6b7280;
+  --c-azul: #2f6fd0;
+  --c-verde: #1a7f52;
+  --c-ambar: #b07f10;
+  --c-rojo: #c0392b;
+  --c-violeta: #7b4fd0;
+}
+
+.documento main { padding: 0; }
+
+/* El plan lleva las dos clases: `informe` le da el paginado y la tipografía de
+   documento (son reglas de papel, no del contenido) y `plan` lo propio de la hoja
+   horizontal. */
+.documento .plan { max-width: none; }
+.documento .plan .bloque { break-inside: avoid; }
+.documento .plan .bloque.salto { break-before: page; }
+
+/* Un hito ocupa un solo día. Con el Gantt comprimido para que entre en la hoja, un día
+   puede medir 2px y el rombo desaparecería justo en lo que más se mira de un plan. */
+.documento .barra-tarea.hito { min-width: 7px; }
+
+/* Gantt comprimido: cuando cada día mide unos pocos píxeles, las etiquetas de semana se
+   pisan entre sí y el rótulo de cada barra se desborda sobre las vecinas. Quedan los
+   meses, que son los que dan la forma del proyecto; los nombres están en el panel
+   izquierdo y en la tabla. */
+.documento .comprimido .fila-semanas { display: none; }
+.documento .comprimido .rotulo { display: none; }
+.documento .comprimido .barra-tarea { border-radius: 2px; }
+/* Un mes comprimido son ~35px: con la letra de pantalla entra «AGO» y pisa al vecino. */
+.documento .comprimido .mes { font-size: .5rem; letter-spacing: 0; }
+
+/* En el plan, el Gantt no repite fechas ni avance: ya están en la tabla de arriba, y esas
+   columnas le robaban al título el ancho que necesita. Con el nombre completo al lado de
+   la barra, el cronograma se lee sin volver a la tabla. */
+.documento .plan .informe-gantt .c-fecha,
+.documento .plan .informe-gantt .c-avance,
+.documento .plan .informe-gantt .c-desvio { display: none; }
+.documento .plan .informe-gantt .panel-izq { flex: 0 0 340px; max-width: 340px; }
+/* Que un título largo se corte con puntos suspensivos y no se monte sobre la barra. */
+.documento .informe-gantt .c-tarea {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* El informe va en hoja vertical, que da unos 688px útiles. Con los 300px de panel que
+   usa en pantalla, un proyecto largo no entra ni comprimido al mínimo y Chrome le corta
+   los últimos meses. Con 250px entra completo, que es lo que importa en un cronograma. */
+.documento .informe-gantt .panel-izq { flex: 0 0 250px; max-width: 250px; }
+
+/* La tabla del plan es la parte que de verdad se lee en papel: compacta y que no se
+   corte una fila al medio. */
+.documento .tabla-plan { width: 100%; border-collapse: collapse; font-size: .74rem; }
+.documento .tabla-plan th, .documento .tabla-plan td {
+  border-bottom: 1px solid #ddd; padding: 3px 5px; text-align: left; vertical-align: top;
+}
+.documento .tabla-plan th {
+  color: #333; font-weight: 600; text-transform: uppercase; font-size: .62rem;
+}
+.documento .tabla-plan tr { break-inside: avoid; }
+.documento .tabla-plan .num { text-align: right; font-variant-numeric: tabular-nums; }
+.documento .tabla-plan .etapa { font-weight: 700; background: #f2f5fa; }
+.documento .tabla-plan .hecha { color: #666; text-decoration: line-through; }
+.documento .tabla-plan .critica td:first-child { box-shadow: inset 3px 0 0 #b3261e; }

@@ -1,0 +1,141 @@
+{% extends "documentos/base.html" %}
+{% block titulo %}Plan — {{ plan.proyecto.nombre }}{% endblock %}
+
+{# Hoja horizontal: el Gantt y una tabla de diez columnas no entran en vertical. #}
+{% block css %}<style>{{ css_embebido('documento-plan.css') }}</style>{% endblock %}
+
+{% block contenido %}
+{# Las dos clases a propósito: `informe` aporta el paginado y la tipografía de papel,
+   `plan` lo propio de la hoja horizontal. Ver `documento.css`. #}
+<article class="informe plan">
+
+  <header class="portada">
+    <h1>{{ plan.proyecto.nombre }}</h1>
+    <p class="bajada">
+      Plan de trabajo al <strong>{{ plan.hoy | fecha }}</strong>.
+      {% if plan.hay_base %}
+        Las barras punteadas son la línea base «{{ plan.linea_base.nombre }}»,
+        congelada el {{ plan.linea_base.congelada_el | fecha }}.
+      {% else %}
+        Sin línea base congelada: son las fechas calculadas de hoy.
+      {% endif %}
+    </p>
+    {% if plan.proyecto.descripcion %}
+      <p class="tenue">{{ plan.proyecto.descripcion }}</p>
+    {% endif %}
+    {% if plan.avisos %}
+      <p class="tenue">{% for aviso in plan.avisos %}{{ aviso }} {% endfor %}</p>
+    {% endif %}
+  </header>
+
+  <section class="bloque">
+    <h2>Resumen</h2>
+    <div class="resumen">
+      <div class="dato">
+        <span class="etiqueta">Arranque</span>
+        <strong>{{ plan.resumen.inicio | fecha }}</strong>
+        <span class="tenue">{{ plan.resumen.tareas }} tareas · {{ plan.resumen.hitos }} hitos</span>
+      </div>
+      <div class="dato">
+        <span class="etiqueta">Fin proyectado</span>
+        <strong>{{ plan.resumen.fin | fecha }}</strong>
+        <span class="tenue">{{ plan.resumen.dias_habiles }} días hábiles de punta a punta</span>
+      </div>
+      <div class="dato">
+        <span class="etiqueta">Avance</span>
+        <strong>{{ plan.avance }}%</strong>
+        <span class="tenue">ponderado por peso</span>
+      </div>
+      {% if plan.proximo_hito %}
+        <div class="dato">
+          <span class="etiqueta">Próximo hito</span>
+          <strong>◆ {{ plan.proximo_hito.tarea.titulo }}</strong>
+          <span class="tenue">{{ plan.proximo_hito.fin | fecha }}</span>
+        </div>
+      {% endif %}
+    </div>
+
+    {% if plan.por_ambito %}
+      <table class="tabla-informe">
+        <thead>
+          <tr><th>Bloque</th><th>Ventana</th><th>Días hábiles</th><th>Esfuerzo</th></tr>
+        </thead>
+        <tbody>
+          {% for bloque in plan.por_ambito %}
+            <tr>
+              <td>{{ 'Duración total' if loop.first else bloque.etiqueta }}</td>
+              <td>{{ bloque.inicio | fecha }} → {{ bloque.fin | fecha }}</td>
+              <td class="num">{{ bloque.dias_habiles }}</td>
+              <td class="num">{{ bloque.esfuerzo }} d</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="pie tenue">
+        Las ventanas son calendario y se superponen entre sí; el esfuerzo es trabajo
+        acumulado. Son dos unidades distintas y no se suman.
+      </p>
+    {% endif %}
+  </section>
+
+  <section class="bloque">
+    <h2>Tareas ({{ plan.filas | length }})</h2>
+    <table class="tabla-plan">
+      <thead>
+        <tr>
+          <th>WBS</th><th>Tarea</th><th>Resp.</th><th>Predec.</th>
+          <th>Días</th><th>Inicio</th><th>Fin</th>
+          {% if plan.hay_base %}<th>Desvío</th>{% endif %}
+          <th>Peso</th><th>Avance</th><th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for fila in plan.filas %}
+          {% set t = fila.tarea %}
+          <tr class="{{ 'etapa' if fila.es_resumen }} {{ 'critica' if t.critica }}
+                     {{ 'hecha' if fila.estado and fila.estado.es_final }}">
+            <td class="mono">{{ t.codigo }}</td>
+            <td style="padding-left: {{ 5 + fila.nivel * 12 }}px">
+              {% if fila.es_hito %}◆ {% endif %}{{ t.titulo }}
+            </td>
+            <td>{{ fila.responsable.nombre if fila.responsable else '—' }}</td>
+            <td class="mono">{{ fila.predecesoras_texto or '—' }}</td>
+            <td class="num">{{ '—' if fila.es_resumen else t.duracion }}</td>
+            <td>{{ fila.inicio | fecha }}</td>
+            <td>{{ fila.fin | fecha }}</td>
+            {% if plan.hay_base %}
+              <td class="num {{ 'atrasado' if fila.desvio and fila.desvio > 0 }}{{ 'adelantado' if fila.desvio and fila.desvio < 0 }}">
+                {{ ('%+d' % fila.desvio) if fila.desvio is not none else ('nueva' if fila.es_nueva else '—') }}
+              </td>
+            {% endif %}
+            <td class="num">{{ '%.1f' % fila.peso_absoluto }}%</td>
+            <td class="num">{{ t.avance }}%</td>
+            <td>{{ fila.estado.nombre if fila.estado else '—' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="pie tenue">
+      El peso es lo que cada tarea vale sobre el proyecto entero. Las etapas no tienen
+      duración propia: sus fechas envuelven a sus subtareas.
+    </p>
+  </section>
+
+  <section class="bloque salto">
+    <h2>Cronograma</h2>
+    {% if plan.comprimido %}
+      <p class="pie tenue">
+        El proyecto es largo, así que el Gantt va comprimido para entrar en la hoja: se
+        ven los meses y la forma de cada tarea, no las semanas. Los nombres están en la
+        tabla de arriba.
+      </p>
+    {% endif %}
+    {% set doc = plan %}{% include "partials/gantt_documento.html" %}
+  </section>
+
+  <footer class="pie tenue">
+    Generado el {{ plan.hoy | fecha }} · WOPR Proyectos ·
+    Las fechas las calcula el motor a partir de las duraciones y las dependencias.
+  </footer>
+</article>
+{% endblock %}

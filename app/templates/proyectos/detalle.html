@@ -3,6 +3,11 @@
 
 {% block acciones %}
 <div class="acciones-barra">
+  {# El plan como documento: PDF para mandar tal cual, Word para retocarlo antes. #}
+  <a class="enlace-tenue" href="/proyectos/{{ proyecto.id }}/export/plan.pdf"
+     title="El plan completo con el Gantt, tal como se ve acá. Hoja horizontal">Plan .pdf</a>
+  <a class="enlace-tenue" href="/proyectos/{{ proyecto.id }}/export/plan.docx"
+     title="El plan en Word, editable. Sin el Gantt dibujado">Plan .docx</a>
   <a class="enlace-tenue" href="/proyectos/{{ proyecto.id }}/export/excel"
      title="La grilla completa. Reimportar este archivo reproduce el proyecto">Exportar .xlsx</a>
   <a class="enlace-tenue" href="/proyectos/{{ proyecto.id }}/export/markdown">Exportar .md</a>

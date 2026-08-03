@@ -1,24 +1,27 @@
-{# El Gantt del informe: solo barras, sin celdas editables ni operaciones.
-   Es un documento, no una herramienta. Reusa las mismas clases del tablero para
-   que lo impreso y lo de pantalla no se separen con el tiempo. #}
-{% if informe.grilla %}
-<div class="gantt informe-gantt">
+{# El Gantt de los documentos (informe y plan): solo barras, sin celdas editables
+   ni operaciones. Es un documento, no una herramienta. Reusa las clases del tablero
+   para que lo impreso y lo de pantalla no se separen con el tiempo.
+
+   Espera un `doc` con: filas, grilla, ancho_dia, columna_hoy y hay_base. Lo llenan
+   `services/informe.py` y `services/documento.py`, que exponen esos mismos nombres. #}
+{% if doc.grilla %}
+<div class="gantt informe-gantt {{ 'comprimido' if doc.comprimido }}">
   <div class="panel-izq">
     <div class="cabecera">
-      <span class="c-tarea">Etapa / hito</span>
+      <span class="c-tarea">{{ doc.titulo_panel }}</span>
       <span class="c-fecha">Inicio</span>
       <span class="c-fecha">Fin</span>
-      {% if informe.hay_base %}<span class="c-desvio">Desvío</span>{% endif %}
+      {% if doc.hay_base %}<span class="c-desvio">Desvío</span>{% endif %}
       <span class="c-avance">Avance</span>
     </div>
-    {% for fila in informe.filas %}
+    {% for fila in doc.filas %}
       <div class="fila {{ 'resumen' if fila.es_resumen }}">
         <span class="c-tarea" style="padding-left: {{ fila.nivel * 12 }}px">
           {% if fila.es_hito %}◆ {% endif %}{{ fila.tarea.titulo }}
         </span>
         <span class="c-fecha">{{ fila.inicio | fecha }}</span>
         <span class="c-fecha">{{ fila.fin | fecha }}</span>
-        {% if informe.hay_base %}
+        {% if doc.hay_base %}
           <span class="c-desvio {{ 'atrasado' if fila.desvio and fila.desvio > 0 }}{{ 'adelantado' if fila.desvio and fila.desvio < 0 }}">
             {{ ('%+d' % fila.desvio) if fila.desvio is not none else ('nueva' if fila.es_nueva else '—') }}
           </span>
@@ -29,24 +32,24 @@
   </div>
 
   <div class="panel-der">
-    <div class="pista" style="--cols: {{ informe.grilla.columnas }}; --ancho-dia: {{ informe.ancho_dia }}px">
-      {% if informe.columna_hoy %}
-        <div class="linea-hoy" style="--col: {{ informe.columna_hoy }}" title="Fecha de corte"></div>
+    <div class="pista" style="--cols: {{ doc.grilla.columnas }}; --ancho-dia: {{ doc.ancho_dia }}px">
+      {% if doc.columna_hoy %}
+        <div class="linea-hoy" style="--col: {{ doc.columna_hoy }}" title="Fecha de corte"></div>
       {% endif %}
       <div class="cabecera-grilla">
         <div class="fila-meses">
-          {% for mes in informe.grilla.meses %}
+          {% for mes in doc.grilla.meses %}
             <span class="mes" style="grid-column: span {{ mes.dias }}">{{ mes.etiqueta }}</span>
           {% endfor %}
         </div>
         <div class="fila-semanas">
-          {% for semana in informe.grilla.semanas %}
+          {% for semana in doc.grilla.semanas %}
             <span class="semana" style="grid-column: span {{ semana.dias }}">{{ semana.etiqueta }}</span>
           {% endfor %}
         </div>
       </div>
 
-      {% for fila in informe.filas %}
+      {% for fila in doc.filas %}
         <div class="fila-barra">
           {% if fila.columnas %}
             {% if fila.columnas_base and not fila.es_resumen %}

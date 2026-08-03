@@ -50,10 +50,16 @@ class Informe:
     riesgos: object | None = None
     # El Gantt del informe va en vista de etapas: un árbol de 200 filas no entra en A4.
     filas: list = field(default_factory=list)
+    # Encabezado del panel izquierdo del Gantt: acá son etapas e hitos, en el plan son
+    # todas las tareas. Parte del contrato con `partials/gantt_documento.html`.
+    titulo_panel: str = "Etapa / hito"
     grilla: object | None = None
     flechas: list = field(default_factory=list)
     columna_hoy: int | None = None
-    ancho_dia: int = 22
+    ancho_dia: float = 22
+    # Al emitirse en PDF, `documento.ajustar_al_papel` comprime el Gantt para que entre
+    # en la hoja y avisa acá: comprimido, la plantilla deja solo los meses.
+    comprimido: bool = False
     alto_pista: int = 44
     desvios: dict = field(default_factory=dict)
 

@@ -1,0 +1,21 @@
+{# Base de los documentos que se imprimen a PDF.
+
+   No extiende `base.html` a propósito: esa trae navegación, htmx y el CSS por link.
+   Acá el documento tiene que ser **autocontenido** —se imprime con `file://`, donde
+   una ruta absoluta no resuelve— y no debe tener ni un control.
+
+   Chrome imprime aplicando `media: print`, así que el `@media print` de `estilo.css`
+   (que ya esconde barras y botones y fija A4 vertical) rige solo. El bloque `css`
+   existe para el documento que necesita otra hoja, como el plan en horizontal. #}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>{% block titulo %}Documento{% endblock %}</title>
+  <style>{{ css_embebido('estilo.css', 'documento.css') }}</style>
+  {% block css %}{% endblock %}
+</head>
+<body class="documento">
+  <main>{% block contenido %}{% endblock %}</main>
+</body>
+</html>

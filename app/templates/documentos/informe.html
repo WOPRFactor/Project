@@ -1,0 +1,6 @@
+{% extends "documentos/base.html" %}
+{% block titulo %}Informe — {{ informe.proyecto.nombre }}{% endblock %}
+
+{# Mismo cuerpo que la pantalla, sin navegación ni controles: es el mismo documento,
+   no una segunda versión que se va a desincronizar. #}
+{% block contenido %}{% include "informe/cuerpo.html" %}{% endblock %}

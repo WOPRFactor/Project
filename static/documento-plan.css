@@ -1,0 +1,7 @@
+/* Solo el documento del plan: hoja horizontal.
+
+   Va en su propio archivo y no en `documento.css` porque `@page` no se puede
+   condicionar por clase de forma confiable en Chrome, y el informe tiene que seguir
+   saliendo vertical. Cada documento embebe la hoja que le corresponde. */
+
+@page { size: A4 landscape; margin: 10mm; }
